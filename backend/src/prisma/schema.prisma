@@ -1,0 +1,262 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Profiles (User Management)
+model Profile {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  nama       String
+  role       Role     @default(staff_kantor)
+  aktif      Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  purchases_created  Purchase[]         @relation("PurchaseCreatedBy")
+  sales_created      Sale[]             @relation("SaleCreatedBy")
+  payments_created   SalesPayment[]     @relation("PaymentCreatedBy")
+  stock_adjustments  StockAdjustment[]  @relation("AdjustmentCreatedBy")
+
+  @@map("profiles")
+}
+
+enum Role {
+  admin
+  staff_gudang
+  staff_kantor
+  sales
+}
+
+// 2. Products (Barang Gudang)
+model Product {
+  id          String   @id @default(uuid())
+  kode        String   @unique
+  nama        String
+  deskripsi   String?  @db.Text
+  stok        Decimal  @default(0.000) @db.Decimal(15, 3)
+  satuan      String   @default("pcs")
+  aktif       Boolean  @default(true)
+  is_archived Boolean  @default(false)
+  foto_urls   Json?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  product_prices    ProductPrice[]
+  purchase_items    PurchaseItem[]
+  sale_items        SaleItem[]
+  stock_adjustments StockAdjustment[]
+
+  @@map("products")
+}
+
+// 3. Suppliers (Pemasok)
+model Supplier {
+  id                 String   @id @default(uuid())
+  kode               String   @unique
+  nama               String
+  alamat             String?  @db.Text
+  no_telp            String?
+  jatuh_tempo_bulan  Int      @default(1)
+  aktif              Boolean  @default(true)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  // Relations
+  product_prices ProductPrice[]
+  purchases      Purchase[]
+
+  @@map("suppliers")
+}
+
+// 4. Customers (Pelanggan)
+model Customer {
+  id                 String   @id @default(uuid())
+  kode               String   @unique
+  nama               String
+  alamat             String?  @db.Text
+  no_telp            String?
+  jatuh_tempo_bulan  Int      @default(1)
+  limit_kredit       Decimal  @default(10000000.00) @db.Decimal(15, 2)
+  saldo_piutang      Decimal  @default(0.00) @db.Decimal(15, 2)
+  aktif              Boolean  @default(true)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  // Relations
+  sales Sale[]
+
+  @@map("customers")
+}
+
+// 5. Product Prices (Harga Barang per Supplier)
+model ProductPrice {
+  id          String   @id @default(uuid())
+  product_id  String
+  supplier_id String
+  stok        Decimal  @default(0.000) @db.Decimal(15, 3)
+  harga_beli  Decimal  @default(0.00) @db.Decimal(15, 2)
+  aktif       Boolean  @default(true)
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, supplier_id])
+  @@map("product_prices")
+}
+
+// 6. Purchases (Order Beli / Purchase Order)
+model Purchase {
+  id          String         @id @default(uuid())
+  no_order    String         @unique
+  supplier_id String
+  order_date  DateTime       @db.Date
+  terms       String         @default("tunai") // 'tunai', '1', '2', '3'
+  subtotal    Decimal        @default(0.00) @db.Decimal(15, 2)
+  status      PurchaseStatus @default(draft)
+  received_at DateTime?
+  created_by  String?
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+
+  // Relations
+  supplier       Supplier       @relation(fields: [supplier_id], references: [id])
+  creator        Profile?       @relation("PurchaseCreatedBy", fields: [created_by], references: [id])
+  purchase_items PurchaseItem[]
+
+  @@map("purchases")
+}
+
+enum PurchaseStatus {
+  draft
+  completed
+  received
+}
+
+// 7. Purchase Items (Detail Item PO)
+model PurchaseItem {
+  id          String  @id @default(uuid())
+  purchase_id String
+  product_id  String
+  qty         Decimal @default(0.000) @db.Decimal(15, 3)
+  harga_beli  Decimal @default(0.00) @db.Decimal(15, 2)
+  subtotal    Decimal @default(0.00) @db.Decimal(15, 2)
+
+  // Relations
+  purchase Purchase @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [product_id], references: [id])
+
+  @@map("purchase_items")
+}
+
+// 8. Sales (Order Jual / Sales Invoice)
+model Sale {
+  id                  String     @id @default(uuid())
+  no_order            String     @unique
+  no_faktur           String?    @unique
+  order_date          DateTime   @db.Date
+  customer_id         String
+  customer_nama       String
+  customer_alamat     String?    @db.Text
+  customer_telp       String?
+  diantar             Boolean    @default(true)
+  limit_bulan         Int        @default(0)
+  due_date            DateTime?  @db.Date
+  extra_charge_desc   String?    @db.Text
+  extra_charge_amount Decimal    @default(0.00) @db.Decimal(15, 2)
+  sender_note         String?    @db.Text
+  subtotal            Decimal    @default(0.00) @db.Decimal(15, 2)
+  status              SaleStatus @default(draft)
+  nota_merah          Boolean    @default(false)
+  nota_putih          Boolean    @default(false)
+  nota_kuning         Boolean    @default(true)
+  created_by          String?
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+
+  // Relations
+  customer       Customer       @relation(fields: [customer_id], references: [id])
+  creator        Profile?       @relation("SaleCreatedBy", fields: [created_by], references: [id])
+  sale_items     SaleItem[]
+  sales_payments SalesPayment[]
+
+  @@map("sales")
+}
+
+enum SaleStatus {
+  draft
+  completed
+}
+
+// 9. Sale Items (Detail Item Penjualan)
+model SaleItem {
+  id           String   @id @default(uuid())
+  sale_id      String
+  product_id   String
+  product_kode String
+  product_nama String
+  qty          Decimal  @db.Decimal(15, 3)
+  unit_price   Decimal  @db.Decimal(15, 2)
+  total        Decimal  @db.Decimal(15, 2)
+  created_at   DateTime @default(now())
+
+  // Relations
+  sale    Sale    @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id])
+
+  @@map("sale_items")
+}
+
+// 10. Sales Payments (Catatan Pembayaran Penagihan)
+model SalesPayment {
+  id             String   @id @default(uuid())
+  sale_id        String
+  payment_date   DateTime @db.Date
+  amount         Decimal  @db.Decimal(15, 2)
+  payment_method String   @default("cash")
+  note           String?  @db.Text
+  created_by     String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Relations
+  sale    Sale     @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  creator Profile? @relation("PaymentCreatedBy", fields: [created_by], references: [id])
+
+  @@map("sales_payments")
+}
+
+// 11. Stock Adjustments (Histori Penyesuaian Stok Gudang)
+model StockAdjustment {
+  id              String   @id @default(uuid())
+  product_id      String?
+  product_kode    String   @default("")
+  product_nama    String   @default("")
+  adjustment_date DateTime @db.Date
+  stock_before    Decimal  @default(0.000) @db.Decimal(15, 3)
+  stock_after     Decimal  @default(0.000) @db.Decimal(15, 3)
+  qty_delta       Decimal  @default(0.000) @db.Decimal(15, 3)
+  staff_nama      String   @default("")
+  alasan          String   @db.Text
+  created_by      String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  product Product? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  creator Profile? @relation("AdjustmentCreatedBy", fields: [created_by], references: [id])
+
+  @@map("stock_adjustments")
+}

@@ -1,0 +1,899 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* MMB Brand Colors */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+
+  /* Light Surface Colors */
+  --color-surface-900: #f8fafc; /* Slate 50 (Page background) */
+  --color-surface-800: #ffffff; /* White (Card/Header background) */
+  --color-surface-700: #e2e8f0; /* Slate 200 (Borders) */
+  --color-surface-600: #f1f5f9; /* Slate 100 (Hover/Alt BG) */
+  --color-surface-500: #cbd5e1; /* Slate 300 (Darker borders) */
+  --color-surface-400: #94a3b8; /* Slate 400 (Muted texts) */
+
+  /* Status Colors */
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-400: #facc15;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+
+/* Base Styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+/* Utility Classes */
+.animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+.animate-slide-left { animation: slideInLeft 0.3s ease-out forwards; }
+.animate-slide-right { animation: slideInRight 0.3s ease-out forwards; }
+.animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+
+/* Glassmorphism (Light Theme) */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+/* Card Styles - Scaled Down (iPhone-style Glassmorphism) */
+.card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(239, 246, 255, 0.7) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  color: #1e293b;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02) !important;
+}
+
+.card:hover {
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(219, 234, 254, 0.8) 100%) !important;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.08) !important;
+}
+
+.card-hovered {
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(219, 234, 254, 0.8) 100%) !important;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.08) !important;
+}
+
+.card-hovered:hover {
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(219, 234, 254, 0.8) 100%) !important;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.08) !important;
+}
+
+.card-stat {
+  /* Selalu tampil dalam kondisi "hovered" — style permanen, tidak ada efek hover */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(219, 234, 254, 0.85) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1.5px solid rgba(37, 99, 235, 0.30) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px;
+  position: relative;
+  overflow: hidden;
+  color: #1e293b;
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.10), 0 1px 4px rgba(37, 99, 235, 0.06) !important;
+}
+
+/* Garis gradient biru-ungu selalu terlihat di atas card */
+.card-stat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+  opacity: 1;
+}
+
+/* Skeleton Loader */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* Table Styles */
+.table-row-selected {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  border-left: 3px solid #3b82f6;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* Input Styles - Use Longhands to Avoid Overriding Tailwind Spacers */
+.input-field {
+  background: #ffffff !important;
+  border: 1px solid #93c5fd !important;
+  border-radius: 6px;
+  color: #0f172a !important;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 12px;
+  padding-right: 12px;
+  width: 100%;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+/* Automatically add left padding when preceded by an icon span (prevent text overlapping icon) */
+.relative > span.absolute + .input-field,
+.relative > span.absolute ~ .input-field {
+  padding-left: 38px !important;
+}
+
+/* Automatically add right padding when followed by an absolute button (e.g. password eye) */
+.relative:has(> button.absolute) > .input-field {
+  padding-right: 38px !important;
+}
+
+/* If input already has explicit pl-9 / pl-10 class, ensure icon does not overlap */
+.input-field.pl-9  { padding-left: 36px !important; }
+.input-field.pl-10 { padding-left: 40px !important; }
+
+.input-field:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  outline: none;
+}
+
+.input-field::placeholder { color: #94a3b8; }
+
+/* Button Styles - Scaled Down */
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-secondary:hover {
+  background: rgba(37, 99, 235, 0.05);
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.4);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-danger:hover {
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-success:hover {
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Badge Styles */
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.badge-blue { background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); }
+.badge-green { background: rgba(22, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.2); }
+.badge-yellow { background: rgba(202, 138, 4, 0.1); color: #ca8a04; border: 1px solid rgba(202, 138, 4, 0.2); }
+.badge-red { background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); }
+.badge-gray { background: rgba(71, 85, 105, 0.1); color: #475569; border: 1px solid rgba(71, 85, 105, 0.2); }
+.badge-purple { background: rgba(124, 58, 237, 0.1); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.2); }
+
+/* Sidebar Nav (Redesigned for blue gradient background sidebar) */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  color: #bfdbfe;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.nav-item.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Shortcut badge */
+.shortcut-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #2563eb;
+  font-family: monospace;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Number formatting */
+.currency { font-variant-numeric: tabular-nums; }
+
+/* 
+=========================================
+LIGHT MODE GLOBAL TEXT & TABLE WORKAROUNDS
+=========================================
+*/
+
+/* Override white/light-slate text styles within content areas to dark slate for readability */
+main .text-white,
+main .text-slate-100,
+main .text-slate-200,
+main .text-slate-300,
+main .text-slate-350 {
+  color: #1e293b !important;
+}
+
+main .text-slate-400,
+main .text-slate-450 {
+  color: #475569 !important;
+}
+
+/* Exemptions for components where white/light text is intended (buttons, active status states) */
+main .btn-primary,
+main .btn-primary *,
+main .btn-danger,
+main .btn-danger *,
+main .btn-success,
+main .btn-success *,
+main a.btn-primary,
+main a.btn-primary *,
+main a.btn-danger,
+main a.btn-danger *,
+main a.btn-success,
+main a.btn-success *,
+main .bg-primary-600,
+main .bg-primary-600 *,
+main .bg-primary-500,
+main .bg-primary-500 *,
+main .bg-blue-600,
+main .bg-blue-600 *,
+main .bg-success-600,
+main .bg-success-600 *,
+main .bg-danger-600,
+main .bg-danger-600 *,
+main .bg-warning-600,
+main .bg-warning-600 * {
+  color: #ffffff !important;
+}
+
+main .btn-secondary,
+main .btn-secondary * {
+  color: #475569 !important;
+}
+
+main .shortcut-badge,
+main .shortcut-badge * {
+  color: #2563eb !important;
+}
+
+/* Table layout adjustments (Blue and Rounded Header) */
+main table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid #cbd5e1 !important;
+  width: 100% !important;
+}
+
+main thead tr {
+  background-color: #1d4ed8 !important; /* Premium dark blue header */
+  color: #ffffff !important;
+}
+
+main thead th {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  background-color: #1d4ed8 !important;
+  padding: 10px 14px !important;
+}
+
+main tbody tr {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+main tbody tr td {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+main tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+main tbody tr:hover {
+  background-color: rgba(37, 99, 235, 0.04) !important;
+}
+
+/* Ensure danger text/numbers look high-contrast (darker red) */
+main .text-danger-400,
+main .text-red-400 {
+  color: #dc2626 !important;
+}
+
+/* Ensure success text/numbers look high-contrast (darker green) */
+main .text-success-400,
+main .text-green-400 {
+  color: #16a34a !important;
+}
+
+/* iPhone glass gradients for container elements using bg-surface-800 */
+main .bg-surface-800 {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(239, 246, 255, 0.75) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 30px rgba(37, 99, 235, 0.03) !important;
+}
+
+/* Global Light-Mode Pastel Overrides for dark icon wrapper boxes using wildcard attributes */
+main [class*="bg-primary-950"],
+main [class*="bg-primary-900"],
+main [class*="bg-blue-950"] {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid rgba(37, 99, 235, 0.25) !important;
+}
+main [class*="bg-primary-950"] *,
+main [class*="bg-primary-900"] *,
+main [class*="bg-blue-950"] * {
+  color: #1d4ed8 !important;
+  stroke: #1d4ed8 !important;
+  fill: transparent !important;
+}
+
+main [class*="bg-purple-950"],
+main [class*="bg-purple-900"],
+main [class*="bg-indigo-950"] {
+  background-color: rgba(124, 58, 237, 0.12) !important;
+  color: #6d28d9 !important;
+  border: 1px solid rgba(124, 58, 237, 0.25) !important;
+}
+main [class*="bg-purple-950"] *,
+main [class*="bg-purple-900"] *,
+main [class*="bg-indigo-950"] * {
+  color: #6d28d9 !important;
+  stroke: #6d28d9 !important;
+  fill: transparent !important;
+}
+
+main [class*="bg-danger-950"],
+main [class*="bg-danger-900"],
+main [class*="bg-red-950"],
+main [class*="bg-rose-950"] {
+  background-color: rgba(220, 38, 38, 0.12) !important;
+  color: #b91c1c !important;
+  border: 1px solid rgba(220, 38, 38, 0.25) !important;
+}
+main [class*="bg-danger-950"] *,
+main [class*="bg-danger-900"] *,
+main [class*="bg-red-950"] *,
+main [class*="bg-rose-950"] * {
+  color: #b91c1c !important;
+  stroke: #b91c1c !important;
+  fill: transparent !important;
+}
+
+main [class*="bg-success-950"],
+main [class*="bg-green-950"],
+main [class*="bg-emerald-950"],
+main [class*="bg-teal-950"] {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+}
+main [class*="bg-success-950"] *,
+main [class*="bg-green-950"] *,
+main [class*="bg-emerald-950"] *,
+main [class*="bg-teal-950"] * {
+  color: #047857 !important;
+  stroke: #047857 !important;
+  fill: transparent !important;
+}
+
+main [class*="bg-amber-950"],
+main [class*="bg-amber-900"],
+main [class*="bg-yellow-950"],
+main [class*="bg-orange-950"] {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+main [class*="bg-amber-950"] *,
+main [class*="bg-amber-900"] *,
+main [class*="bg-yellow-950"] *,
+main [class*="bg-orange-950"] * {
+  color: #b45309 !important;
+  stroke: #b45309 !important;
+  fill: transparent !important;
+}
+
+/* 
+=========================================
+NAVIGATION SUBMENU CARD STYLING
+=========================================
+*/
+
+/* Consistent card base for submenu navigation links */
+main button.card,
+main a.card,
+main .card[onClick] {
+  border: 1.5px solid #bfdbfe !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(239, 246, 255, 0.80) 100%) !important;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.04), 0 1px 4px rgba(37, 99, 235, 0.06) !important;
+  transition: all 0.22s ease !important;
+}
+
+main button.card.card-focused,
+main button.card:hover,
+main a.card:hover,
+main .card[onClick]:hover {
+  border-color: #3b82f6 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(219, 234, 254, 0.90) 100%) !important;
+  box-shadow: 0 8px 28px rgba(37, 99, 235, 0.10), 0 2px 8px rgba(37, 99, 235, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+main button.card:active,
+main a.card:active {
+  transform: translateY(0);
+}
+
+/* Card title - bold primary blue */
+main button.card h3,
+main a.card h3,
+main .card[onClick] h3 {
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+}
+
+/* Card description - muted blue-slate */
+main button.card p,
+main a.card p,
+main .card[onClick] p {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+/* 
+  Icon wrapper div (p-3 or p-3.5) inside navigation menu cards:
+  - These carry the per-card color class (e.g. text-emerald-400, text-rose-400)
+  - We give them a colored pill background that derives from the parent icon color
+  - The !important border rule from bg-surface-800 override is lifted for these wrappers
+*/
+main button.card div.p-3,
+main button.card div.p-3\.5,
+main a.card div.p-3,
+main a.card div.p-3\.5,
+main .card[onClick] div.p-3 {
+  background-color: rgba(37, 99, 235, 0.09) !important;
+  border: 1.5px solid rgba(37, 99, 235, 0.18) !important;
+  border-radius: 12px !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease !important;
+}
+
+/* 
+  Color-coded icon wrappers: apply tinted bg based on the icon color class present
+  on the WRAPPER div. These classes are set directly in each menu component.
+*/
+/* Primary/Blue */
+main button.card div.p-3.text-primary-400,
+main button.card div.p-3\.5.text-primary-400,
+main button.card [class*="p-3"][class*="text-primary"] {
+  background-color: rgba(37, 99, 235, 0.10) !important;
+  border-color: rgba(37, 99, 235, 0.22) !important;
+}
+/* Emerald/Green */
+main button.card div.p-3.text-emerald-400,
+main button.card div.p-3\.5.text-emerald-400,
+main button.card [class*="p-3"][class*="text-emerald"] {
+  background-color: rgba(16, 185, 129, 0.10) !important;
+  border-color: rgba(16, 185, 129, 0.22) !important;
+}
+/* Red/Danger */
+main button.card div.p-3.text-danger-400,
+main button.card div.p-3\.5.text-danger-400,
+main button.card [class*="p-3"][class*="text-danger"],
+main button.card [class*="p-3"][class*="text-rose"] {
+  background-color: rgba(220, 38, 38, 0.09) !important;
+  border-color: rgba(220, 38, 38, 0.20) !important;
+}
+/* Amber/Yellow */
+main button.card div.p-3.text-amber-400,
+main button.card div.p-3\.5.text-amber-400,
+main button.card [class*="p-3"][class*="text-amber"] {
+  background-color: rgba(245, 158, 11, 0.10) !important;
+  border-color: rgba(245, 158, 11, 0.22) !important;
+}
+/* Purple */
+main button.card div.p-3.text-purple-400,
+main button.card div.p-3\.5.text-purple-400,
+main button.card [class*="p-3"][class*="text-purple"] {
+  background-color: rgba(124, 58, 237, 0.10) !important;
+  border-color: rgba(124, 58, 237, 0.22) !important;
+}
+/* Sky */
+main button.card div.p-3.text-sky-400,
+main button.card div.p-3\.5.text-sky-400,
+main button.card [class*="p-3"][class*="text-sky"] {
+  background-color: rgba(14, 165, 233, 0.10) !important;
+  border-color: rgba(14, 165, 233, 0.22) !important;
+}
+
+/* 
+  ICON COLORS: Preserve the per-menu color class on icons.
+  We only need to prevent the old global blue-override from wiping colors.
+  The per-component text-color class (text-emerald-400, text-rose-400, etc.) will apply
+  because these are placed on the wrapper div which cascades to the svg.
+  We override the global bg-surface-800 rule for icon wrappers that have color classes.
+*/
+
+/* Navigation card icons — let the color class on the wrapper div cascade to SVG */
+main button.card div[class*="text-emerald"] svg,
+main button.card div[class*="text-rose"] svg,
+main button.card div[class*="text-amber"] svg,
+main button.card div[class*="text-danger"] svg,
+main button.card div[class*="text-purple"] svg,
+main button.card div[class*="text-yellow"] svg,
+main button.card div[class*="text-sky"] svg,
+main button.card div[class*="text-slate"] svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+/* Primary/blue icons still show as primary blue */
+main button.card div[class*="text-primary"] svg {
+  color: #2563eb !important;
+  stroke: #2563eb !important;
+}
+
+/* ChevronRight chevron icon - always muted */
+main button.card > div > div svg:last-child,
+main button.card .text-slate-500 svg {
+  color: #64748b !important;
+  stroke: #64748b !important;
+}
+
+/* 
+=========================================
+STAT / INFO CARDS — ATTRACTIVE BORDERS
+=========================================
+*/
+
+/* Non-clickable stat cards (plain div.card in grid, no left-border class) 
+   get a subtle colored top accent + soft shadow */
+main .grid > div.card:not([class*="border-l"]):not([class*="border-rose"]):not([class*="border-amber"]):not([class*="border-emerald"]):not([class*="border-primary"]) {
+  position: relative !important;
+  overflow: hidden !important;
+  border: 1.5px solid #e0e7ff !important;
+  border-top: 3px solid #3b82f6 !important;
+  box-shadow: 0 2px 16px rgba(37, 99, 235, 0.06) !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease !important;
+}
+
+main .grid > div.card:not([class*="border-l"]):not([class*="border-rose"]):not([class*="border-amber"]):not([class*="border-emerald"]):not([class*="border-primary"]):hover {
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.10) !important;
+  border-color: #c7d2fe !important;
+  border-top-color: #2563eb !important;
+}
+
+/* Penagihan border-l-4 stat cards — enhance with deeper shadow */
+main .grid > div.card[class*="border-l"] {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+  transition: box-shadow 0.2s ease, transform 0.15s ease !important;
+}
+
+main .grid > div.card[class*="border-l"]:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10) !important;
+  transform: translateY(-1px);
+}
+
+/* Restore explicit left-border colors on stat cards (border-rose/amber/emerald-500) */
+main .grid > div.card.border-rose-500   { border-left: 4px solid #f43f5e !important; }
+main .grid > div.card.border-amber-500  { border-left: 4px solid #f59e0b !important; }
+main .grid > div.card.border-emerald-500 { border-left: 4px solid #10b981 !important; }
+main .grid > div.card.border-primary-500 { border-left: 4px solid #3b82f6 !important; }
+main .grid > div.card.border-sky-500    { border-left: 4px solid #0ea5e9 !important; }
+main .grid > div.card.border-purple-500 { border-left: 4px solid #8b5cf6 !important; }
+
+/* 
+=========================================
+POPUP MODAL DIALOG HEADER STYLE OVERRIDES
+=========================================
+*/
+
+/* modal-overlay wrapper and card layout adjustments */
+.modal-overlay > div {
+  overflow: hidden !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Default Blue Header */
+.modal-overlay > div > div:first-child,
+.modal-overlay > div > form > div:first-child {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+  padding: 16px 20px !important;
+  border-top-left-radius: 11px !important;
+  border-top-right-radius: 11px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+/* Header Text elements */
+.modal-overlay > div > div:first-child h2,
+.modal-overlay > div > div:first-child h3,
+.modal-overlay > div > div:first-child h4,
+.modal-overlay > div > form > div:first-child h2,
+.modal-overlay > div > form > div:first-child h3,
+.modal-overlay > div > form > div:first-child h4 {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  margin: 0 !important;
+}
+
+/* Close Icon buttons inside headers */
+.modal-overlay > div > div:first-child button,
+.modal-overlay > div > form > div:first-child button {
+  color: rgba(255, 255, 255, 0.8) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 4px !important;
+  border-radius: 6px !important;
+}
+.modal-overlay > div > div:first-child button:hover,
+.modal-overlay > div > form > div:first-child button:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Close Icon svg inside header close button */
+.modal-overlay > div > div:first-child button svg,
+.modal-overlay > div > form > div:first-child button svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Ensure all SVG icons in any modal header are white */
+.modal-overlay > div > div:first-child svg,
+.modal-overlay > div > form > div:first-child svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Modal Body container elements spacing padding */
+.modal-overlay > div > :not(:first-child),
+.modal-overlay > div > form > :not(:first-child) {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+.modal-overlay > div > :not(:first-child):last-child,
+.modal-overlay > div > form > :not(:first-child):last-child {
+  padding-bottom: 24px !important;
+}
+.modal-overlay > div > :not(:first-child):first-of-type,
+.modal-overlay > div > form > :not(:first-child):first-of-type {
+  padding-top: 20px !important;
+}
+
+/* Delete popup (RED) overrides - if modal has danger buttons */
+.modal-overlay:has(.btn-danger, .bg-danger-600, .bg-red-600, [class*="bg-danger"]) > div > div:first-child,
+.modal-overlay:has(.btn-danger, .bg-danger-600, .bg-red-600, [class*="bg-danger"]) > div > form > div:first-child {
+  background-color: #dc2626 !important;
+}
+
+/* Archive popup (YELLOW) overrides - if modal has archive buttons */
+.modal-overlay:has(.btn-warning, .bg-warning-600, .bg-amber-600, .bg-yellow-600, [class*="bg-warning"]) > div > div:first-child,
+.modal-overlay:has(.btn-warning, .bg-warning-600, .bg-amber-600, .bg-yellow-600, [class*="bg-warning"]) > div > form > div:first-child {
+  background-color: #d97706 !important;
+}
+
+/* Fix default focus outline on modal divs when focused programmatically */
+.modal-overlay > div:focus,
+.modal-overlay > div:focus-visible {
+  outline: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Selected row highlighted border for tables */
+.table-row-selected td {
+  border-top: 2px solid #3b82f6 !important;
+  border-bottom: 2px solid #3b82f6 !important;
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+.table-row-selected td,
+.table-row-selected td *,
+.table-row-selected td span,
+.table-row-selected td div {
+  color: #000000 !important;
+}
+.table-row-selected td:first-child {
+  border-left: 2px solid #3b82f6 !important;
+  border-top-left-radius: 8px !important;
+  border-bottom-left-radius: 8px !important;
+}
+.table-row-selected td:last-child {
+  border-right: 2px solid #3b82f6 !important;
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}

@@ -1,0 +1,15 @@
+{
+  "folders": [
+    {
+      "path": "frontend",
+      "name": "MMB Frontend"
+    },
+    {
+      "path": "backend",
+      "name": "MMB Backend"
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "node_modules/typescript/lib"
+  }
+}

@@ -1,0 +1,36 @@
+# Dependency directories
+node_modules/
+
+# Production build outputs
+dist/
+build/
+.next/
+
+# Environments / Credentials
+.env
+.env.local
+.env.*.local
+
+# SQLite database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+EHthumbs.db
+Desktop.ini
+.DS_Store
+
+# Gemini logs
+.gemini/

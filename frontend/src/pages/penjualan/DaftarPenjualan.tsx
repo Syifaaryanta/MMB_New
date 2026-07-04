@@ -1,0 +1,1084 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useHotkeys } from 'react-hotkeys-hook';
+import api from '@/lib/api';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { Search, Calendar, User, FileText, X, Eye, Trash2, Printer, AlertTriangle } from 'lucide-react';
+
+interface Sale {
+  id: string;
+  no_order: string;
+  no_faktur: string | null;
+  order_date: string;
+  customer_nama: string;
+  subtotal: number;
+  status: string;
+  diantar: boolean;
+  limit_bulan: number;
+  due_date: string | null;
+}
+
+export const DaftarPenjualan: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const initDate = (location.state as any)?.date || '';
+
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
+  // Active SO Detail
+  const [activeSo, setActiveSo] = useState<any | null>(null);
+
+  // Filters Screen
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const defaultFromDate = `${year}-${month}-01`;
+  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+  const defaultToDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+
+  const initSkipFilter = (location.state as any)?.skipFilter || false;
+  const [showFilterPage, setShowFilterPage] = useState(!initDate && !initSkipFilter);
+  const [fromDate, setFromDate] = useState(initDate || defaultFromDate);
+  const [toDate, setToDate] = useState(initDate || defaultToDate);
+  const [noOrderFilter, setNoOrderFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isTableFocused, setIsTableFocused] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const [showConfirmReissue, setShowConfirmReissue] = useState(false);
+  const [showPrintConfirm, setShowPrintConfirm] = useState(false);
+  const [sortOption, setSortOption] = useState<'asli' | 'abjad' | 'qty' | 'harga'>('asli');
+
+  const getSortedItems = (itemList: any[]) => {
+    if (!itemList) return [];
+    const list = [...itemList];
+    if (sortOption === 'abjad') {
+      return list.sort((a, b) => a.product_nama.localeCompare(b.product_nama));
+    } else if (sortOption === 'qty') {
+      return list.sort((a, b) => Number(b.qty) - Number(a.qty));
+    } else if (sortOption === 'harga') {
+      return list.sort((a, b) => Number(b.unit_price) - Number(a.unit_price));
+    }
+    return list;
+  };
+
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
+  const noOrderFilterRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  useEffect(() => {
+    if (initDate) {
+      setIsLoading(true);
+      api.get(`/sales?status=completed&from=${initDate}&to=${initDate}&limit=1000`)
+        .then((res) => {
+          setSales(res.data.data || []);
+          setTotal(res.data.total || 0);
+          setSelectedIdx(0);
+          setShowFilterPage(false);
+          setTimeout(() => {
+            searchInputRef.current?.focus();
+            searchInputRef.current?.select();
+          }, 150);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    } else if (initSkipFilter) {
+      setIsLoading(true);
+      api.get(`/sales?status=completed&from=${defaultFromDate}&to=${defaultToDate}&limit=1000`)
+        .then((res) => {
+          setSales(res.data.data || []);
+          setTotal(res.data.total || 0);
+          setSelectedIdx(0);
+          setShowFilterPage(false);
+          setTimeout(() => {
+            searchInputRef.current?.focus();
+            searchInputRef.current?.select();
+          }, 150);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    }
+  }, [initDate, initSkipFilter]);
+
+  useEffect(() => {
+    if (showFilterPage) {
+      setTimeout(() => {
+        fromDateRef.current?.focus();
+        fromDateRef.current?.select();
+      }, 150);
+    }
+  }, [showFilterPage]);
+
+  const filteredSales = sales.filter((s) =>
+    s.customer_nama.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const confirmDeleteSale = async () => {
+    if (!saleToDelete) return;
+    try {
+      await api.delete(`/sales/${saleToDelete.id}`);
+      showToast('Transaksi berhasil dibatalkan dan stok dikembalikan', 'success');
+      let url = `/sales?status=completed&limit=1000`;
+      if (fromDate) url += `&from=${fromDate}`;
+      if (toDate) url += `&to=${toDate}`;
+      const res = await api.get(url);
+      setSales(res.data.data || []);
+      setSelectedIdx(0);
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal membatalkan transaksi', 'error');
+    } finally {
+      setShowDeleteConfirm(false);
+      setSaleToDelete(null);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredSales.length > 0) {
+        setIsTableFocused(true);
+        setSelectedIdx(0);
+        searchInputRef.current?.blur();
+      }
+    }
+  };
+
+  const handleOpenDetail = async (so: Sale) => {
+    try {
+      const res = await api.get(`/sales/${so.id}`);
+      setActiveSo(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleFilterSubmit = async (e: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      let url = `/sales?status=completed&limit=1000`;
+      if (fromDate) url += `&from=${fromDate}`;
+      if (toDate) url += `&to=${toDate}`;
+
+      const res = await api.get(url);
+      let list = res.data.data || [];
+
+      if (noOrderFilter.trim()) {
+        const query = noOrderFilter.trim().toLowerCase();
+        list = list.filter((s: Sale) => 
+          (s.no_order && s.no_order.toLowerCase().includes(query)) ||
+          (s.no_faktur && s.no_faktur.toLowerCase().includes(query))
+        );
+      }
+
+      setSales(list);
+      setSelectedIdx(0);
+      setShowFilterPage(false);
+      setIsTableFocused(false);
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }, 150);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const [printFormat, setPrintFormat] = useState<'thermal' | 'a4'>('thermal');
+
+  const handlePrint = async (format: 'thermal' | 'a4') => {
+    setPrintFormat(format);
+    if (!activeSo) return;
+    try {
+      setIsLoading(true);
+      const res = await api.patch(`/sales/${activeSo.id}/print`);
+      setActiveSo(res.data);
+      setSales((prev) => prev.map((s) => (s.id === activeSo.id ? res.data : s)));
+      setTimeout(() => {
+        window.print();
+      }, 250);
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Gagal memproses cetak ulang nota', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Keyboard Shortcuts
+  // Enter: View SO detail
+  useHotkeys('enter', (e) => {
+    if (isTableFocused && !activeSo && !showDeleteConfirm && filteredSales[selectedIdx]) {
+      e.preventDefault();
+      handleOpenDetail(filteredSales[selectedIdx]);
+    }
+  }, { enableOnFormTags: false });
+
+  // Delete key: Trigger delete modal
+  useHotkeys('del', (e) => {
+    if (isTableFocused && !activeSo && !showDeleteConfirm && filteredSales[selectedIdx]) {
+      e.preventDefault();
+      setSaleToDelete(filteredSales[selectedIdx]);
+      setShowDeleteConfirm(true);
+    }
+  }, { enableOnFormTags: false });
+
+  // F1: Focus search input
+  useHotkeys('f1', (e) => {
+    e.preventDefault();
+    setIsTableFocused(false);
+    searchInputRef.current?.focus();
+    searchInputRef.current?.select();
+  }, { enableOnFormTags: true });
+
+  // F2: Open Filter Popup
+  useHotkeys('f2', (e) => {
+    e.preventDefault();
+    if (!activeSo) setShowFilterPage(true);
+  }, { enableOnFormTags: true });
+
+  // Arrow up/down navigation
+  useHotkeys('up', (e) => {
+    if (isTableFocused && !activeSo && !showDeleteConfirm) {
+      e.preventDefault();
+      setSelectedIdx((p) => Math.max(0, p - 1));
+    }
+  }, { enableOnFormTags: false });
+
+  useHotkeys('down', (e) => {
+    if (isTableFocused && !activeSo && !showDeleteConfirm) {
+      e.preventDefault();
+      setSelectedIdx((p) => Math.min(filteredSales.length - 1, p + 1));
+    }
+  }, { enableOnFormTags: false });
+
+  // Escape to close detail or go back
+  useHotkeys('esc', (e) => {
+    e.preventDefault();
+    if (showPrintConfirm) {
+      setShowPrintConfirm(false);
+    } else if (showConfirmReissue) {
+      setShowConfirmReissue(false);
+    } else if (activeSo) {
+      setActiveSo(null);
+    } else if (showDeleteConfirm) {
+      setShowDeleteConfirm(false);
+      setSaleToDelete(null);
+    } else if (showFilterPage) {
+      navigate('/penjualan');
+    } else if (isTableFocused) {
+      setIsTableFocused(false);
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    } else {
+      setShowFilterPage(true);
+    }
+  }, { enableOnFormTags: true });
+
+  // Enter inside Delete or Print Confirmation popup
+  useHotkeys('enter', (e) => {
+    if (showDeleteConfirm) {
+      e.preventDefault();
+      confirmDeleteSale();
+    } else if (showConfirmReissue) {
+      e.preventDefault();
+      setShowConfirmReissue(false);
+      setShowPrintConfirm(true);
+    } else if (showPrintConfirm) {
+      e.preventDefault();
+      setShowPrintConfirm(false);
+    }
+  }, { enableOnFormTags: true });
+
+  // Y key to confirm reissue
+  useHotkeys('y', (e) => {
+    if (showConfirmReissue) {
+      e.preventDefault();
+      setShowConfirmReissue(false);
+      setShowPrintConfirm(true);
+    }
+  }, { enableOnFormTags: true });
+
+  // P inside format confirm or detail page to trigger print reissue
+  useHotkeys('p', (e) => {
+    if (showPrintConfirm) {
+      e.preventDefault();
+      setShowPrintConfirm(false);
+      handlePrint(printFormat);
+    } else if (activeSo && !showPrintConfirm && !showConfirmReissue && !showDeleteConfirm) {
+      e.preventDefault();
+      setShowConfirmReissue(true);
+    }
+  }, { enableOnFormTags: true });
+
+  // Arrow Keys inside print confirm to choose options
+  useHotkeys('up', (e) => {
+    if (showPrintConfirm) {
+      e.preventDefault();
+      setPrintFormat('thermal');
+    }
+  }, { enableOnFormTags: true });
+
+  useHotkeys('down', (e) => {
+    if (showPrintConfirm) {
+      e.preventDefault();
+      setPrintFormat('a4');
+    }
+  }, { enableOnFormTags: true });
+
+  useHotkeys('right', (e) => {
+    if (showPrintConfirm) {
+      e.preventDefault();
+      const sortOptions: Array<'asli' | 'abjad' | 'qty' | 'harga'> = ['asli', 'abjad', 'qty', 'harga'];
+      const currentIndex = sortOptions.indexOf(sortOption);
+      const nextIndex = (currentIndex + 1) % sortOptions.length;
+      setSortOption(sortOptions[nextIndex]);
+    }
+  }, { enableOnFormTags: true });
+
+  useHotkeys('left', (e) => {
+    if (showPrintConfirm) {
+      e.preventDefault();
+      const sortOptions: Array<'asli' | 'abjad' | 'qty' | 'harga'> = ['asli', 'abjad', 'qty', 'harga'];
+      const currentIndex = sortOptions.indexOf(sortOption);
+      const nextIndex = (currentIndex - 1 + sortOptions.length) % sortOptions.length;
+      setSortOption(sortOptions[nextIndex]);
+    }
+  }, { enableOnFormTags: true });
+
+  if (showFilterPage) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-white">Daftar Nota Penjualan</h1>
+            <p className="text-slate-400">Daftar transaksi penjualan (SO) yang telah diselesaikan</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-800 overflow-hidden">
+            <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pencarian SO</h3>
+            </div>
+
+            <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <input
+                    ref={fromDateRef}
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), toDateRef.current?.focus())}
+                    className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <input
+                    ref={toDateRef}
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), noOrderFilterRef.current?.focus())}
+                    className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nomor Order</label>
+                <input
+                  ref={noOrderFilterRef}
+                  type="text"
+                  placeholder="Semua / Ketik No Order"
+                  value={noOrderFilter}
+                  onChange={(e) => setNoOrderFilter(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
+                  className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white font-mono uppercase"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => navigate('/penjualan')}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Kembali
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
+                >
+                  Tampilkan (Enter)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="print:hidden space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-white">Daftar Nota Penjualan</h1>
+            <p className="text-slate-400">Daftar transaksi penjualan (SO) yang telah diselesaikan</p>
+          </div>
+        </div>
+
+        {!activeSo ? (
+          /* SO List Grid */
+          <div className="space-y-4">
+            {/* Inline Search Bar & Filter Button */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Cari nama customer (F1)..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsTableFocused(false);
+                  }}
+                  onKeyDown={handleSearchKeyDown}
+                  className="input-field pl-9 w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white shadow-sm"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
+                <div className="px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-700 font-semibold flex items-center gap-2 bg-white shadow-sm font-mono">
+                  <Calendar size={14} className="text-primary-600" />
+                  <span>{formatDate(fromDate)} - {formatDate(toDate)}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowFilterPage(true)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm"
+                >
+                  Filter Tanggal & No Order (F2)
+                </button>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-16 skeleton" />
+                ))}
+              </div>
+            ) : filteredSales.length > 0 ? (
+              <div className="card p-0 overflow-hidden border border-surface-700">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
+                      <th className="p-4">No Order</th>
+                      <th className="p-4">No Faktur</th>
+                      <th className="p-4">Pelanggan</th>
+                      <th className="p-4">Tanggal Order</th>
+                      <th className="p-4">Jatuh Tempo</th>
+                      <th className="p-4 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-700/50">
+                    {filteredSales.map((s, idx) => {
+                      const isFocused = idx === selectedIdx && isTableFocused;
+                      const rowBgClass = isFocused ? 'bg-blue-50/20 font-semibold' : 'hover:bg-slate-50';
+                      
+                      const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                        let base = "p-4 text-xs transition-all duration-150 ";
+                        if (isFocused) {
+                          base += "border-y-2 border-primary-600 bg-blue-50/50 text-primary-950 ";
+                          if (pos === 'first') base += "border-l-2 rounded-l-lg ";
+                          if (pos === 'last') base += "border-r-2 rounded-r-lg ";
+                        } else {
+                          base += "border-y border-slate-100 text-slate-800 ";
+                        }
+                        return base;
+                      };
+
+                      return (
+                        <tr
+                          key={s.id}
+                          onClick={() => {
+                            setSelectedIdx(idx);
+                            setIsTableFocused(true);
+                          }}
+                          onDoubleClick={() => handleOpenDetail(s)}
+                          className={`cursor-pointer ${rowBgClass}`}
+                        >
+                          <td className={getTdClass('first') + " font-mono font-bold"}>
+                            {s.no_order}
+                          </td>
+                          <td className={getTdClass('middle') + " font-mono"}>
+                            {s.no_faktur || '-'}
+                          </td>
+                          <td className={getTdClass('middle') + " font-semibold"}>
+                            {s.customer_nama}
+                          </td>
+                          <td className={getTdClass('middle')}>
+                            {formatDate(s.order_date)}
+                          </td>
+                          <td className={getTdClass('middle')}>
+                            {s.due_date ? formatDate(s.due_date) : '-'}
+                          </td>
+                          <td className={getTdClass('last') + " text-right font-black text-slate-900"}>
+                            {formatCurrency(Number(s.subtotal))}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20">
+                <Calendar className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
+                <h3 className="text-lg font-bold text-slate-400">Tidak ada data SO ditemukan</h3>
+                <p className="text-sm mt-1">Gunakan filter F1 untuk melakukan pencarian penjualan.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* SO Detail Sheet */
+          <div className="bg-white rounded-xl shadow-xl border border-blue-200 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
+            {/* Blue Header Bar */}
+            <div className="bg-primary-600 text-white px-6 py-4 flex justify-between items-center border-b border-primary-700">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-white/10 rounded-lg">
+                  <FileText size={18} className="text-white" />
+                </div>
+                <h2 className="text-base font-bold text-white">
+                  Detail Order: {activeSo.no_order}
+                </h2>
+              </div>
+              <button
+                onClick={() => setActiveSo(null)}
+                className="text-white/80 hover:text-white transition-colors focus:outline-none"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body content */}
+            <div className="p-4 bg-slate-50/50 space-y-4">
+              {/* Grid for Informasi Order & Customer */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Informasi Order Card */}
+                <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                  <div className="border-b border-slate-100 pb-2">
+                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Informasi Order</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Order:</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_order}</span>
+                    </div>
+                    
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Faktur:</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_faktur || '-'}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal:</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activeSo.order_date)}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Pengiriman:</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                        {activeSo.diantar ? 'Diantar' : 'Diambil'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Jatuh Tempo:</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                        {activeSo.limit_bulan !== undefined ? `${activeSo.limit_bulan + 1} Bulan` : '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Customer Card */}
+                <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                  <div className="border-b border-slate-100 pb-2">
+                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Customer</h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama:</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.customer_nama}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Alamat:</span>
+                      <span className="text-xs font-medium text-slate-700 mt-0.5 block leading-relaxed">
+                        {activeSo.customer_alamat || 'Alamat tidak dicantumkan'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Telp:</span>
+                      <span className="text-xs font-semibold text-slate-700 mt-0.5 block font-mono">
+                        {activeSo.customer_telp || '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Daftar Barang Section */}
+              <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                <div className="border-b border-slate-100 pb-2">
+                  <h3 className="font-bold text-slate-850 text-xs uppercase tracking-wider">Daftar Barang</h3>
+                </div>
+
+                <div className="overflow-hidden rounded-lg border border-blue-200">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-primary-600 text-white font-bold text-xs uppercase">
+                        <th className="p-3 w-12 text-center">#</th>
+                        <th className="p-3 w-32 text-center">Kode</th>
+                        <th className="p-3">Nama Barang</th>
+                        <th className="p-3 text-center w-20">Qty</th>
+                        <th className="p-3 text-right w-36">Harga Satuan</th>
+                        <th className="p-3 text-right w-40">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-blue-100 bg-white">
+                      {activeSo.sale_items.map((item: any, idx: number) => (
+                        <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-800">
+                          <td className="p-3 text-center text-slate-500 font-semibold">{idx + 1}</td>
+                          <td className="p-3 text-center">
+                            <span className="px-2.5 py-1 text-[10px] font-bold font-mono rounded-lg bg-blue-50/50 text-primary-700 border border-blue-100">
+                              {item.product_kode}
+                            </span>
+                          </td>
+                          <td className="p-3 font-bold text-slate-900">{item.product_nama}</td>
+                          <td className="p-3 text-center font-bold text-slate-700">{Number(item.qty)}</td>
+                          <td className="p-3 text-right font-semibold text-slate-550">
+                            {formatCurrency(Number(item.unit_price))}
+                          </td>
+                          <td className="p-3 text-right font-bold text-slate-900">
+                            {formatCurrency(Number(item.total))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  {/* Table summary subtotal block */}
+                  <div className="bg-slate-50/50 border-t border-blue-200 p-3.5 flex flex-col items-end gap-1.5">
+                    {Number(activeSo.extra_charge_amount) !== 0 && (
+                      <div className="flex gap-4 text-xs font-semibold text-slate-600">
+                        <span>Penyesuaian ({activeSo.extra_charge_desc}):</span>
+                        <span className="font-mono text-slate-800">{formatCurrency(Number(activeSo.extra_charge_amount))}</span>
+                      </div>
+                    )}
+                    <div className="flex gap-4 text-xs font-bold items-center">
+                      <span className="text-slate-800">Subtotal:</span>
+                      <span className="text-emerald-600 font-black text-sm font-mono">
+                        {formatCurrency(Number(activeSo.subtotal))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Actions Buttons */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveSo(null)}
+                  className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white"
+                >
+                  Tutup <kbd className="text-[10px] text-slate-400 font-bold ml-1 font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">Esc</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmReissue(true)}
+                  className="px-5 py-2.5 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md flex items-center gap-2"
+                >
+                  <Printer size={14} />
+                  <span>Print</span>
+                  <kbd className="text-[10px] text-white/70 font-bold font-mono uppercase bg-primary-700/80 px-1 py-0.5 rounded">P</kbd>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Simple Reissue Confirmation Modal (Modal A) */}
+        {showConfirmReissue && activeSo && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden border border-blue-200">
+              <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2 border-b border-primary-700/80">
+                <Printer size={24} className="shrink-0 text-white animate-pulse" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Cetak Ulang Nota</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
+                  Apakah Anda yakin ingin mencetak ulang nota ini?
+                </p>
+                <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmReissue(false)}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-500/20"
+                  >
+                    Batal (Esc)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowConfirmReissue(false);
+                      setShowPrintConfirm(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md focus:ring-2 focus:ring-primary-500/20"
+                  >
+                    Ya, Lanjut (Enter/Y)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Print Confirmation Dialog (Modal B) */}
+        {showPrintConfirm && activeSo && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+            <div className="bg-white border border-blue-200 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800">
+              
+              {/* Header */}
+              <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Printer size={18} className="text-primary-600" />
+                  <span>Konfirmasi Cetak Nota</span>
+                </h3>
+                <button
+                  onClick={() => setShowPrintConfirm(false)}
+                  className="text-slate-450 hover:text-slate-650 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Subtitle */}
+              <p className="text-xs text-slate-500 mt-4 font-medium">
+                Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
+              </p>
+
+              {/* Sorting Pills */}
+              <div className="flex gap-2.5 mt-4">
+                {(['asli', 'abjad', 'qty', 'harga'] as const).map((opt) => {
+                  const labelMap = {
+                    asli: 'Urutan Asli',
+                    abjad: 'Abjad (A-Z)',
+                    qty: 'Qty Terbanyak',
+                    harga: 'Harga Tertinggi',
+                  };
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setSortOption(opt)}
+                      className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        sortOption === opt
+                          ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {labelMap[opt]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Items Preview Table */}
+              <div className="mt-4 border border-blue-200 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto bg-slate-50">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-blue-250 text-slate-700 font-bold">
+                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3 text-right w-20">Qty</th>
+                      <th className="p-3 text-right w-32">Harga</th>
+                      <th className="p-3 text-right w-32">Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-150 bg-white">
+                    {getSortedItems(activeSo.sale_items).map((item: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-50 text-slate-800">
+                        <td className="p-3 font-semibold text-slate-900">{item.product_nama}</td>
+                        <td className="p-3 text-right font-medium text-slate-700">{Number(item.qty)}</td>
+                        <td className="p-3 text-right font-mono font-medium text-slate-600">{formatCurrency(Number(item.unit_price))}</td>
+                        <td className="p-3 text-right font-mono font-bold text-slate-900">{formatCurrency(Number(item.total))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Format Cetak Indicator & Selector (Panah Atas/Bawah) */}
+              <div className="mt-3 flex justify-between items-center bg-blue-50/40 border border-blue-100 rounded-lg px-4 py-2.5 text-xs">
+                <span className="font-semibold text-slate-600">Format Cetak terpilih:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-primary-700 capitalize">{printFormat} Invoice</span>
+                  <span className="text-[10px] text-slate-400 font-medium">(Panah Atas/Bawah untuk mengubah)</span>
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="flex justify-end gap-3 mt-4 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowPrintConfirm(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPrintConfirm(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Simpan Draft (Enter)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPrintConfirm(false);
+                    handlePrint(printFormat);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
+                >
+                  Print (P)
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* Print Layout */}
+      {activeSo && (
+        <div className="hidden print:block text-black bg-white font-mono text-[11px] leading-relaxed p-4">
+          {printFormat === 'thermal' ? (
+            /* Thermal Print (58mm/80mm layout) */
+            <div className="w-[72mm] mx-auto p-1 space-y-3">
+              <div className="text-center">
+                <h2 className="font-bold text-sm uppercase">Maju Mulia Bersama</h2>
+                <p className="text-[10px]">Jl. Raya Industri Utama No. 88, Bekasi</p>
+                <p className="text-[10px]">Telp: 021-89876543</p>
+                <p className="border-t border-dashed border-black my-1.5"></p>
+              </div>
+              <div className="space-y-0.5">
+                <p>No. Faktur: {activeSo.no_faktur || activeSo.no_order}</p>
+                <p>Tanggal: {formatDate(activeSo.order_date)}</p>
+                <p>Pelanggan: {activeSo.customer_nama}</p>
+                <p>Termin: {activeSo.limit_bulan + 1} Bulan</p>
+                <p>Status: LUNAS (KREDIT J.TEMPO)</p>
+                <p className="border-t border-dashed border-black my-1.5"></p>
+              </div>
+              <div className="space-y-1">
+                {getSortedItems(activeSo.sale_items).map((item: any) => (
+                  <div key={item.id} className="space-y-0.5">
+                    <p className="font-bold">{item.product_nama}</p>
+                    <div className="flex justify-between text-[10px]">
+                      <span>{Number(item.qty)} x {formatCurrency(Number(item.unit_price))}</span>
+                      <span>{formatCurrency(Number(item.total))}</span>
+                    </div>
+                  </div>
+                ))}
+                <p className="border-t border-dashed border-black my-1.5"></p>
+              </div>
+              <div className="space-y-0.5 text-right font-semibold">
+                {Number(activeSo.extra_charge_amount) !== 0 && (
+                  <p>Adj ({activeSo.extra_charge_desc}): {formatCurrency(Number(activeSo.extra_charge_amount))}</p>
+                )}
+                <p className="font-bold text-xs">Total: {formatCurrency(Number(activeSo.subtotal))}</p>
+              </div>
+              <div className="text-center text-[9px] pt-3 space-y-0.5">
+                <p>Terima Kasih Atas Kunjungan Anda</p>
+                <p>Barang yang sudah dibeli tidak dapat ditukar</p>
+              </div>
+            </div>
+          ) : (
+            /* A4 Print Layout */
+            <div className="space-y-6 max-w-[21cm] mx-auto p-4">
+              <div className="flex justify-between items-start border-b border-black pb-4">
+                <div>
+                  <h1 className="text-lg font-bold uppercase tracking-wider">Maju Mulia Bersama</h1>
+                  <p className="text-xs text-slate-700">Distributor Bahan Bangunan & Logam</p>
+                  <p className="text-xs text-slate-700">Jl. Raya Industri Utama No. 88, Cikarang, Bekasi</p>
+                  <p className="text-xs text-slate-700">Telp: (021) 89876543 | Email: contact@mmb.com</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-base font-bold uppercase">Faktur Penjualan</h2>
+                  <p className="text-xs font-semibold font-mono">{activeSo.no_faktur || activeSo.no_order}</p>
+                  <p className="text-[10px] mt-2">Tanggal: {formatDate(activeSo.order_date)}</p>
+                  {activeSo.due_date && (
+                    <p className="text-[10px] text-red-600 font-bold">Jatuh Tempo: {formatDate(activeSo.due_date)}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-[10px]">
+                <div>
+                  <p className="font-bold uppercase text-slate-500">Pelanggan:</p>
+                  <p className="font-bold text-xs">{activeSo.customer_nama}</p>
+                  <p>{activeSo.customer_alamat || 'Alamat tidak dicantumkan'}</p>
+                  <p>Telp: {activeSo.customer_telp || '-'}</p>
+                </div>
+                <div>
+                  <p className="font-bold uppercase text-slate-500">Pengiriman & Catatan:</p>
+                  <p className="font-semibold">{activeSo.diantar ? '🚚 DIANTAR SOPIR' : '🚶 DIAMBIL SENDIRI'}</p>
+                  {activeSo.sender_note && <p className="italic mt-1">"{activeSo.sender_note}"</p>}
+                </div>
+              </div>
+
+              <table className="w-full text-left text-[10px] border-collapse border border-black">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-black font-bold uppercase text-[9px]">
+                    <th className="p-1.5 border-r border-black w-8 text-center">No</th>
+                    <th className="p-1.5 border-r border-black">Kode Barang</th>
+                    <th className="p-1.5 border-r border-black">Nama Produk</th>
+                    <th className="p-1.5 border-r border-black text-right w-20">Kuantitas</th>
+                    <th className="p-1.5 border-r border-black text-right w-28">Harga</th>
+                    <th className="p-1.5 text-right w-28">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black">
+                  {getSortedItems(activeSo.sale_items).map((item: any, idx: number) => (
+                    <tr key={item.id} className="align-top">
+                      <td className="p-1.5 border-r border-black text-center">{idx + 1}</td>
+                      <td className="p-1.5 border-r border-black font-mono">{item.product_kode}</td>
+                      <td className="p-1.5 border-r border-black font-bold">{item.product_nama}</td>
+                      <td className="p-1.5 border-r border-black text-right">{Number(item.qty)}</td>
+                      <td className="p-1.5 border-r border-black text-right">{formatCurrency(Number(item.unit_price))}</td>
+                      <td className="p-1.5 text-right">{formatCurrency(Number(item.total))}</td>
+                    </tr>
+                  ))}
+                  {Number(activeSo.extra_charge_amount) !== 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
+                        Penyesuaian ({activeSo.extra_charge_desc})
+                      </td>
+                      <td className="p-1.5 text-right font-bold">
+                        {formatCurrency(Number(activeSo.extra_charge_amount))}
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="bg-slate-50 border-t border-black">
+                    <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
+                      Grand Total Penjualan
+                    </td>
+                    <td className="p-1.5 text-right font-black">
+                      {formatCurrency(Number(activeSo.subtotal))}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="grid grid-cols-3 gap-4 text-center text-[9px] pt-8">
+                <div className="space-y-10">
+                  <p>Penerima / Customer</p>
+                  <p className="underline font-bold">( ____________________ )</p>
+                </div>
+                <div className="space-y-10">
+                  <p>Sopir / Pengirim</p>
+                  <p className="underline font-bold">( ____________________ )</p>
+                </div>
+                <div className="space-y-10">
+                  <p>Hormat Kami, Kasir</p>
+                  <p className="underline font-bold">({activeSo.creator?.nama || '____________________'})</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showDeleteConfirm && saleToDelete && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+            <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+              <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Konfirmasi Batal Transaksi</h3>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                Apakah Anda yakin ingin membatalkan transaksi order <strong>{saleToDelete.no_order}</strong>? (Stok produk akan dikembalikan ke gudang)
+              </p>
+              <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setSaleToDelete(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteSale}
+                  className="px-4 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-700 transition-all shadow-md"
+                >
+                  Ya, Batalkan (Enter)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in-right">
+          <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${
+            toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+          }`}>
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
