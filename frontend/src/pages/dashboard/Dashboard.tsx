@@ -529,19 +529,19 @@ export const Dashboard: React.FC = () => {
 
                     if (sales === 0) {
                       bgClass = isSelected ? 'bg-rose-500/25' : 'bg-rose-500/10 hover:bg-rose-500/20';
-                      textClass = 'text-rose-300';
+                      textClass = 'text-slate-900';
                       borderClass = isSelected ? 'border-rose-500/35' : 'border-rose-500/10';
                     } else if (sales >= 33000000) {
                       bgClass = isSelected ? 'bg-emerald-500/35' : 'bg-emerald-500/20 hover:bg-emerald-500/30';
-                      textClass = 'text-emerald-300';
+                      textClass = 'text-slate-900';
                       borderClass = isSelected ? 'border-emerald-500/50' : 'border-emerald-500/40';
                     } else if (sales >= 15000000) {
                       bgClass = isSelected ? 'bg-amber-500/35' : 'bg-amber-500/20 hover:bg-amber-500/30';
-                      textClass = 'text-amber-300';
+                      textClass = 'text-slate-900';
                       borderClass = isSelected ? 'border-amber-500/50' : 'border-amber-500/40';
                     } else {
                       bgClass = isSelected ? 'bg-rose-500/25' : 'bg-rose-500/10 hover:bg-rose-500/20';
-                      textClass = 'text-rose-300';
+                      textClass = 'text-slate-900';
                       borderClass = isSelected ? 'border-rose-500/35' : 'border-rose-500/20';
                     }
 
