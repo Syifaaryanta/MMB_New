@@ -369,79 +369,70 @@ export const DraftSO: React.FC = () => {
           ))}
         </div>
       ) : filteredDrafts.length > 0 ? (
-        <div className="print:hidden bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="print:hidden card p-0 overflow-hidden border border-surface-700 shadow-sm">
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-            <table className="w-full text-left text-sm border-collapse text-slate-800">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider">
+                <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
                   <th className="p-4 w-12 text-center">No</th>
                   <th className="p-4">No Order</th>
+                  <th className="p-4">Tanggal</th>
                   <th className="p-4">Pelanggan</th>
-                  <th className="p-4">Nama Barang</th>
-                  <th className="p-4 w-28 text-right">Qty</th>
+                  <th className="p-4 text-center">Jumlah Barang</th>
                   <th className="p-4 text-right">Subtotal</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-150">
-                {filteredDrafts.map((d, idx) => (
-                  <tr
-                    key={d.id}
-                    ref={(el) => {
-                      rowRefs.current.set(idx, el);
-                    }}
-                    onClick={() => {
-                      setSelectedIdx(idx);
-                      setIsTableFocused(true);
-                    }}
-                    onDoubleClick={() => handleOpenDetail(d)}
-                    className={`hover:bg-slate-50 cursor-pointer transition-all ${idx === selectedIdx && isTableFocused
-                      ? 'bg-blue-50/60 border-l-4 border-primary-600 font-semibold'
-                      : idx === selectedIdx
-                        ? 'bg-slate-50 border-l-4 border-slate-350'
-                        : 'border-l-4 border-l-transparent'
-                      }`}
-                  >
-                    <td className="p-4 text-center text-slate-400 font-mono text-xs">{idx + 1}</td>
-                    <td className="p-4 font-mono">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-750">{d.no_order}</span>
-                        <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 font-sans">
-                          {formatDate(d.order_date)}
+              <tbody>
+                {filteredDrafts.map((d, idx) => {
+                  const isFocused = idx === selectedIdx && isTableFocused;
+                  const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
+
+                  const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                    let base = "p-4 text-xs transition-all duration-150 border-b ";
+                    if (isFocused) {
+                      base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                      if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                    } else {
+                      base += "text-slate-800 border-slate-200 ";
+                      if (pos === 'first') base += "border-l-4 border-transparent ";
+                    }
+                    return base;
+                  };
+
+                  return (
+                    <tr
+                      key={d.id}
+                      ref={(el) => {
+                        rowRefs.current.set(idx, el);
+                      }}
+                      onClick={() => {
+                        setSelectedIdx(idx);
+                        setIsTableFocused(true);
+                      }}
+                      onDoubleClick={() => handleOpenDetail(d)}
+                      className={`cursor-pointer transition-all ${rowBgClass}`}
+                    >
+                      <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
+                      <td className={getTdClass('middle') + " font-mono"}>
+                        <span className="px-2 py-0.5 rounded bg-blue-50/80 text-primary-700 border border-blue-100 font-mono font-bold text-xs inline-block">
+                          {d.no_order}
                         </span>
-                      </div>
-                    </td>
-                    <td className="p-4 font-bold text-slate-900">{d.customer_nama}</td>
-                    <td className="p-4">
-                      <div className="flex flex-col gap-1 text-xs text-slate-700">
-                        {d.sale_items && d.sale_items.slice(0, 3).map((item, i) => (
-                          <div key={item.id || i} className="truncate max-w-[220px]" title={item.product_nama}>
-                            {item.product_nama}
-                          </div>
-                        ))}
-                        {d.sale_items && d.sale_items.length > 3 && (
-                          <div className="text-[10px] text-slate-400 italic">
-                            + {d.sale_items.length - 3} barang lainnya...
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4 text-right font-mono text-xs">
-                      <div className="flex flex-col gap-1 items-end">
-                        {d.sale_items && d.sale_items.slice(0, 3).map((item, i) => (
-                          <div key={item.id || i} className="bg-primary-50 text-primary-700 border border-primary-100 px-2 py-0.5 rounded text-[10px] font-bold">
-                            {Number(item.qty)}
-                          </div>
-                        ))}
-                        {d.sale_items && d.sale_items.length > 3 && (
-                          <div className="h-[18px]" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4 text-right font-bold text-slate-900 currency">
-                      {formatCurrency(Number(d.subtotal))}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className={getTdClass('middle') + " text-slate-700 font-medium"}>
+                        {formatDate(d.order_date)}
+                      </td>
+                      <td className={getTdClass('middle') + " font-bold text-slate-900"}>{d.customer_nama}</td>
+                      <td className={getTdClass('middle') + " text-center"}>
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 border border-slate-200 text-slate-750">
+                          {d.sale_items?.length || 0} Barang
+                        </span>
+                      </td>
+                      <td className={getTdClass('last') + " text-right font-bold text-slate-900 currency"}>
+                        {formatCurrency(Number(d.subtotal))}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -547,7 +538,7 @@ export const DraftSO: React.FC = () => {
                             <th className="p-3 text-right w-32">Subtotal</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-150">
+                        <tbody className="divide-y divide-slate-200">
                           {selectedDraftDetail.sale_items?.map((item: any, index: number) => (
                             <tr key={item.id} className="bg-white hover:bg-slate-50 text-slate-800">
                               <td className="p-3 text-center text-slate-400">{index + 1}</td>
@@ -587,7 +578,7 @@ export const DraftSO: React.FC = () => {
                 </div>
 
                 {/* Modal Footer (Actions) */}
-                <div className="bg-slate-50 p-4 rounded-b-xl flex justify-end gap-3 border-t border-slate-150">
+                <div className="bg-slate-50 p-4 rounded-b-xl flex justify-end gap-3 border-t border-slate-200">
                   <button
                     onClick={() => {
                       setIsPopupOpen(false);
@@ -706,7 +697,7 @@ export const DraftSO: React.FC = () => {
                     <th className="p-3 text-right w-32">Jumlah</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-150">
+                <tbody className="divide-y divide-slate-200">
                   {getSortedItems(selectedDraftDetail.sale_items || []).map((item: any, idx: number) => (
                     <tr key={idx} className="bg-white hover:bg-slate-50 text-slate-800">
                       <td className="p-3 font-semibold text-slate-900">{item.product_nama || item.product?.nama}</td>
@@ -905,15 +896,14 @@ export const DraftSO: React.FC = () => {
 
       {/* Toast Alert */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${
-          toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+          }`}>
           {toast.type === 'success' ? (
             <CheckCircle className="w-4 h-4 shrink-0 text-white" />
           ) : (
             <XCircle className="w-4 h-4 shrink-0 text-white" />
           )}
-          <span>{toast.message}</span>
+          <span className="!text-white">{toast.message}</span>
         </div>
       )}
     </div>

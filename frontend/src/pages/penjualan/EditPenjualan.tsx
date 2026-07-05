@@ -121,7 +121,7 @@ export const EditPenjualan: React.FC = () => {
   const adjustmentDescRef = useRef<HTMLInputElement>(null);
   const adjustmentAmountRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
-  
+
   const customerPopupRef = useRef<HTMLDivElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
 
@@ -793,7 +793,7 @@ export const EditPenjualan: React.FC = () => {
                     required
                     value={soQuery}
                     onChange={(e) => setSoQuery(e.target.value)}
-                    placeholder="Contoh: SO-20260702-001"
+                    placeholder="Contoh: 260001"
                     className="input-field font-mono uppercase w-full py-2.5 text-xs text-slate-800 border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
                   />
                 </div>
@@ -829,7 +829,7 @@ export const EditPenjualan: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Side (Forms and Items Table) */}
               <div className="lg:col-span-2 space-y-6">
-                
+
                 {/* Customer, Delivery & Terms Section */}
                 <div className="card p-6 space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -876,9 +876,8 @@ export const EditPenjualan: React.FC = () => {
                         tabIndex={0}
                         onKeyDown={handleDeliveryKeyDown}
                         onFocus={() => setActiveStep('delivery')}
-                        className={`flex gap-3 outline-none rounded-lg p-1 transition-all ${
-                          activeStep === 'delivery' ? 'ring-2 ring-primary-500/30 border border-primary-500/40' : 'border border-transparent'
-                        }`}
+                        className={`flex gap-3 outline-none rounded-lg p-1 transition-all ${activeStep === 'delivery' ? 'ring-2 ring-primary-500/30 border border-primary-500/40' : 'border border-transparent'
+                          }`}
                       >
                         <button
                           type="button"
@@ -886,11 +885,10 @@ export const EditPenjualan: React.FC = () => {
                             setDiantar(true);
                             setActiveStep('delivery');
                           }}
-                          className={`flex-1 py-1.5 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${
-                            diantar
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${diantar
                               ? 'bg-primary-600/10 border-primary-500 text-primary-400 shadow'
                               : 'bg-surface-900 border-surface-700/60 text-slate-400 hover:text-slate-200'
-                          }`}
+                            }`}
                         >
                           <Truck size={14} />
                           <span>Diantar</span>
@@ -901,11 +899,10 @@ export const EditPenjualan: React.FC = () => {
                             setDiantar(false);
                             setActiveStep('delivery');
                           }}
-                          className={`flex-1 py-1.5 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${
-                            !diantar
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${!diantar
                               ? 'bg-primary-600/10 border-primary-500 text-primary-400 shadow'
                               : 'bg-surface-900 border-surface-700/60 text-slate-400 hover:text-slate-200'
-                          }`}
+                            }`}
                         >
                           <User size={14} />
                           <span>Diambil</span>
@@ -921,9 +918,8 @@ export const EditPenjualan: React.FC = () => {
                         tabIndex={0}
                         onKeyDown={handleTermsKeyDown}
                         onFocus={() => setActiveStep('terms')}
-                        className={`flex gap-2 p-1 bg-surface-900 border border-surface-700 rounded-lg outline-none transition-all ${
-                          activeStep === 'terms' ? 'ring-2 ring-primary-500/20' : ''
-                        }`}
+                        className={`flex gap-2 p-1 bg-surface-900 border border-surface-700 rounded-lg outline-none transition-all ${activeStep === 'terms' ? 'ring-2 ring-primary-500/20' : ''
+                          }`}
                       >
                         {[
                           { val: 0, label: 'Tunai' },
@@ -938,11 +934,10 @@ export const EditPenjualan: React.FC = () => {
                               setLimitBulan(opt.val);
                               setActiveStep('terms');
                             }}
-                            className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                              limitBulan === opt.val
+                            className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${limitBulan === opt.val
                                 ? 'bg-primary-600 text-white shadow'
                                 : 'text-slate-400 hover:text-slate-200'
-                            }`}
+                              }`}
                           >
                             <span>{opt.label}</span>
                           </button>
@@ -1038,35 +1033,49 @@ export const EditPenjualan: React.FC = () => {
                         <th className="p-4 text-right">Subtotal</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-surface-700/50">
+                    <tbody>
                       {items.length > 0 ? (
-                        items.map((item, idx) => (
-                          <tr
-                            key={item.product_id}
-                            onClick={() => {
-                              setSelectedRowIdx(idx);
-                              setActiveStep('table');
-                            }}
-                            className={`cursor-pointer transition-all ${
-                              idx === selectedRowIdx && activeStep === 'table'
-                                ? 'bg-primary-950/40 text-primary-400 font-semibold'
-                                : idx === selectedRowIdx
-                                  ? 'bg-surface-800'
-                                  : 'hover:bg-surface-850'
-                            }`}
-                          >
-                            <td className={`p-4 text-center text-slate-500 transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-l border-primary-500' : ''}`}>{idx + 1}</td>
-                            <td className={`p-4 font-mono font-semibold text-slate-350 transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>{item.product_kode}</td>
-                            <td className={`p-4 font-bold text-white transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>{item.product_nama}</td>
-                            <td className={`p-4 text-right font-semibold text-slate-200 transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>{item.qty}</td>
-                            <td className={`p-4 text-right font-mono text-emerald-400 font-semibold currency transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>
-                              {formatCurrency(item.unit_price)}
-                            </td>
-                            <td className={`p-4 text-right font-mono text-white font-bold currency transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-r border-primary-500' : ''}`}>
-                              {formatCurrency(item.total)}
-                            </td>
-                          </tr>
-                        ))
+                        items.map((item, idx) => {
+                          const isFocused = idx === selectedRowIdx && activeStep === 'table';
+                          const rowBgClass = isFocused ? 'bg-blue-100' : idx === selectedRowIdx ? 'bg-slate-50' : 'hover:bg-slate-50';
+
+                          const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                            let base = "p-4 transition-all duration-150 border-b ";
+                            if (isFocused) {
+                              base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                              if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                            } else if (idx === selectedRowIdx) {
+                              base += "bg-slate-50 text-slate-800 border-slate-200 ";
+                              if (pos === 'first') base += "border-l-4 border-slate-350 ";
+                            } else {
+                              base += "text-slate-800 border-slate-200 ";
+                              if (pos === 'first') base += "border-l-4 border-transparent ";
+                            }
+                            return base;
+                          };
+
+                          return (
+                            <tr
+                              key={item.product_id}
+                              onClick={() => {
+                                setSelectedRowIdx(idx);
+                                setActiveStep('table');
+                              }}
+                              className={`cursor-pointer transition-all ${rowBgClass}`}
+                            >
+                              <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
+                              <td className={getTdClass('middle') + " font-mono text-slate-700 font-semibold"}>{item.product_kode}</td>
+                              <td className={getTdClass('middle') + " font-bold text-slate-900"}>{item.product_nama}</td>
+                              <td className={getTdClass('middle') + " text-right text-slate-800 font-semibold"}>{item.qty}</td>
+                              <td className={getTdClass('middle') + " text-right font-mono text-slate-700"}>
+                                {formatCurrency(item.unit_price)}
+                              </td>
+                              <td className={getTdClass('last') + " text-right font-mono text-slate-900 font-bold"}>
+                                {formatCurrency(item.total)}
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
                           <td colSpan={6} className="p-8 text-center text-slate-500 text-xs italic">
@@ -1343,15 +1352,14 @@ export const EditPenjualan: React.FC = () => {
 
       {/* Toast Alert */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${
-          toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+          }`}>
           {toast.type === 'success' ? (
             <CheckCircle className="w-4 h-4 shrink-0 text-white" />
           ) : (
             <XCircle className="w-4 h-4 shrink-0 text-white" />
           )}
-          <span>{toast.message}</span>
+          <span className="!text-white">{toast.message}</span>
         </div>
       )}
 
@@ -1445,8 +1453,8 @@ export const EditPenjualan: React.FC = () => {
                 type="button"
                 onClick={() => setSortOption('asli')}
                 className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'asli'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
               >
                 Urutan Asli
@@ -1456,8 +1464,8 @@ export const EditPenjualan: React.FC = () => {
                 type="button"
                 onClick={() => setSortOption('abjad')}
                 className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'abjad'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
               >
                 Abjad (A-Z)
@@ -1467,8 +1475,8 @@ export const EditPenjualan: React.FC = () => {
                 type="button"
                 onClick={() => setSortOption('qty')}
                 className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'qty'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
               >
                 Qty Terbanyak
@@ -1478,8 +1486,8 @@ export const EditPenjualan: React.FC = () => {
                 type="button"
                 onClick={() => setSortOption('harga')}
                 className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'harga'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
               >
                 Harga Tertinggi
@@ -1594,7 +1602,7 @@ export const EditPenjualan: React.FC = () => {
               <h3 className="text-lg font-bold text-white">Simpan sebagai Draft</h3>
             </div>
             <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              Order penjualan ini akan disimpan sebagai <strong className="text-white">Draft</strong>. 
+              Order penjualan ini akan disimpan sebagai <strong className="text-white">Draft</strong>.
               Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
             </p>
             <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
@@ -1652,11 +1660,10 @@ export const EditPenjualan: React.FC = () => {
                   <button
                     key={cust.id}
                     onClick={() => selectCustomer(cust)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${
-                      idx === focusedCustIdx
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedCustIdx
                         ? 'border-emerald-500 bg-emerald-50/80 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-800 bg-white'
-                    }`}
+                      }`}
                   >
                     <div>
                       <p className={`font-semibold ${idx === focusedCustIdx ? 'text-emerald-900' : 'text-slate-900'}`}>{cust.nama}</p>
@@ -1707,11 +1714,10 @@ export const EditPenjualan: React.FC = () => {
                   <button
                     key={p.id}
                     onClick={() => selectProduct(p)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${
-                      idx === focusedProdIdx
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedProdIdx
                         ? 'border-emerald-500 bg-emerald-50/80 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-800 bg-white'
-                    }`}
+                      }`}
                   >
                     <div>
                       <p className={`font-semibold ${idx === focusedProdIdx ? 'text-emerald-900 font-bold' : 'text-slate-900'}`}>{p.nama}</p>

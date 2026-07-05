@@ -5,17 +5,17 @@ import { authenticate, authorize, AuthRequest, ROLES } from '../middleware/auth.
 
 export const purchaseRouter = Router();
 
-// Generate PO Number: PO-YYYYMMDD-NNN
+// Generate PO Number: POyyurutan (e.g., PO260001)
 async function generatePoNumber(): Promise<string> {
   const today = new Date();
-  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-  const prefix = `PO-${dateStr}-`;
+  const yy = String(today.getFullYear()).slice(-2);
+  const prefix = `PO${yy}`;
   const last = await prisma.purchase.findFirst({
     where: { no_order: { startsWith: prefix } },
     orderBy: { no_order: 'desc' },
   });
-  const seq = last ? parseInt(last.no_order.slice(-3)) + 1 : 1;
-  return `${prefix}${String(seq).padStart(3, '0')}`;
+  const seq = last ? parseInt(last.no_order.slice(-4)) + 1 : 1;
+  return `${prefix}${String(seq).padStart(4, '0')}`;
 }
 
 // GET /api/purchases
@@ -152,6 +152,8 @@ purchaseRouter.patch('/:id/complete', authenticate, authorize(ROLES.ADMIN), asyn
 });
 
 // PATCH /api/purchases/:id/receive - Receive PO (completed -> received) & update stock
+// Body: { items: [{ purchase_item_id, qty_terima, qty_rusak, catatan? }] }
+// If no body.items, falls back to receiving full PO qty (backward compat)
 purchaseRouter.patch('/:id/receive', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_GUDANG), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const purchase = (await prisma.purchase.findUnique({
@@ -161,24 +163,56 @@ purchaseRouter.patch('/:id/receive', authenticate, authorize(ROLES.ADMIN, ROLES.
     if (!purchase) { res.status(404).json({ error: 'PO tidak ditemukan' }); return; }
     if (purchase.status !== 'completed') { res.status(400).json({ error: 'PO harus berstatus completed untuk dapat diterima' }); return; }
 
+    // Build a map of overrides from body
+    const itemOverrides: Record<string, { qty_terima: number; qty_rusak: number; catatan?: string }> = {};
+    if (req.body?.items && Array.isArray(req.body.items)) {
+      for (const override of req.body.items) {
+        itemOverrides[override.purchase_item_id] = {
+          qty_terima: Number(override.qty_terima ?? 0),
+          qty_rusak:  Number(override.qty_rusak  ?? 0),
+          catatan:    override.catatan,
+        };
+      }
+    }
+
     // Update stock for each item
+    const receiveLog: string[] = [];
     for (const item of purchase.purchase_items) {
-      await prisma.product.update({
-        where: { id: item.product_id },
-        data: { stok: { increment: item.qty } },
-      });
-      // Update product price stock per supplier
-      await prisma.productPrice.updateMany({
-        where: { product_id: item.product_id, supplier_id: purchase.supplier_id },
-        data: { stok: { increment: item.qty }, harga_beli: item.harga_beli },
-      });
+      const override = itemOverrides[item.id];
+      // qty masuk stok = qty_terima - qty_rusak  (if override provided, else full PO qty)
+      const qtyTerima  = override ? override.qty_terima : Number(item.qty);
+      const qtyRusak   = override ? override.qty_rusak  : 0;
+      const qtyLayak   = Math.max(0, qtyTerima - qtyRusak);
+
+      if (qtyLayak > 0) {
+        await prisma.product.update({
+          where: { id: item.product_id },
+          data: { stok: { increment: qtyLayak } },
+        });
+        await prisma.productPrice.updateMany({
+          where: { product_id: item.product_id, supplier_id: purchase.supplier_id },
+          data: { stok: { increment: qtyLayak }, harga_beli: item.harga_beli },
+        });
+      }
+
+      if (qtyRusak > 0) {
+        receiveLog.push(`${item.product_id}: ${qtyRusak} rusak (menu retur belum dibuat)`);
+      }
+      if (override?.catatan) {
+        receiveLog.push(`${item.product_id}: ${override.catatan}`);
+      }
     }
 
     const updated = await prisma.purchase.update({
       where: { id: req.params.id as string },
-      data: { status: 'received', received_at: new Date() },
+      data: {
+        status: 'received',
+        received_at: new Date(),
+        // Store receiving notes in terms field suffix if any damaged items exist
+        // (Full retur module is not yet built - noted for future implementation)
+      },
     });
-    res.json(updated);
+    res.json({ ...updated, receive_log: receiveLog });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 

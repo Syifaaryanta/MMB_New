@@ -25,7 +25,11 @@ import { DraftPO } from '@/pages/pembelian/DraftPO';
 import { EditOrderPO } from '@/pages/pembelian/EditOrderPO';
 import { Receiving } from '@/pages/pembelian/Receiving';
 import { HistoryPembelian } from '@/pages/pembelian/HistoryPembelian';
-import { HistoryTransaksi } from '@/pages/pembelian/HistoryTransaksi';
+
+// History Pages
+import { HistoryMenu } from '@/pages/history/HistoryMenu';
+import { HistoryBarangMasuk } from '@/pages/history/HistoryBarangMasuk';
+import { HistoryBarangKeluar } from '@/pages/history/HistoryBarangKeluar';
 
 // Real Penjualan Pages
 import { PenjualanMenu } from '@/pages/penjualan/PenjualanMenu';
@@ -95,7 +99,6 @@ function App() {
                     <Route path="pembelian/edit-order" element={<EditOrderPO />} />
                     <Route path="pembelian/receiving" element={<Receiving />} />
                     <Route path="pembelian/history-pembelian" element={<HistoryPembelian />} />
-                    <Route path="pembelian/history" element={<HistoryTransaksi />} />
                   </Route>
 
                   {/* Penjualan */}
@@ -115,6 +118,13 @@ function App() {
                     <Route path="penagihan/nota" element={<ManajemenNota />} />
                     <Route path="penagihan/tunai" element={<HistoryPembayaran />} />
                     <Route path="penagihan/riwayat" element={<RiwayatPenagihan />} />
+                  </Route>
+
+                  {/* History */}
+                  <Route element={<ProtectedRoute allowedRoles={['admin', 'sales', 'staff_kantor']} />}>
+                    <Route path="history" element={<HistoryMenu />} />
+                    <Route path="history/barang-masuk" element={<HistoryBarangMasuk />} />
+                    <Route path="history/barang-keluar" element={<HistoryBarangKeluar />} />
                   </Route>
 
                   {/* Laporan */}

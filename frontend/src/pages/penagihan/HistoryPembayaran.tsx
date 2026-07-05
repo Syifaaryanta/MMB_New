@@ -282,7 +282,7 @@ export const HistoryPembayaran: React.FC = () => {
               <th className="p-4 text-right">Nominal Setoran</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-750">
+          <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={7} className="p-8 text-center text-slate-400 italic">
@@ -298,30 +298,42 @@ export const HistoryPembayaran: React.FC = () => {
             ) : (
               filteredPayments.map((pay, idx) => {
                 const isSelected = selectedRowIdx === idx;
+                const rowBgClass = isSelected ? 'bg-blue-100' : 'hover:bg-slate-50';
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                  let base = "p-4 transition-all duration-150 border-b ";
+                  if (isSelected) {
+                    base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                    if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                  } else {
+                    base += "text-slate-800 border-slate-200 ";
+                    if (pos === 'first') base += "border-l-4 border-transparent ";
+                  }
+                  return base;
+                };
+
                 return (
                   <tr
                     key={pay.id}
                     onClick={() => setSelectedRowIdx(idx)}
-                    className={`hover:bg-surface-750/30 cursor-pointer ${
-                      isSelected ? 'bg-surface-750/50 text-white font-semibold' : 'text-slate-350'
-                    }`}
+                    className={`cursor-pointer transition-all ${rowBgClass}`}
                   >
-                    <td className="p-4 text-center text-slate-500">{idx + 1}</td>
-                    <td className="p-4 font-semibold">{formatDate(pay.payment_date)}</td>
-                    <td className="p-4 font-mono font-bold text-slate-200">
+                    <td className={getTdClass('first') + " text-center text-slate-500"}>{idx + 1}</td>
+                    <td className={getTdClass('middle') + " font-semibold text-slate-700"}>{formatDate(pay.payment_date)}</td>
+                    <td className={getTdClass('middle') + " font-mono font-bold text-slate-800"}>
                       {pay.sale?.no_faktur || pay.sale?.no_order || '-'}
                     </td>
-                    <td className="p-4">
+                    <td className={getTdClass('middle') + " font-bold text-slate-900"}>
                       {pay.sale?.customer?.nama || 'Direct Cash'}
-                      <span className="block text-[10px] text-slate-400">{pay.sale?.customer?.kode || ''}</span>
+                      <span className="block text-[10px] text-slate-500">{pay.sale?.customer?.kode || ''}</span>
                     </td>
-                    <td className="p-4 text-center">
-                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-surface-900 border border-surface-700/60 text-slate-300">
+                    <td className={getTdClass('middle') + " text-center"}>
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-surface-900 border border-surface-700/60 text-slate-650">
                         {pay.payment_method}
                       </span>
                     </td>
-                    <td className="p-4 italic text-slate-400 truncate max-w-xs">{pay.note || '-'}</td>
-                    <td className="p-4 text-right font-mono text-emerald-400 font-bold text-sm">
+                    <td className={getTdClass('middle') + " italic text-slate-600 truncate max-w-xs"}>{pay.note || '-'}</td>
+                    <td className={getTdClass('last') + " text-right font-mono text-slate-900 font-bold text-sm"}>
                       {formatCurrency(Number(pay.amount))}
                     </td>
                   </tr>

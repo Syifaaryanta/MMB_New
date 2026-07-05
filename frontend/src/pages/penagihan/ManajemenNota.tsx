@@ -355,7 +355,7 @@ export const ManajemenNota: React.FC = () => {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-700/50">
+          <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-400">
@@ -377,26 +377,37 @@ export const ManajemenNota: React.FC = () => {
                 const isMerahActive = isSelected && isEditMode && activeCol === 'merah';
                 const isPutihActive = isSelected && isEditMode && activeCol === 'putih';
                 const isKuningActive = isSelected && isEditMode && activeCol === 'kuning';
+                const rowBgClass = isSelected ? 'bg-blue-100' : 'hover:bg-slate-50';
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last', customBg?: string) => {
+                  let base = "p-4 transition-all duration-150 border-b ";
+                  if (isSelected) {
+                    base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                    if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                  } else {
+                    base += (customBg || "text-slate-800") + " border-slate-200 ";
+                    if (pos === 'first') base += "border-l-4 border-transparent ";
+                  }
+                  return base;
+                };
 
                 return (
                   <tr
                     key={inv.id}
                     onClick={() => handleRowClick(idx)}
-                    className={`hover:bg-surface-750/30 cursor-pointer ${
-                      isSelected ? 'bg-surface-750/50 text-white font-semibold' : 'text-slate-350'
-                    }`}
+                    className={`cursor-pointer transition-all ${rowBgClass}`}
                   >
-                    <td className="p-4 text-center text-slate-500">{idx + 1}</td>
-                    <td className="p-4 font-mono font-bold text-slate-200">
+                    <td className={getTdClass('first') + " text-center text-slate-500"}>{idx + 1}</td>
+                    <td className={getTdClass('middle') + " font-mono font-bold text-slate-800"}>
                       {inv.no_faktur || inv.no_order}
                     </td>
-                    <td className="p-4">{formatDate(inv.order_date)}</td>
-                    <td className="p-4 font-bold text-slate-200">{inv.customer_nama}</td>
-                    <td className="p-4 text-right font-mono">{formatCurrency(Number(inv.subtotal))}</td>
+                    <td className={getTdClass('middle') + " text-slate-700"}>{formatDate(inv.order_date)}</td>
+                    <td className={getTdClass('middle') + " font-bold text-slate-900"}>{inv.customer_nama}</td>
+                    <td className={getTdClass('middle') + " text-right font-mono text-slate-800"}>{formatCurrency(Number(inv.subtotal))}</td>
                     
                     {/* Nota Merah Checkbox */}
-                    <td className={`p-4 text-center bg-rose-950/10 border-l border-surface-700/30 transition-all ${
-                      isMerahActive ? 'ring-2 ring-rose-500 ring-inset bg-rose-950/45' : ''
+                    <td className={getTdClass('middle', 'bg-rose-50/60') + ` text-center border-l border-slate-200 transition-all ${
+                      isMerahActive ? 'ring-2 ring-rose-500 ring-inset bg-rose-100' : ''
                     }`}>
                       <input
                         type="checkbox"
@@ -407,13 +418,14 @@ export const ManajemenNota: React.FC = () => {
                           saveNotaStatus({ ...inv, nota_merah: e.target.checked });
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded border-surface-700 bg-surface-900 text-rose-500 focus:ring-rose-500 focus:ring-offset-surface-800 w-4 h-4 cursor-pointer"
+                        className="rounded border-slate-300 bg-white text-rose-550 focus:ring-rose-500 w-4 h-4 cursor-pointer"
                       />
                     </td>
 
+                    {/* ... */}
                     {/* Nota Putih Checkbox */}
-                    <td className={`p-4 text-center bg-slate-900/20 border-l border-surface-700/30 transition-all ${
-                      isPutihActive ? 'ring-2 ring-primary-500 ring-inset bg-surface-750' : ''
+                    <td className={getTdClass('middle', 'bg-slate-50/60') + ` text-center border-l border-slate-200 transition-all ${
+                      isPutihActive ? 'ring-2 ring-primary-500 ring-inset bg-blue-50' : ''
                     }`}>
                       <input
                         type="checkbox"
@@ -424,13 +436,13 @@ export const ManajemenNota: React.FC = () => {
                           saveNotaStatus({ ...inv, nota_putih: e.target.checked });
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded border-surface-700 bg-surface-900 text-primary-500 focus:ring-primary-500 focus:ring-offset-surface-800 w-4 h-4 cursor-pointer"
+                        className="rounded border-slate-300 bg-white text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
                       />
                     </td>
 
                     {/* Nota Kuning Checkbox */}
-                    <td className={`p-4 text-center bg-amber-950/10 border-l border-surface-700/30 transition-all ${
-                      isKuningActive ? 'ring-2 ring-amber-500 ring-inset bg-amber-950/40' : ''
+                    <td className={getTdClass('last', 'bg-amber-50/60') + ` text-center border-l border-slate-200 transition-all ${
+                      isKuningActive ? 'ring-2 ring-amber-500 ring-inset bg-amber-100' : ''
                     }`}>
                       <input
                         type="checkbox"
@@ -441,7 +453,7 @@ export const ManajemenNota: React.FC = () => {
                           saveNotaStatus({ ...inv, nota_kuning: e.target.checked });
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded border-surface-700 bg-surface-900 text-amber-500 focus:ring-amber-500 focus:ring-offset-surface-800 w-4 h-4 cursor-pointer"
+                        className="rounded border-slate-300 bg-white text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
                       />
                     </td>
                   </tr>

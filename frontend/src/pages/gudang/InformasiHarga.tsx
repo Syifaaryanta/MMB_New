@@ -580,7 +580,7 @@ export const InformasiHarga: React.FC = () => {
                   </div>
 
                   <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
-                    {customerHistory.map((item) => (
+                    {customerHistory.slice(0, 1).map((item) => (
                       <div key={item.id} className="p-3 bg-surface-800 rounded border border-surface-700/50 space-y-2">
                         <div className="flex justify-between items-start">
                           <div>

@@ -72,14 +72,6 @@ export const PembelianMenu: React.FC = () => {
       iconColor: 'text-amber-500',
       iconBg: 'bg-amber-50',
     },
-    {
-      title: 'Histori Transaksi & Log',
-      desc: 'Lacak riwayat mutasi barang per supplier atau audit log per barang.',
-      path: '/pembelian/history',
-      icon: FileText,
-      iconColor: 'text-slate-500',
-      iconBg: 'bg-slate-100',
-    },
   ];
 
   // Keyboard Navigation
@@ -159,11 +151,10 @@ export const PembelianMenu: React.FC = () => {
             <button
               key={menu.path}
               onClick={() => navigate(menu.path)}
-              className={`card text-left p-6 flex gap-4 border transition-all duration-150 cursor-pointer ${
-                isFocused
+              className={`card text-left p-6 flex gap-4 border transition-all duration-150 cursor-pointer ${isFocused
                   ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]'
                   : 'border-surface-700/50 hover:bg-surface-800'
-              }`}
+                }`}
             >
               <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
                 <Icon size={20} />
@@ -178,9 +169,6 @@ export const PembelianMenu: React.FC = () => {
             </button>
           );
         })}
-      </div>
-      <div className="flex justify-end text-[11px] text-slate-500 mt-4">
-        <span>Gunakan <kbd className="shortcut-badge">←</kbd> <kbd className="shortcut-badge">→</kbd> <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> masuk, <kbd className="shortcut-badge">Esc</kbd> keluar</span>
       </div>
     </div>
   );

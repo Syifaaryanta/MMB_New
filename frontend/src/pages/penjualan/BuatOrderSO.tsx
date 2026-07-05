@@ -158,6 +158,13 @@ export const BuatOrderSO: React.FC = () => {
   };
 
   const handleCustomerPopupKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowCustomerPopup(false);
+      customerInputRef.current?.focus();
+      return;
+    }
     if (customers.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -168,10 +175,6 @@ export const BuatOrderSO: React.FC = () => {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       selectCustomer(customers[focusedCustIdx]);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setShowCustomerPopup(false);
-      customerInputRef.current?.focus();
     }
   };
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Search, Calendar, FileText, X } from 'lucide-react';
+import { Search, Calendar, FileText, X, PackageCheck } from 'lucide-react';
 
 interface Purchase {
   id: string;
@@ -13,6 +13,7 @@ interface Purchase {
     id: string;
     kode: string;
     nama: string;
+    alamat?: string;
   };
   terms: string;
   subtotal: number;
@@ -20,10 +21,8 @@ interface Purchase {
   received_at: string | null;
 }
 
-export const HistoryPembelian: React.FC = () => {
+export const HistoryBarangMasuk: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const fromHistory = searchParams.get('from') === 'history';
 
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -149,7 +148,6 @@ export const HistoryPembelian: React.FC = () => {
   };
 
   // Keyboard Shortcuts
-  // Enter: View PO detail
   useHotkeys('enter', (e) => {
     if (isTableFocused && !activePo && filteredPurchases[selectedIdx]) {
       e.preventDefault();
@@ -157,7 +155,6 @@ export const HistoryPembelian: React.FC = () => {
     }
   }, { enableOnFormTags: false });
 
-  // F1: Focus search input or toggle detail info visibility
   useHotkeys('f1', (e) => {
     e.preventDefault();
     if (activePo) {
@@ -169,13 +166,11 @@ export const HistoryPembelian: React.FC = () => {
     }
   }, { enableOnFormTags: true }, [activePo]);
 
-  // F2: Open Filter Popup
   useHotkeys('f2', (e) => {
     e.preventDefault();
     if (!activePo) setShowFilterPage(true);
   }, { enableOnFormTags: true });
 
-  // Arrow up/down navigation
   useHotkeys('up', (e) => {
     if (isTableFocused && !activePo) {
       e.preventDefault();
@@ -190,14 +185,14 @@ export const HistoryPembelian: React.FC = () => {
     }
   }, { enableOnFormTags: false });
 
-  // Escape to close detail or go back
+  // Escape: always go back to /history
   useHotkeys('esc', (e) => {
     e.preventDefault();
     if (activePo) {
       setActivePo(null);
       setIsInfoHidden(false);
     } else if (showFilterPage) {
-      navigate(fromHistory ? '/history' : '/pembelian');
+      navigate('/history');
     } else if (isTableFocused) {
       setIsTableFocused(false);
       searchInputRef.current?.focus();
@@ -213,15 +208,20 @@ export const HistoryPembelian: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Histori Pembelian</h1>
-            <p className="text-slate-400">Arsip lengkap transaksi pemesanan barang yang sudah diterima</p>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                <PackageCheck size={18} />
+              </div>
+              <h1 className="text-2xl font-extrabold text-white">Histori Barang Masuk</h1>
+            </div>
+            <p className="text-slate-400 ml-10">Log penerimaan barang ke gudang dari Purchase Order (received)</p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pencarian PO</h3>
+            <div className="bg-emerald-600 text-white px-6 py-4 text-center border-b border-emerald-700/80">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pencarian Barang Masuk</h3>
             </div>
 
             <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
@@ -234,7 +234,7 @@ export const HistoryPembelian: React.FC = () => {
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), toDateRef.current?.focus())}
-                    className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                    className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-lg bg-white"
                   />
                 </div>
                 <div>
@@ -245,7 +245,7 @@ export const HistoryPembelian: React.FC = () => {
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), noOrderFilterRef.current?.focus())}
-                    className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                    className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-lg bg-white"
                   />
                 </div>
               </div>
@@ -259,21 +259,21 @@ export const HistoryPembelian: React.FC = () => {
                   value={noOrderFilter}
                   onChange={(e) => setNoOrderFilter(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
-                  className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white font-mono uppercase"
+                  className="input-field w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-lg bg-white font-mono uppercase"
                 />
               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => navigate('/pembelian')}
+                  onClick={() => navigate('/history')}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs font-bold hover:bg-slate-50 transition-all"
                 >
                   Kembali
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
+                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-550 transition-all shadow-md shadow-emerald-500/10"
                 >
                   Tampilkan (Enter)
                 </button>
@@ -290,8 +290,13 @@ export const HistoryPembelian: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Histori Pembelian</h1>
-          <p className="text-slate-400">Arsip lengkap transaksi pemesanan barang yang sudah diterima</p>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <PackageCheck size={18} />
+            </div>
+            <h1 className="text-2xl font-extrabold text-white">Histori Barang Masuk</h1>
+          </div>
+          <p className="text-slate-400 ml-10">Log penerimaan barang ke gudang dari Purchase Order (received)</p>
         </div>
       </div>
 
@@ -312,7 +317,7 @@ export const HistoryPembelian: React.FC = () => {
                   setIsTableFocused(false);
                 }}
                 onKeyDown={handleSearchKeyDown}
-                className="input-field pl-9 w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white shadow-sm"
+                className="input-field pl-9 w-full py-2.5 text-xs text-slate-800 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-lg bg-white shadow-sm"
               />
             </div>
 
@@ -322,7 +327,7 @@ export const HistoryPembelian: React.FC = () => {
               </div>
 
               <div className="px-3 py-2.5 rounded-lg border border-slate-200 text-xs text-slate-700 font-semibold flex items-center gap-2 bg-white shadow-sm font-mono">
-                <Calendar size={14} className="text-primary-600" />
+                <Calendar size={14} className="text-emerald-600" />
                 <span>{formatDate(fromDate)} - {formatDate(toDate)}</span>
               </div>
 
@@ -351,20 +356,20 @@ export const HistoryPembelian: React.FC = () => {
                       <th className="p-4">Nomor PO</th>
                       <th className="p-4">Supplier</th>
                       <th className="p-4">Tanggal Order</th>
-                      <th className="p-4">Tanggal Terima</th>
+                      <th className="p-4">Tanggal Diterima</th>
                       <th className="p-4 text-right">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredPurchases.map((p, idx) => {
                       const isFocused = idx === selectedIdx && isTableFocused;
-                      const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
+                      const rowBgClass = isFocused ? 'bg-emerald-100' : 'hover:bg-slate-50';
 
                       const getTdClass = (pos: 'first' | 'middle' | 'last') => {
                         let base = "p-4 text-xs transition-all duration-150 border-b ";
                         if (isFocused) {
-                          base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
-                          if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                          base += "bg-emerald-100 text-emerald-950 font-bold border-emerald-300 ";
+                          if (pos === 'first') base += "border-l-4 border-emerald-600 ";
                         } else {
                           base += "text-slate-800 border-slate-200 ";
                         }
@@ -382,7 +387,7 @@ export const HistoryPembelian: React.FC = () => {
                           className={`cursor-pointer ${rowBgClass}`}
                         >
                           <td className={getTdClass('first')}>
-                            <span className="px-2 py-0.5 rounded bg-blue-50/80 text-primary-700 border border-blue-100 font-mono font-bold text-xs inline-block">
+                            <span className="px-2 py-0.5 rounded bg-emerald-50/80 text-emerald-700 border border-emerald-100 font-mono font-bold text-xs inline-block">
                               {p.no_order}
                             </span>
                           </td>
@@ -407,23 +412,23 @@ export const HistoryPembelian: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20">
-              <Calendar className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-              <h3 className="text-lg font-bold text-slate-400">Tidak ada data PO ditemukan</h3>
-              <p className="text-sm mt-1">Gunakan filter F2 untuk mencari berdasarkan tanggal dan supplier lain.</p>
+              <PackageCheck className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
+              <h3 className="text-lg font-bold text-slate-400">Tidak ada data barang masuk ditemukan</h3>
+              <p className="text-sm mt-1">Gunakan filter F2 untuk mencari berdasarkan tanggal dan nomor PO.</p>
             </div>
           )}
         </div>
       ) : (
         /* PO Detail Sheet */
-        <div className="bg-white rounded-xl shadow-xl border border-blue-200 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
-          {/* Blue Header Bar */}
-          <div className="bg-primary-600 text-white px-6 py-4 flex justify-between items-center border-b border-primary-700">
+        <div className="bg-white rounded-xl shadow-xl border border-emerald-200 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
+          {/* Green Header Bar */}
+          <div className="bg-emerald-600 text-white px-6 py-4 flex justify-between items-center border-b border-emerald-700">
             <div className="flex items-center gap-3">
               <div className="p-1.5 bg-white/10 rounded-lg">
                 <FileText size={18} className="text-white" />
               </div>
               <h2 className="text-base font-bold text-white">
-                Detail PO: {activePo.no_order}
+                Detail Penerimaan: {activePo.no_order}
               </h2>
             </div>
             <button
@@ -444,9 +449,9 @@ export const HistoryPembelian: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {/* Informasi PO Card */}
-                <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                <div className="bg-gradient-to-br from-white to-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm space-y-3">
                   <div className="border-b border-slate-100 pb-2">
-                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Informasi PO</h3>
+                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Informasi Penerimaan</h3>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3.5">
@@ -461,8 +466,8 @@ export const HistoryPembelian: React.FC = () => {
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Terima:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Diterima:</span>
+                      <span className="text-xs font-bold text-emerald-700 mt-0.5 block">
                         {activePo.received_at ? formatDate(activePo.received_at) : '-'}
                       </span>
                     </div>
@@ -477,7 +482,7 @@ export const HistoryPembelian: React.FC = () => {
                 </div>
 
                 {/* Supplier Card */}
-                <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                <div className="bg-gradient-to-br from-white to-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm space-y-3">
                   <div className="border-b border-slate-100 pb-2">
                     <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Pemasok (Supplier)</h3>
                   </div>
@@ -503,28 +508,30 @@ export const HistoryPembelian: React.FC = () => {
 
               </div>
             ) : (
-              <div className="bg-gradient-to-r from-white to-blue-50/30 p-4 rounded-xl border border-blue-200 shadow-sm flex flex-wrap gap-x-8 gap-y-3 text-slate-800">
+              <div className="bg-gradient-to-r from-white to-emerald-50/30 p-4 rounded-xl border border-emerald-200 shadow-sm flex flex-wrap gap-x-8 gap-y-3 text-slate-800">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama Supplier</span>
                   <span className="text-xs font-bold text-slate-850 mt-0.5 block">{activePo.supplier?.nama}</span>
                 </div>
-                <div className="border-l border-blue-100 pl-6">
-                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Order</span>
-                  <span className="text-xs font-bold text-slate-855 mt-0.5 block font-mono">{formatDate(activePo.order_date)}</span>
+                <div className="border-l border-emerald-100 pl-6">
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Diterima</span>
+                  <span className="text-xs font-bold text-emerald-700 mt-0.5 block font-mono">
+                    {activePo.received_at ? formatDate(activePo.received_at) : '-'}
+                  </span>
                 </div>
               </div>
             )}
 
             {/* Daftar Barang Section */}
-            <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+            <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm space-y-3">
               <div className="border-b border-slate-100 pb-2">
-                <h3 className="font-bold text-slate-855 text-xs uppercase tracking-wider">Daftar Barang</h3>
+                <h3 className="font-bold text-slate-855 text-xs uppercase tracking-wider">Daftar Barang yang Diterima</h3>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-blue-200">
+              <div className="overflow-hidden rounded-lg border border-emerald-200">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-primary-600 text-white font-bold text-xs uppercase">
+                    <tr className="bg-emerald-600 text-white font-bold text-xs uppercase">
                       <th className="p-3 w-12 text-center">#</th>
                       <th className="p-3 w-32 text-center">Kode</th>
                       <th className="p-3">Nama Barang</th>
@@ -533,12 +540,12 @@ export const HistoryPembelian: React.FC = () => {
                       <th className="p-3 text-right w-40">Subtotal</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-blue-100 bg-white">
+                  <tbody className="divide-y divide-emerald-100 bg-white">
                     {activePo.purchase_items.map((item: any, idx: number) => (
                       <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-800">
                         <td className="p-3 text-center text-slate-500 font-semibold">{idx + 1}</td>
                         <td className="p-3 text-center">
-                          <span className="px-2.5 py-1 text-[10px] font-bold font-mono rounded-lg bg-blue-50/50 text-primary-700 border border-blue-100">
+                          <span className="px-2.5 py-1 text-[10px] font-bold font-mono rounded-lg bg-emerald-50/50 text-emerald-700 border border-emerald-100">
                             {item.product?.kode || '-'}
                           </span>
                         </td>
@@ -556,9 +563,9 @@ export const HistoryPembelian: React.FC = () => {
                 </table>
 
                 {/* Table summary subtotal block */}
-                <div className="bg-slate-50/50 border-t border-blue-200 p-3.5 flex flex-col items-end gap-1.5">
+                <div className="bg-slate-50/50 border-t border-emerald-200 p-3.5 flex flex-col items-end gap-1.5">
                   <div className="flex gap-4 text-xs font-bold items-center">
-                    <span className="text-slate-800">Grand Total PO:</span>
+                    <span className="text-slate-800">Total Barang Masuk:</span>
                     <span className="text-emerald-600 font-black text-sm font-mono">
                       {formatCurrency(Number(activePo.subtotal))}
                     </span>

@@ -225,10 +225,28 @@ dashboardRouter.get('/stats/gudang', authenticate, async (req: AuthRequest, res:
 
 dashboardRouter.get('/stats/pembelian', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const startOfCurrentYear = new Date(currentYear, 0, 1);
+
+    // Find if there is any pending PO (completed status)
+    const oldestPendingPo = await prisma.purchase.findFirst({
+      where: { status: 'completed' },
+      orderBy: { order_date: 'asc' },
+    });
+
+    let purchaseThresholdDate = startOfCurrentYear;
+    if (oldestPendingPo) {
+      const oldestPendingYear = new Date(oldestPendingPo.order_date).getFullYear();
+      if (oldestPendingYear < currentYear) {
+        purchaseThresholdDate = new Date(oldestPendingYear, 0, 1);
+      }
+    }
+
     const [totalPO, menungguTerima, sudahDiterima, supplierAktif] = await Promise.all([
-      prisma.purchase.count(),
+      prisma.purchase.count({ where: { order_date: { gte: startOfCurrentYear } } }),
       prisma.purchase.count({ where: { status: 'completed' } }),
-      prisma.purchase.count({ where: { status: 'received' } }),
+      prisma.purchase.count({ where: { status: 'received', order_date: { gte: purchaseThresholdDate } } }),
       prisma.supplier.count({ where: { aktif: true } }),
     ]);
     res.json({ totalPO, menungguTerima, sudahDiterima, supplierAktif });
@@ -242,12 +260,13 @@ dashboardRouter.get('/stats/penjualan', authenticate, async (req: AuthRequest, r
     const startOfWeek = new Date();
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
 
     const [hariIni, mingguIni, bulanIni, total] = await Promise.all([
       prisma.sale.aggregate({ where: { status: 'completed', order_date: { gte: startOfDay } }, _sum: { subtotal: true } }),
       prisma.sale.aggregate({ where: { status: 'completed', order_date: { gte: startOfWeek } }, _sum: { subtotal: true } }),
       prisma.sale.aggregate({ where: { status: 'completed', order_date: { gte: startOfMonth } }, _sum: { subtotal: true } }),
-      prisma.sale.aggregate({ where: { status: 'completed' }, _sum: { subtotal: true } }),
+      prisma.sale.aggregate({ where: { status: 'completed', order_date: { gte: startOfYear } }, _sum: { subtotal: true } }),
     ]);
 
     res.json({

@@ -133,6 +133,13 @@ export const BuatOrderPO: React.FC = () => {
   };
 
   const handleSupplierPopupKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowSupplierPopup(false);
+      supplierInputRef.current?.focus();
+      return;
+    }
     if (suppliers.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -143,10 +150,6 @@ export const BuatOrderPO: React.FC = () => {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       selectSupplier(suppliers[focusedIndex]);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setShowSupplierPopup(false);
-      supplierInputRef.current?.focus();
     }
   };
 

@@ -16,7 +16,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ClipboardList
+  ClipboardList,
+  History,
 } from 'lucide-react';
 
 export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -69,6 +70,12 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       path: '/penagihan',
       icon: DollarSign,
       roles: ['admin', 'sales'],
+    },
+    {
+      label: 'Histori',
+      path: '/history',
+      icon: History,
+      roles: ['admin', 'sales', 'staff_kantor'],
     },
     {
       label: 'Laporan',

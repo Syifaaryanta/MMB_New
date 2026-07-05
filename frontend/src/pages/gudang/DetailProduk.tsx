@@ -120,9 +120,13 @@ export const DetailProduk: React.FC = () => {
   };
 
   const photos = getPhotosList(product);
-  const cheapestPrice = product && product.product_prices.length > 0
-    ? Math.min(...product.product_prices.map((sp) => Number(sp.harga_beli)))
-    : 0;
+  const latestPurchase = purchaseHistory.length > 0 ? purchaseHistory[0] : null;
+  const latestPrice = latestPurchase
+    ? Number(latestPurchase.harga_beli)
+    : (product && product.product_prices.length > 0
+      ? Math.max(...product.product_prices.map((sp) => Number(sp.harga_beli)))
+      : 0);
+  const latestDate = latestPurchase ? latestPurchase.purchase?.order_date : null;
 
   // Keyboard Navigation
   useHotkeys('esc', (e) => {
@@ -130,7 +134,7 @@ export const DetailProduk: React.FC = () => {
     if (isZoomed) {
       setIsZoomed(false);
     } else {
-      navigate('/dashboard');
+      navigate('/gudang');
     }
   }, { enableOnFormTags: true });
 
@@ -215,11 +219,14 @@ export const DetailProduk: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header breadcrumbs */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">{product.nama}</h1>
           <p className="text-xs text-slate-500 font-mono mt-0.5">{product.kode}</p>
         </div>
+        <button onClick={() => navigate('/gudang')} className="btn-secondary text-xs">
+          Kembali ke Gudang
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -266,7 +273,6 @@ export const DetailProduk: React.FC = () => {
 
           <div className="text-xs text-slate-500 border-t border-surface-700/50 pt-3 flex flex-wrap gap-x-4 gap-y-1">
             <span>Tekan <kbd className="shortcut-badge text-[10px]">F2</kbd> untuk fullscreen</span>
-            <span>Tekan <kbd className="shortcut-badge text-[10px]">Esc</kbd> untuk kembali</span>
           </div>
         </div>
 
@@ -285,10 +291,19 @@ export const DetailProduk: React.FC = () => {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Harga Beli Terendah</p>
+                <p className="text-xs text-slate-400">Harga Beli Terbaru</p>
                 <p className="text-base font-extrabold text-emerald-600 mt-0.5 currency">
-                  {cheapestPrice > 0 ? formatCurrency(cheapestPrice) : '-'}
+                  {latestPrice > 0 ? formatCurrency(latestPrice) : '-'}
                 </p>
+                {latestDate ? (
+                  <span className="text-[11px] text-slate-500 block font-mono mt-0.5">
+                    Beli: {formatDate(latestDate)}
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-slate-400/60 block italic mt-0.5">
+                    Belum ada pembelian
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -325,7 +340,7 @@ export const DetailProduk: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4 pt-1">
                           {/* Latest Modal Price */}
                           <div className="space-y-0.5">
-                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Harga Beli Terkini</span>
+                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Harga Beli Terbaru</span>
                             <strong className="text-base font-extrabold text-emerald-600 block">{formatCurrency(Number(p.harga_beli))}</strong>
                             {latestDate ? (
                               <span className="text-[10px] text-slate-400 block font-mono">Beli: {formatDate(latestDate)}</span>
@@ -365,8 +380,8 @@ export const DetailProduk: React.FC = () => {
 
       {/* Lightbox zoom modal */}
       {isZoomed && activePhoto && (
-        <div 
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md" 
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md"
           onClick={() => setIsZoomed(false)}
         >
           {/* Close button */}
@@ -393,10 +408,10 @@ export const DetailProduk: React.FC = () => {
               </button>
             )}
 
-            <img 
-              src={activePhoto} 
-              alt="Product full preview" 
-              className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl border border-white/5 animate-scale-in" 
+            <img
+              src={activePhoto}
+              alt="Product full preview"
+              className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl border border-white/5 animate-scale-in"
             />
 
             {photos.length > 1 && (
@@ -421,11 +436,10 @@ export const DetailProduk: React.FC = () => {
                   <button
                     key={idx}
                     onClick={() => setActivePhoto(ph)}
-                    className={`w-10 h-10 rounded-md border overflow-hidden transition-all ${
-                      activePhoto === ph 
-                        ? 'border-primary-500 scale-105 shadow-lg shadow-primary-500/20' 
-                        : 'border-white/10 opacity-50 hover:opacity-100'
-                    }`}
+                    className={`w-10 h-10 rounded-md border overflow-hidden transition-all ${activePhoto === ph
+                      ? 'border-primary-500 scale-105 shadow-lg shadow-primary-500/20'
+                      : 'border-white/10 opacity-50 hover:opacity-100'
+                      }`}
                   >
                     <img src={ph} alt="thumbnail" className="w-full h-full object-cover" />
                   </button>

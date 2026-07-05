@@ -195,13 +195,34 @@ export const InputItemSO: React.FC = () => {
       setPrice('');
     }
 
+    // Focus Qty input immediately (use 150ms to ensure modal unmount and browser focus restore has finished)
     setTimeout(() => {
       qtyInputRef.current?.focus();
       qtyInputRef.current?.select();
-    }, 50);
+    }, 150);
+
+    try {
+      const res = await api.get(`/customers/${soMeta?.customer.id}/product-history/${p.id}`);
+      setProductHistoryData(res.data);
+      if (res.data.last_sale) {
+        setPrice(res.data.last_sale.unit_price);
+      } else {
+        setPrice('');
+      }
+    } catch (err) {
+      console.error('Gagal mengambil riwayat harga produk', err);
+      setPrice('');
+    }
   };
 
   const handleProductPopupKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowProductPopup(false);
+      searchInputRef.current?.focus();
+      return;
+    }
     if (products.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -211,11 +232,8 @@ export const InputItemSO: React.FC = () => {
       setFocusedProdIdx((prev) => (prev - 1 + products.length) % products.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       selectProduct(products[focusedProdIdx]);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setShowProductPopup(false);
-      searchInputRef.current?.focus();
     }
   };
 
@@ -776,45 +794,60 @@ export const InputItemSO: React.FC = () => {
                     <th className="p-4 text-center w-16">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-surface-700/50">
-                  {items.length > 0 ? (
-                    items.map((item, idx) => (
-                      <tr
-                        key={item.product_id}
-                        onClick={() => {
-                          setSelectedRowIdx(idx);
-                          setActiveStep('table');
-                        }}
-                        className={`cursor-pointer transition-all ${idx === selectedRowIdx && activeStep === 'table'
-                          ? 'bg-primary-950/40 text-primary-400 font-semibold'
-                          : idx === selectedRowIdx
-                            ? 'bg-surface-800'
-                            : 'hover:bg-surface-850'
-                          }`}
-                      >
-                        <td className={`p-4 text-center text-slate-500 transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-l border-primary-500' : ''}`}>{idx + 1}</td>
-                        <td className={`p-4 font-mono font-semibold text-slate-350 transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>{item.product_kode}</td>
-                        <td className={`p-4 font-bold text-white transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>{item.product_nama}</td>
-                        <td className={`p-4 text-right font-semibold text-slate-200 transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>{item.qty}</td>
-                        <td className={`p-4 text-right font-mono text-emerald-400 font-semibold currency transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>
-                          {formatCurrency(item.unit_price)}
-                        </td>
-                        <td className={`p-4 text-right font-mono text-white font-bold currency transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-primary-500' : ''}`}>
-                          {formatCurrency(item.total)}
-                        </td>
-                        <td className={`p-4 text-center transition-all ${idx === selectedRowIdx && activeStep === 'table' ? 'border-y border-r border-primary-500' : ''}`}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteRow(idx);
+                  <tbody>
+                    {items.length > 0 ? (
+                      items.map((item, idx) => {
+                        const isFocused = idx === selectedRowIdx && activeStep === 'table';
+                        const rowBgClass = isFocused ? 'bg-blue-100' : idx === selectedRowIdx ? 'bg-slate-50' : 'hover:bg-slate-50';
+
+                        const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                          let base = "p-4 transition-all duration-150 border-b ";
+                          if (isFocused) {
+                            base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                            if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                          } else if (idx === selectedRowIdx) {
+                            base += "bg-slate-50 text-slate-800 border-slate-200 ";
+                            if (pos === 'first') base += "border-l-4 border-slate-350 ";
+                          } else {
+                            base += "text-slate-800 border-slate-200 ";
+                            if (pos === 'first') base += "border-l-4 border-transparent ";
+                          }
+                          return base;
+                        };
+
+                        return (
+                          <tr
+                            key={item.product_id}
+                            onClick={() => {
+                              setSelectedRowIdx(idx);
+                              setActiveStep('table');
                             }}
-                            className="text-danger-400 p-1.5 hover:bg-danger-600/10 rounded-lg transition-colors"
+                            className={`cursor-pointer transition-all ${rowBgClass}`}
                           >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                            <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
+                            <td className={getTdClass('middle') + " font-mono text-slate-700 font-semibold"}>{item.product_kode}</td>
+                            <td className={getTdClass('middle') + " font-bold text-slate-900"}>{item.product_nama}</td>
+                            <td className={getTdClass('middle') + " text-right text-slate-800 font-semibold"}>{item.qty}</td>
+                            <td className={getTdClass('middle') + " text-right font-mono text-slate-700"}>
+                              {formatCurrency(item.unit_price)}
+                            </td>
+                            <td className={getTdClass('middle') + " text-right font-mono text-slate-900 font-bold"}>
+                              {formatCurrency(item.total)}
+                            </td>
+                            <td className={getTdClass('last') + " text-center"}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteRow(idx);
+                                }}
+                                className="text-danger-400 p-1.5 hover:bg-danger-600/10 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                   ) : (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-500 text-xs italic">
@@ -1304,7 +1337,7 @@ export const InputItemSO: React.FC = () => {
           ) : (
             <XCircle className="w-4 h-4 shrink-0 text-white" />
           )}
-          <span>{toast.message}</span>
+          <span className="!text-white">{toast.message}</span>
         </div>
       )}
 
@@ -1371,7 +1404,7 @@ export const InputItemSO: React.FC = () => {
                       }`}
                   >
                     <div>
-                      <p className={`font-semibold ${idx === focusedProdIdx ? 'text-black font-bold' : 'text-slate-900'}`}>{p.nama}</p>
+                      <p className="font-semibold text-black">{p.nama}</p>
                       <p className="text-xs text-slate-500 font-mono mt-0.5">{p.kode}</p>
                     </div>
                     <div className="text-right">

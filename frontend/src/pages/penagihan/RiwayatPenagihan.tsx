@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { 
@@ -34,6 +34,8 @@ interface PaymentLog {
 
 export const RiwayatPenagihan: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromHistory = searchParams.get('from') === 'history';
   const [logs, setLogs] = useState<PaymentLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<PaymentLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -104,7 +106,7 @@ export const RiwayatPenagihan: React.FC = () => {
     if (searchQuery) {
       setSearchQuery('');
     } else {
-      navigate('/penagihan');
+      navigate(fromHistory ? '/history' : '/penagihan');
     }
   }, { enableOnFormTags: true });
 
@@ -234,7 +236,7 @@ export const RiwayatPenagihan: React.FC = () => {
               <th className="p-4 text-right">Jumlah Uang</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-750">
+          <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={7} className="p-8 text-center text-slate-400 italic">
@@ -250,31 +252,45 @@ export const RiwayatPenagihan: React.FC = () => {
             ) : (
               filteredLogs.map((log, idx) => {
                 const isSelected = selectedRowIdx === idx;
+                const rowBgClass = isSelected ? 'bg-blue-100' : 'hover:bg-slate-50';
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                  let base = "p-4 transition-all duration-150 border-b ";
+                  if (isSelected) {
+                    base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                    if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                  } else {
+                    base += "text-slate-800 border-slate-200 ";
+                    if (pos === 'first') base += "border-l-4 border-transparent ";
+                  }
+                  return base;
+                };
+
                 return (
                   <tr
                     key={log.id}
                     onClick={() => setSelectedRowIdx(idx)}
-                    className={`hover:bg-surface-750/30 cursor-pointer ${
-                      isSelected ? 'bg-surface-750/50 text-white font-semibold' : 'text-slate-350'
-                    }`}
+                    className={`cursor-pointer transition-all ${rowBgClass}`}
                   >
-                    <td className="p-4 text-center text-slate-500">{idx + 1}</td>
-                    <td className="p-4 font-semibold">{formatDate(log.payment_date)}</td>
-                    <td className="p-4">
-                      <div className="font-bold text-slate-200">{log.sale?.customer?.nama || 'Direct Cash'}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{log.sale?.customer?.kode || '-'}</div>
+                    <td className={getTdClass('first') + " text-center text-slate-500"}>{idx + 1}</td>
+                    <td className={getTdClass('middle') + " font-semibold text-slate-700"}>{formatDate(log.payment_date)}</td>
+                    <td className={getTdClass('middle')}>
+                      <div className="font-bold text-slate-900">{log.sale?.customer?.nama || 'Direct Cash'}</div>
+                      <div className="text-[10px] text-slate-550 font-mono">{log.sale?.customer?.kode || '-'}</div>
                     </td>
-                    <td className="p-4 font-mono font-bold text-slate-200 flex items-center gap-1">
-                      <FileText size={12} className="text-slate-500" />
-                      <span>{log.sale?.no_faktur || log.sale?.no_order || '-'}</span>
+                    <td className={getTdClass('middle') + " font-mono font-bold text-slate-800"}>
+                      <div className="flex items-center gap-1">
+                        <FileText size={12} className="text-slate-500" />
+                        <span>{log.sale?.no_faktur || log.sale?.no_order || '-'}</span>
+                      </div>
                     </td>
-                    <td className="p-4 text-center">
-                      <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-surface-900 border border-surface-700/50 text-slate-300">
+                    <td className={getTdClass('middle') + " text-center"}>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-surface-900 border border-surface-700/50 text-slate-600">
                         {log.payment_method}
                       </span>
                     </td>
-                    <td className="p-4 italic text-slate-400 truncate max-w-xs">{log.note || '-'}</td>
-                    <td className="p-4 text-right font-mono text-emerald-400 font-black text-sm">
+                    <td className={getTdClass('middle') + " italic text-slate-600 truncate max-w-xs"}>{log.note || '-'}</td>
+                    <td className={getTdClass('last') + " text-right font-mono text-slate-900 font-bold text-sm"}>
                       {formatCurrency(Number(log.amount))}
                     </td>
                   </tr>

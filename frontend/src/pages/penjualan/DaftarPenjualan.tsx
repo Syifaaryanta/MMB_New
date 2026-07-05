@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -21,6 +21,8 @@ interface Sale {
 export const DaftarPenjualan: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const fromHistory = searchParams.get('from') === 'history';
   const initDate = (location.state as any)?.date || '';
 
   const [sales, setSales] = useState<Sale[]>([]);
@@ -30,6 +32,7 @@ export const DaftarPenjualan: React.FC = () => {
 
   // Active SO Detail
   const [activeSo, setActiveSo] = useState<any | null>(null);
+  const [isInfoHidden, setIsInfoHidden] = useState(false);
 
   // Filters Screen
   const now = new Date();
@@ -159,6 +162,7 @@ export const DaftarPenjualan: React.FC = () => {
     try {
       const res = await api.get(`/sales/${so.id}`);
       setActiveSo(res.data);
+      setIsInfoHidden(false);
     } catch (err) {
       console.error(err);
     }
@@ -237,13 +241,17 @@ export const DaftarPenjualan: React.FC = () => {
     }
   }, { enableOnFormTags: false });
 
-  // F1: Focus search input
+  // F1: Focus search input or toggle detail info visibility
   useHotkeys('f1', (e) => {
     e.preventDefault();
-    setIsTableFocused(false);
-    searchInputRef.current?.focus();
-    searchInputRef.current?.select();
-  }, { enableOnFormTags: true });
+    if (activeSo) {
+      setIsInfoHidden((prev) => !prev);
+    } else {
+      setIsTableFocused(false);
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }
+  }, { enableOnFormTags: true }, [activeSo]);
 
   // F2: Open Filter Popup
   useHotkeys('f2', (e) => {
@@ -275,11 +283,12 @@ export const DaftarPenjualan: React.FC = () => {
       setShowConfirmReissue(false);
     } else if (activeSo) {
       setActiveSo(null);
+      setIsInfoHidden(false);
     } else if (showDeleteConfirm) {
       setShowDeleteConfirm(false);
       setSaleToDelete(null);
     } else if (showFilterPage) {
-      navigate('/penjualan');
+      navigate(fromHistory ? '/history' : '/penjualan');
     } else if (isTableFocused) {
       setIsTableFocused(false);
       searchInputRef.current?.focus();
@@ -507,19 +516,18 @@ export const DaftarPenjualan: React.FC = () => {
                       <th className="p-4 text-right">Subtotal</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-surface-700/50">
+                  <tbody>
                     {filteredSales.map((s, idx) => {
                       const isFocused = idx === selectedIdx && isTableFocused;
-                      const rowBgClass = isFocused ? 'bg-blue-50/20 font-semibold' : 'hover:bg-slate-50';
+                      const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
                       
                       const getTdClass = (pos: 'first' | 'middle' | 'last') => {
-                        let base = "p-4 text-xs transition-all duration-150 ";
+                        let base = "p-4 text-xs transition-all duration-150 border-b ";
                         if (isFocused) {
-                          base += "border-y-2 border-primary-600 bg-blue-50/50 text-primary-950 ";
-                          if (pos === 'first') base += "border-l-2 rounded-l-lg ";
-                          if (pos === 'last') base += "border-r-2 rounded-r-lg ";
+                          base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                          if (pos === 'first') base += "border-l-4 border-primary-600 ";
                         } else {
-                          base += "border-y border-slate-100 text-slate-800 ";
+                          base += "text-slate-800 border-slate-200 ";
                         }
                         return base;
                       };
@@ -534,8 +542,10 @@ export const DaftarPenjualan: React.FC = () => {
                           onDoubleClick={() => handleOpenDetail(s)}
                           className={`cursor-pointer ${rowBgClass}`}
                         >
-                          <td className={getTdClass('first') + " font-mono font-bold"}>
-                            {s.no_order}
+                          <td className={getTdClass('first')}>
+                            <span className="px-2 py-0.5 rounded bg-blue-50/80 text-primary-700 border border-blue-100 font-mono font-bold text-xs inline-block">
+                              {s.no_order}
+                            </span>
                           </td>
                           <td className={getTdClass('middle') + " font-mono"}>
                             {s.no_faktur || '-'}
@@ -591,75 +601,88 @@ export const DaftarPenjualan: React.FC = () => {
             {/* Body content */}
             <div className="p-4 bg-slate-50/50 space-y-4">
               {/* Grid for Informasi Order & Customer */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Informasi Order Card */}
-                <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
-                  <div className="border-b border-slate-100 pb-2">
-                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Informasi Order</h3>
-                  </div>
+              {!isInfoHidden ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Order:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_order}</span>
+                  {/* Informasi Order Card */}
+                  <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                    <div className="border-b border-slate-100 pb-2">
+                      <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Informasi Order</h3>
                     </div>
                     
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Faktur:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_faktur || '-'}</span>
-                    </div>
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Order:</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_order}</span>
+                      </div>
+                      
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Faktur:</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_faktur || '-'}</span>
+                      </div>
 
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activeSo.order_date)}</span>
-                    </div>
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal:</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activeSo.order_date)}</span>
+                      </div>
 
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Pengiriman:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">
-                        {activeSo.diantar ? 'Diantar' : 'Diambil'}
-                      </span>
-                    </div>
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Pengiriman:</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                          {activeSo.diantar ? 'Diantar' : 'Diambil'}
+                        </span>
+                      </div>
 
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Jatuh Tempo:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">
-                        {activeSo.limit_bulan !== undefined ? `${activeSo.limit_bulan + 1} Bulan` : '-'}
-                      </span>
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Jatuh Tempo:</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                          {activeSo.limit_bulan !== undefined ? `${activeSo.limit_bulan + 1} Bulan` : '-'}
+                        </span>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Customer Card */}
+                  <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                    <div className="border-b border-slate-100 pb-2">
+                      <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Customer</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama:</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.customer_nama}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Alamat:</span>
+                        <span className="text-xs font-medium text-slate-700 mt-0.5 block leading-relaxed">
+                          {activeSo.customer_alamat || 'Alamat tidak dicantumkan'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Telp:</span>
+                        <span className="text-xs font-semibold text-slate-700 mt-0.5 block font-mono">
+                          {activeSo.customer_telp || '-'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                <div className="bg-gradient-to-r from-white to-blue-50/30 p-4 rounded-xl border border-blue-200 shadow-sm flex flex-wrap gap-x-8 gap-y-3 text-slate-800">
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama Customer</span>
+                    <span className="text-xs font-bold text-slate-850 mt-0.5 block">{activeSo.customer_nama}</span>
+                  </div>
+                  <div className="border-l border-blue-100 pl-6">
+                    <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Order</span>
+                    <span className="text-xs font-bold text-slate-850 mt-0.5 block font-mono">{formatDate(activeSo.order_date)}</span>
                   </div>
                 </div>
-
-                {/* Customer Card */}
-                <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
-                  <div className="border-b border-slate-100 pb-2">
-                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Customer</h3>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.customer_nama}</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Alamat:</span>
-                      <span className="text-xs font-medium text-slate-700 mt-0.5 block leading-relaxed">
-                        {activeSo.customer_alamat || 'Alamat tidak dicantumkan'}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Telp:</span>
-                      <span className="text-xs font-semibold text-slate-700 mt-0.5 block font-mono">
-                        {activeSo.customer_telp || '-'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+              )}
 
               {/* Daftar Barang Section */}
               <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
@@ -723,7 +746,18 @@ export const DaftarPenjualan: React.FC = () => {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setActiveSo(null)}
+                  onClick={() => setIsInfoHidden((prev) => !prev)}
+                  className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white flex items-center gap-1.5"
+                >
+                  <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+                  <kbd className="text-[10px] text-slate-400 font-bold font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">F1</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveSo(null);
+                    setIsInfoHidden(false);
+                  }}
                   className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white"
                 >
                   Tutup <kbd className="text-[10px] text-slate-400 font-bold ml-1 font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">Esc</kbd>
@@ -1075,7 +1109,7 @@ export const DaftarPenjualan: React.FC = () => {
           <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${
             toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
           }`}>
-            <span>{toast.message}</span>
+            <span className="!text-white">{toast.message}</span>
           </div>
         </div>
       )}

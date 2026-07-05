@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { Search, ChevronLeft, ChevronRight, X, AlertTriangle, Image as ImageIcon, Archive, CheckCircle, XCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 /* ─── Types ──────────────────────────────────────────────────── */
 interface Product {
@@ -12,6 +13,7 @@ interface Product {
   satuan: string;
   stok: number;
   foto_urls?: any;
+  harga_beli_terbaru?: number | null;
 }
 
 interface Toast {
@@ -350,6 +352,7 @@ export const DaftarInventori: React.FC = () => {
                   <th className="p-4">Kode Barang</th>
                   <th className="p-4">Nama Barang</th>
                   <th className="p-4 text-right">Stok Fisik</th>
+                  <th className="p-4 text-right">Harga Beli Terbaru</th>
                   <th className="p-4 text-center">Status</th>
                 </tr>
               </thead>
@@ -370,6 +373,11 @@ export const DaftarInventori: React.FC = () => {
                         <td className="p-4 font-mono font-semibold text-slate-300">{p.kode}</td>
                         <td className="p-4 font-bold text-white">{p.nama}</td>
                         <td className="p-4 text-right font-bold text-slate-200">{Number(p.stok)}</td>
+                        <td className="p-4 text-right font-bold text-emerald-400">
+                          {p.harga_beli_terbaru !== null && p.harga_beli_terbaru !== undefined
+                            ? formatCurrency(p.harga_beli_terbaru)
+                            : '-'}
+                        </td>
                         <td className="p-4 text-center">
                           {isLow ? (
                             <span className="badge badge-red inline-flex items-center gap-1">
@@ -383,7 +391,7 @@ export const DaftarInventori: React.FC = () => {
                       </tr>
                       {idx === selectedIdx && (
                         <tr className="bg-[rgba(59,130,246,0.08)] border-t-0" style={{ borderLeft: '3px solid #3b82f6', borderTop: 'none' }}>
-                          <td colSpan={4} className="p-4 pt-1 pb-3 border-t-0">
+                          <td colSpan={5} className="p-4 pt-1 pb-3 border-t-0">
                             <div className="flex items-center gap-4 bg-slate-900/10 p-3 rounded-lg border border-surface-700/30 w-fit">
                               <div className="relative w-20 h-20 rounded-lg bg-surface-800 border border-surface-700 overflow-hidden flex items-center justify-center group/img">
                                 {photoUrl ? (

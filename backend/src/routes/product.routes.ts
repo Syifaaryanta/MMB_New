@@ -30,6 +30,11 @@ productRouter.get('/', authenticate, async (req: AuthRequest, res: Response): Pr
             include: { supplier: { select: { id: true, nama: true, kode: true } } },
             where: { aktif: true },
           },
+          purchase_items: {
+            where: { purchase: { status: 'received' } },
+            orderBy: { purchase: { order_date: 'desc' } },
+            take: 1,
+          },
         },
         orderBy: { nama: 'asc' },
         skip,
@@ -38,7 +43,16 @@ productRouter.get('/', authenticate, async (req: AuthRequest, res: Response): Pr
       prisma.product.count({ where }),
     ]);
 
-    res.json({ data: products, total, page: parseInt(page as string), limit: parseInt(limit as string) });
+    const formattedProducts = products.map((p: any) => {
+      const latestPurchase = p.purchase_items?.[0];
+      const latestPrice = latestPurchase ? Number(latestPurchase.harga_beli) : null;
+      return {
+        ...p,
+        harga_beli_terbaru: latestPrice,
+      };
+    });
+
+    res.json({ data: formattedProducts, total, page: parseInt(page as string), limit: parseInt(limit as string) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
