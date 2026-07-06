@@ -65,6 +65,11 @@ purchaseRouter.get('/:id', authenticate, async (req: AuthRequest, res: Response)
         supplier: true,
         purchase_items: { include: { product: true } },
         creator: { select: { nama: true } },
+        purchase_returns: {
+          include: {
+            items: true,
+          },
+        },
       },
     });
     if (!purchase) { res.status(404).json({ error: 'PO tidak ditemukan' }); return; }

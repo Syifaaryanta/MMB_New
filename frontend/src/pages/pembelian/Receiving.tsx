@@ -44,13 +44,28 @@ export const Receiving: React.FC = () => {
   const [isTableFocused, setIsTableFocused] = useState(false);
 
   // Active PO Checklist States
-  const [activePo, setActivePo] = useState<any | null>(null);
-  const [poItems, setPoItems] = useState<PurchaseItem[]>([]);
-  const [receiveStates, setReceiveStates] = useState<Record<string, ItemReceiveState>>({});
-  const [activeItemIdx, setActiveItemIdx] = useState(0);
+  const [activePo, setActivePo] = useState<any | null>(() => {
+    const saved = sessionStorage.getItem('receiving_activePo');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [poItems, setPoItems] = useState<PurchaseItem[]>(() => {
+    const saved = sessionStorage.getItem('receiving_poItems');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [receiveStates, setReceiveStates] = useState<Record<string, ItemReceiveState>>(() => {
+    const saved = sessionStorage.getItem('receiving_receiveStates');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [activeItemIdx, setActiveItemIdx] = useState(() => {
+    const saved = sessionStorage.getItem('receiving_activeItemIdx');
+    return saved ? Number(saved) : 0;
+  });
 
   // Modal & UI States
-  const [modalState, setModalState] = useState<ModalState>('none');
+  const [modalState, setModalState] = useState<ModalState>(() => {
+    const saved = sessionStorage.getItem('receiving_modalState');
+    return (saved as ModalState) || 'none';
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -95,7 +110,29 @@ export const Receiving: React.FC = () => {
     }, 150);
     return () => clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (activePo) {
+      sessionStorage.setItem('receiving_activePo', JSON.stringify(activePo));
+    } else {
+      sessionStorage.removeItem('receiving_activePo');
+    }
+  }, [activePo]);
 
+  useEffect(() => {
+    sessionStorage.setItem('receiving_poItems', JSON.stringify(poItems));
+  }, [poItems]);
+
+  useEffect(() => {
+    sessionStorage.setItem('receiving_receiveStates', JSON.stringify(receiveStates));
+  }, [receiveStates]);
+
+  useEffect(() => {
+    sessionStorage.setItem('receiving_activeItemIdx', String(activeItemIdx));
+  }, [activeItemIdx]);
+
+  useEffect(() => {
+    sessionStorage.setItem('receiving_modalState', modalState);
+  }, [modalState]);
   const filteredPurchases = purchases.filter((p) =>
     p.supplier?.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.no_order?.toLowerCase().includes(searchQuery.toLowerCase())

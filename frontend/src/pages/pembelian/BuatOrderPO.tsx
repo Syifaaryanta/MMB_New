@@ -27,11 +27,16 @@ interface SupplierStats {
 export const BuatOrderPO: React.FC = () => {
   const navigate = useNavigate();
 
-  const [noOrder, setNoOrder] = useState('');
-  const [orderDate, setOrderDate] = useState(todayString());
-  const [supplierQuery, setSupplierQuery] = useState('');
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-  const [terms, setTerms] = useState<'tunai' | '1' | '2' | '3'>('tunai');
+  const [poMetaSaved] = useState(() => {
+    const saved = sessionStorage.getItem('po_step1');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [noOrder, setNoOrder] = useState(poMetaSaved?.noOrder || '');
+  const [orderDate, setOrderDate] = useState(poMetaSaved?.orderDate || todayString());
+  const [supplierQuery, setSupplierQuery] = useState(poMetaSaved?.supplier?.nama || '');
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(poMetaSaved?.supplier || null);
+  const [terms, setTerms] = useState<'tunai' | '1' | '2' | '3'>(poMetaSaved ? poMetaSaved.terms : 'tunai');
   const [supplierStats, setSupplierStats] = useState<SupplierStats | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -56,13 +61,35 @@ export const BuatOrderPO: React.FC = () => {
   }, [showSupplierPopup]);
 
   useEffect(() => {
-    // Generate Order Number
-    api.get('/purchases/generate-no').then((res) => {
-      setNoOrder(res.data.no_order);
-    });
-
+    if (!noOrder) {
+      api.get('/purchases/generate-no').then((res) => {
+        setNoOrder(res.data.no_order);
+      });
+    }
     dateInputRef.current?.focus();
   }, []);
+
+  // Fetch stats if preselected on refresh
+  useEffect(() => {
+    if (selectedSupplier && !supplierStats) {
+      api.get(`/suppliers/${selectedSupplier.id}/summary-stats`).then((res) => {
+        setSupplierStats(res.data);
+      }).catch(err => {
+        console.error('Gagal mengambil statistik supplier', err);
+      });
+    }
+  }, [selectedSupplier, supplierStats]);
+
+  // Sync to sessionStorage on change
+  useEffect(() => {
+    const poMeta = {
+      noOrder,
+      orderDate,
+      supplier: selectedSupplier,
+      terms,
+    };
+    sessionStorage.setItem('po_step1', JSON.stringify(poMeta));
+  }, [noOrder, orderDate, selectedSupplier, terms]);
 
   // Fetch Suppliers on query change
   useEffect(() => {

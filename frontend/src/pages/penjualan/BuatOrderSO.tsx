@@ -32,12 +32,17 @@ interface CustomerStats {
 export const BuatOrderSO: React.FC = () => {
   const navigate = useNavigate();
 
-  const [noOrder, setNoOrder] = useState('');
-  const [orderDate, setOrderDate] = useState(todayString());
-  const [customerQuery, setCustomerQuery] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [diantar, setDiantar] = useState(true);
-  const [limitBulan, setLimitBulan] = useState<number>(0); // 0=1 bln, 1=2 bln, 2=3 bln, etc.
+  const [soMetaSaved] = useState(() => {
+    const saved = sessionStorage.getItem('so_step1');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [noOrder, setNoOrder] = useState(soMetaSaved?.noOrder || '');
+  const [orderDate, setOrderDate] = useState(soMetaSaved?.orderDate || todayString());
+  const [customerQuery, setCustomerQuery] = useState(soMetaSaved?.customer?.nama || '');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(soMetaSaved?.customer || null);
+  const [diantar, setDiantar] = useState<boolean>(soMetaSaved ? soMetaSaved.diantar : true);
+  const [limitBulan, setLimitBulan] = useState<number>(soMetaSaved ? soMetaSaved.limitBulan : 0);
   const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -76,13 +81,36 @@ export const BuatOrderSO: React.FC = () => {
   }, [showCustomerPopup]);
 
   useEffect(() => {
-    // Generate order no
-    api.get('/sales/generate-no').then((res) => {
-      setNoOrder(res.data.no_order);
-    });
-
+    if (!noOrder) {
+      api.get('/sales/generate-no').then((res) => {
+        setNoOrder(res.data.no_order);
+      });
+    }
     dateInputRef.current?.focus();
   }, []);
+
+  // Fetch stats if preselected on refresh
+  useEffect(() => {
+    if (selectedCustomer && !customerStats) {
+      api.get(`/customers/${selectedCustomer.id}/summary-stats`).then((res) => {
+        setCustomerStats(res.data);
+      }).catch(err => {
+        console.error('Gagal mengambil statistik customer', err);
+      });
+    }
+  }, [selectedCustomer, customerStats]);
+
+  // Sync to sessionStorage on change
+  useEffect(() => {
+    const soMeta = {
+      noOrder,
+      orderDate,
+      customer: selectedCustomer,
+      diantar,
+      limitBulan,
+    };
+    sessionStorage.setItem('so_step1', JSON.stringify(soMeta));
+  }, [noOrder, orderDate, selectedCustomer, diantar, limitBulan]);
 
   // Fetch customers
   useEffect(() => {
@@ -181,7 +209,7 @@ export const BuatOrderSO: React.FC = () => {
   const handleDeliveryKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
-      setDiantar((prev) => !prev);
+      setDiantar((prev: boolean) => !prev);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       setActiveStep('terms');

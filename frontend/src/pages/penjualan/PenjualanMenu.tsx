@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { TrendingUp, PlusCircle, Clock, List, FileText, ChevronRight } from 'lucide-react';
+import { TrendingUp, PlusCircle, Clock, List, FileText, ChevronRight, Undo2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface PenjualanStats {
@@ -58,6 +58,14 @@ export const PenjualanMenu: React.FC = () => {
       iconBg: 'bg-purple-50',
     },
     {
+      title: 'Retur Penjualan (Sales Return)',
+      desc: 'Kelola pengembalian barang dari customer, ganti barang, potong piutang, atau refund.',
+      path: '/penjualan/retur',
+      icon: Undo2,
+      iconColor: 'text-rose-500',
+      iconBg: 'bg-rose-50',
+    },
+    {
       title: 'Daftar & Histori Penjualan',
       desc: 'Lacak riwayat lengkap nota faktur penjualan, reprint nota, atau pembatalan.',
       path: '/penjualan/list',
@@ -80,12 +88,12 @@ export const PenjualanMenu: React.FC = () => {
 
   useHotkeys('down', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev < 2 ? prev + 2 : prev - 2));
+    setFocusedIdx((prev) => (prev + 2) % subMenus.length);
   }, { enableOnFormTags: false });
 
   useHotkeys('up', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev >= 2 ? prev - 2 : prev + 2));
+    setFocusedIdx((prev) => (prev - 2 + subMenus.length) % subMenus.length);
   }, { enableOnFormTags: false });
 
   useHotkeys('enter', (e) => {

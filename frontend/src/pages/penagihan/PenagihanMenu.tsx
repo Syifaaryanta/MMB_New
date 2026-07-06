@@ -162,24 +162,24 @@ export const PenagihanMenu: React.FC = () => {
             <button
               key={menu.path}
               onClick={() => navigate(menu.path)}
-              className={`card text-left p-6 flex gap-4 border transition-all duration-150 cursor-pointer ${
+              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${
                 isFocused
                   ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]'
                   : 'border-surface-700/50 hover:bg-surface-800'
               }`}
             >
-              <div className={`p-3.5 rounded-xl shrink-0 border border-surface-700/50 ${menu.iconColor} ${menu.iconBg}`}>
-                <Icon size={22} />
+              <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
+                <Icon size={24} />
               </div>
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-base text-white flex items-center gap-2">
+                  <h3 className="font-bold text-lg text-white flex items-center gap-2">
                     {menu.title}
                     <span className="shortcut-badge text-[9px] uppercase tracking-normal">Tekan {menu.keyChar}</span>
                   </h3>
                   <ChevronRight size={16} className={isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'} />
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{menu.desc}</p>
+                <p className="text-sm text-slate-400 leading-relaxed">{menu.desc}</p>
               </div>
             </button>
           );

@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -26,10 +26,14 @@ import { EditOrderPO } from '@/pages/pembelian/EditOrderPO';
 import { Receiving } from '@/pages/pembelian/Receiving';
 import { HistoryPembelian } from '@/pages/pembelian/HistoryPembelian';
 
+import { ReturPenjualan } from '@/pages/penjualan/ReturPenjualan';
+import { ReturPembelian } from '@/pages/pembelian/ReturPembelian';
+
 // History Pages
 import { HistoryMenu } from '@/pages/history/HistoryMenu';
 import { HistoryBarangMasuk } from '@/pages/history/HistoryBarangMasuk';
 import { HistoryBarangKeluar } from '@/pages/history/HistoryBarangKeluar';
+import { HistoryReturn } from '@/pages/history/HistoryReturn';
 
 // Real Penjualan Pages
 import { PenjualanMenu } from '@/pages/penjualan/PenjualanMenu';
@@ -60,11 +64,103 @@ import { LaporanAudit } from '@/pages/laporan/LaporanAudit';
 // Real Master Data Page
 import { MasterData } from '@/pages/master-data/MasterData';
 
+function RouteStateCleaner() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    // 1. Sales Order
+    if (path !== '/penjualan/buat' && path !== '/penjualan/input') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('so_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 2. Purchase Order
+    if (path !== '/pembelian/order' && path !== '/pembelian/input') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('po_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 3. Receiving
+    if (path !== '/pembelian/receiving') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('receiving_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 4. Sales Return
+    if (path !== '/penjualan/retur') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('retur_so_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 5. Purchase Return
+    if (path !== '/pembelian/retur') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('retur_po_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 6. Manage Product
+    if (path !== '/gudang/katalog') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('manage_product_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 7. Edit Price
+    if (path !== '/gudang/cek-harga') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('edit_price_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 8. Penagihan Piutang
+    if (path !== '/penagihan/piutang') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('penagihan_piutang_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+
+    // 9. Penagihan Nota
+    if (path !== '/penagihan/nota') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('penagihan_nota_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+  }, [location.pathname]);
+
+  return null;
+}
+
 function App() {
   const { isAuthenticated } = useAuthStore();
 
   return (
     <BrowserRouter>
+      <RouteStateCleaner />
       <Routes>
         {/* Public Route */}
         <Route path="/login" element={<Login />} />
@@ -99,6 +195,7 @@ function App() {
                     <Route path="pembelian/edit-order" element={<EditOrderPO />} />
                     <Route path="pembelian/receiving" element={<Receiving />} />
                     <Route path="pembelian/history-pembelian" element={<HistoryPembelian />} />
+                    <Route path="pembelian/retur" element={<ReturPembelian />} />
                   </Route>
 
                   {/* Penjualan */}
@@ -109,6 +206,7 @@ function App() {
                     <Route path="penjualan/edit" element={<EditPenjualan />} />
                     <Route path="penjualan/list" element={<DaftarPenjualan />} />
                     <Route path="penjualan/draft" element={<DraftSO />} />
+                    <Route path="penjualan/retur" element={<ReturPenjualan />} />
                   </Route>
 
                   {/* Penagihan */}
@@ -125,6 +223,7 @@ function App() {
                     <Route path="history" element={<HistoryMenu />} />
                     <Route path="history/barang-masuk" element={<HistoryBarangMasuk />} />
                     <Route path="history/barang-keluar" element={<HistoryBarangKeluar />} />
+                    <Route path="history/retur" element={<HistoryReturn />} />
                   </Route>
 
                   {/* Laporan */}

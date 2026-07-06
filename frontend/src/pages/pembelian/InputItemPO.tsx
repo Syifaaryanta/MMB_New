@@ -46,7 +46,10 @@ export const InputItemPO: React.FC = () => {
   const [poMeta, setPoMeta] = useState<{ noOrder: string; orderDate: string; supplier: Supplier; terms: string } | null>(null);
 
   // Items List
-  const [items, setItems] = useState<POItem[]>([]);
+  const [items, setItems] = useState<POItem[]>(() => {
+    const saved = sessionStorage.getItem('po_items');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [showMetaInfo, setShowMetaInfo] = useState(true);
 
   // New Item Row State
@@ -92,6 +95,10 @@ export const InputItemPO: React.FC = () => {
     // Focus product query on mount
     setTimeout(() => searchInputRef.current?.focus(), 100);
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('po_items', JSON.stringify(items));
+  }, [items]);
 
   // Fetch products
   useEffect(() => {

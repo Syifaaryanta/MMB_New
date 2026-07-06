@@ -43,7 +43,10 @@ export const InputItemSO: React.FC = () => {
   const [soMeta, setSoMeta] = useState<{ noOrder: string; orderDate: string; customer: Customer; diantar: boolean; limitBulan: number } | null>(null);
 
   // Table items
-  const [items, setItems] = useState<SOItem[]>([]);
+  const [items, setItems] = useState<SOItem[]>(() => {
+    const saved = sessionStorage.getItem('so_items');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [showMetaInfo, setShowMetaInfo] = useState(true);
 
   // Form input item row
@@ -58,14 +61,20 @@ export const InputItemSO: React.FC = () => {
   const [focusedProdIdx, setFocusedProdIdx] = useState(0);
 
   // Adjustments & Notes
-  const [adjustmentDesc, setAdjustmentDesc] = useState('');
-  const [adjustmentAmount, setAdjustmentAmount] = useState<number>(0);
-  const [senderNote, setSenderNote] = useState('');
+  const [adjustmentDesc, setAdjustmentDesc] = useState(() => sessionStorage.getItem('so_adjustmentDesc') || '');
+  const [adjustmentAmount, setAdjustmentAmount] = useState<number>(() => {
+    const saved = sessionStorage.getItem('so_adjustmentAmount');
+    return saved ? Number(saved) : 0;
+  });
+  const [senderNote, setSenderNote] = useState(() => sessionStorage.getItem('so_senderNote') || '');
 
   // Custom states for pricing history, step tracking and panel visibility
   const [productHistoryData, setProductHistoryData] = useState<any>(null);
   const [activeStep, setActiveStep] = useState<'search' | 'qty' | 'price' | 'adjust' | 'table'>('search');
-  const [showAdjustmentsPanel, setShowAdjustmentsPanel] = useState(false);
+  const [showAdjustmentsPanel, setShowAdjustmentsPanel] = useState(() => {
+    const saved = sessionStorage.getItem('so_showAdjustmentsPanel');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   // Selected row in table
   const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
@@ -93,7 +102,32 @@ export const InputItemSO: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const [adjustmentAmountInput, setAdjustmentAmountInput] = useState<string>('');
+  const [adjustmentAmountInput, setAdjustmentAmountInput] = useState(() => sessionStorage.getItem('so_adjustmentAmountInput') || '');
+
+  // Sync to sessionStorage on change
+  useEffect(() => {
+    sessionStorage.setItem('so_items', JSON.stringify(items));
+  }, [items]);
+
+  useEffect(() => {
+    sessionStorage.setItem('so_adjustmentDesc', adjustmentDesc);
+  }, [adjustmentDesc]);
+
+  useEffect(() => {
+    sessionStorage.setItem('so_adjustmentAmount', String(adjustmentAmount));
+  }, [adjustmentAmount]);
+
+  useEffect(() => {
+    sessionStorage.setItem('so_adjustmentAmountInput', adjustmentAmountInput);
+  }, [adjustmentAmountInput]);
+
+  useEffect(() => {
+    sessionStorage.setItem('so_senderNote', senderNote);
+  }, [senderNote]);
+
+  useEffect(() => {
+    sessionStorage.setItem('so_showAdjustmentsPanel', String(showAdjustmentsPanel));
+  }, [showAdjustmentsPanel]);
 
   // Focus Refs
   const searchInputRef = useRef<HTMLInputElement>(null);

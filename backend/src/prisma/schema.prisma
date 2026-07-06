@@ -52,10 +52,12 @@ model Product {
   updated_at  DateTime @updatedAt
 
   // Relations
-  product_prices    ProductPrice[]
-  purchase_items    PurchaseItem[]
-  sale_items        SaleItem[]
-  stock_adjustments StockAdjustment[]
+  product_prices        ProductPrice[]
+  purchase_items        PurchaseItem[]
+  sale_items            SaleItem[]
+  stock_adjustments     StockAdjustment[]
+  sale_return_items     SaleReturnItem[]
+  purchase_return_items PurchaseReturnItem[]
 
   @@map("products")
 }
@@ -132,9 +134,10 @@ model Purchase {
   updated_at  DateTime       @updatedAt
 
   // Relations
-  supplier       Supplier       @relation(fields: [supplier_id], references: [id])
-  creator        Profile?       @relation("PurchaseCreatedBy", fields: [created_by], references: [id])
-  purchase_items PurchaseItem[]
+  supplier         Supplier         @relation(fields: [supplier_id], references: [id])
+  creator          Profile?         @relation("PurchaseCreatedBy", fields: [created_by], references: [id])
+  purchase_items   PurchaseItem[]
+  purchase_returns PurchaseReturn[]
 
   @@map("purchases")
 }
@@ -191,6 +194,7 @@ model Sale {
   creator        Profile?       @relation("SaleCreatedBy", fields: [created_by], references: [id])
   sale_items     SaleItem[]
   sales_payments SalesPayment[]
+  sale_returns   SaleReturn[]
 
   @@map("sales")
 }
@@ -260,3 +264,83 @@ model StockAdjustment {
 
   @@map("stock_adjustments")
 }
+
+// 12. Retur Penjualan (Sales Returns)
+model SaleReturn {
+  id                String           @id @default(uuid())
+  no_retur          String           @unique
+  sale_id           String
+  no_order          String
+  no_faktur         String?
+  customer_id       String
+  customer_nama     String
+  retur_date        DateTime         @db.Date
+  total             Decimal          @default(0.00) @db.Decimal(15, 2)
+  metode_kompensasi String           @default("potong_piutang")
+  catatan           String?          @db.Text
+  created_by        String?
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+
+  sale              Sale             @relation(fields: [sale_id], references: [id])
+  items             SaleReturnItem[]
+
+  @@map("sale_returns")
+}
+
+model SaleReturnItem {
+  id           String     @id @default(uuid())
+  retur_id     String
+  product_id   String
+  product_kode String
+  product_nama String
+  qty          Decimal    @db.Decimal(15, 3)
+  unit_price   Decimal    @db.Decimal(15, 2)
+  total        Decimal    @db.Decimal(15, 2)
+  kondisi      String     @default("bagus") // bagus, rusak
+
+  retur        SaleReturn @relation(fields: [retur_id], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [product_id], references: [id])
+
+  @@map("sale_return_items")
+}
+
+// 13. Retur Pembelian (Purchase Returns)
+model PurchaseReturn {
+  id                String               @id @default(uuid())
+  no_retur          String               @unique
+  purchase_id       String
+  no_order          String
+  supplier_id       String
+  supplier_nama     String
+  retur_date        DateTime             @db.Date
+  total             Decimal              @default(0.00) @db.Decimal(15, 2)
+  metode_kompensasi String               @default("potong_hutang")
+  catatan           String?              @db.Text
+  created_by        String?
+  created_at        DateTime             @default(now())
+  updated_at        DateTime             @updatedAt
+
+  purchase          Purchase             @relation(fields: [purchase_id], references: [id])
+  items             PurchaseReturnItem[]
+
+  @@map("purchase_returns")
+}
+
+model PurchaseReturnItem {
+  id           String         @id @default(uuid())
+  retur_id     String
+  product_id   String
+  product_kode String
+  product_nama String
+  qty          Decimal        @db.Decimal(15, 3)
+  unit_price   Decimal        @db.Decimal(15, 2)
+  total        Decimal        @db.Decimal(15, 2)
+  kondisi      String         @default("bagus") // bagus, rusak
+
+  retur        PurchaseReturn @relation(fields: [retur_id], references: [id], onDelete: Cascade)
+  product      Product        @relation(fields: [product_id], references: [id])
+
+  @@map("purchase_return_items")
+}
+

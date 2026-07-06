@@ -417,12 +417,12 @@ export const HistoryPembelian: React.FC = () => {
         /* PO Detail Sheet */
         <div className="bg-white rounded-xl shadow-xl border border-blue-200 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
           {/* Blue Header Bar */}
-          <div className="bg-primary-600 text-white px-6 py-4 flex justify-between items-center border-b border-primary-700">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 bg-white/10 rounded-lg">
-                <FileText size={18} className="text-white" />
+          <div className="bg-primary-600 text-white px-4 py-2.5 flex justify-between items-center border-b border-primary-700">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-white/10 rounded-md">
+                <FileText size={14} className="text-white" />
               </div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-white">
                 Detail PO: {activePo.no_order}
               </h2>
             </div>
@@ -433,7 +433,7 @@ export const HistoryPembelian: React.FC = () => {
               }}
               className="text-white/80 hover:text-white transition-colors focus:outline-none"
             >
-              <X size={20} />
+              <X size={16} />
             </button>
           </div>
 
@@ -534,24 +534,39 @@ export const HistoryPembelian: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-blue-100 bg-white">
-                    {activePo.purchase_items.map((item: any, idx: number) => (
-                      <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-800">
-                        <td className="p-3 text-center text-slate-500 font-semibold">{idx + 1}</td>
-                        <td className="p-3 text-center">
-                          <span className="px-2.5 py-1 text-[10px] font-bold font-mono rounded-lg bg-blue-50/50 text-primary-700 border border-blue-100">
-                            {item.product?.kode || '-'}
-                          </span>
-                        </td>
-                        <td className="p-3 font-bold text-slate-900">{item.product?.nama || '-'}</td>
-                        <td className="p-3 text-center font-bold text-slate-700">{Number(item.qty)}</td>
-                        <td className="p-3 text-right font-semibold text-slate-550">
-                          {formatCurrency(Number(item.harga_beli))}
-                        </td>
-                        <td className="p-3 text-right font-bold text-slate-900">
-                          {formatCurrency(Number(item.qty) * Number(item.harga_beli))}
-                        </td>
-                      </tr>
-                    ))}
+                    {activePo.purchase_items.map((item: any, idx: number) => {
+                      const returnedQty = activePo.purchase_returns?.reduce((sum: number, ret: any) => {
+                        const retItem = ret.items?.find((it: any) => it.product_id === item.product_id);
+                        return sum + (retItem ? Number(retItem.qty) : 0);
+                      }, 0) || 0;
+                      const isReturned = returnedQty > 0;
+
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-800">
+                          <td className="p-3 text-center text-slate-500 font-semibold">{idx + 1}</td>
+                          <td className="p-3 text-center">
+                            <span className="px-2.5 py-1 text-[10px] font-bold font-mono rounded-lg bg-blue-50/50 text-primary-700 border border-blue-100">
+                              {item.product?.kode || '-'}
+                            </span>
+                          </td>
+                          <td className={`p-3 font-bold ${isReturned ? 'text-red-600' : 'text-slate-900'}`}>{item.product?.nama || '-'}</td>
+                          <td className={`p-3 text-center font-bold ${isReturned ? 'text-red-600' : 'text-slate-700'}`}>
+                            {Number(item.qty)}
+                            {isReturned && (
+                              <span className="text-[10px] block text-red-500 font-semibold mt-0.5">
+                                (Retur: {returnedQty})
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-right font-semibold text-slate-550">
+                            {formatCurrency(Number(item.harga_beli))}
+                          </td>
+                          <td className="p-3 text-right font-bold text-slate-900">
+                            {formatCurrency(Number(item.qty) * Number(item.harga_beli))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
 

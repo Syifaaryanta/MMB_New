@@ -23,18 +23,28 @@ async function generateSoNumber(): Promise<string> {
   return '260001';
 }
 
-async function generateFakturNumber(): Promise<string> {
-  const allSales = await prisma.sale.findMany({
-    where: {
-      no_faktur: { not: null }
-    },
-    orderBy: { no_faktur: 'desc' },
-    take: 100,
-  });
+export async function generateFakturNumber(): Promise<string> {
+  const [allSales, allReturns] = await Promise.all([
+    prisma.sale.findMany({
+      where: {
+        no_faktur: { not: null }
+      },
+      orderBy: { no_faktur: 'desc' },
+      take: 100,
+    }),
+    prisma.saleReturn.findMany({
+      where: {
+        no_faktur: { not: null }
+      },
+      orderBy: { no_faktur: 'desc' },
+      take: 100,
+    })
+  ]);
 
-  const numericFakturs = allSales
-    .map(s => s.no_faktur ? parseInt(s.no_faktur) : NaN)
-    .filter(num => !isNaN(num) && num >= 260000 && num <= 999999);
+  const numericFakturs = [
+    ...allSales.map(s => s.no_faktur ? parseInt(s.no_faktur) : NaN),
+    ...allReturns.map(r => r.no_faktur ? parseInt(r.no_faktur) : NaN)
+  ].filter(num => !isNaN(num) && num >= 260000 && num <= 999999);
 
   if (numericFakturs.length > 0) {
     const highest = Math.max(...numericFakturs);
@@ -93,6 +103,11 @@ saleRouter.get('/:id', authenticate, async (req: AuthRequest, res: Response): Pr
         sale_items: { include: { product: true } },
         sales_payments: true,
         creator: { select: { nama: true } },
+        sale_returns: {
+          include: {
+            items: true,
+          },
+        },
       },
     });
     if (!sale) { res.status(404).json({ error: 'SO tidak ditemukan' }); return; }

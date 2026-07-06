@@ -9,6 +9,7 @@ import {
   CreditCard,
   ChevronRight,
   History,
+  Undo2,
 } from 'lucide-react';
 
 export const HistoryMenu: React.FC = () => {
@@ -58,13 +59,23 @@ export const HistoryMenu: React.FC = () => {
     },
     {
       title: 'Histori Penagihan',
-      desc: 'Riwayat pembayaran piutang dan pelunasan nota dari pelanggan.',
+      desc: 'Riwayat pembayaran piutang and pelunasan nota dari pelanggan.',
       path: '/penagihan/riwayat?from=history',
       icon: CreditCard,
       iconColor: 'text-purple-600',
       iconBg: 'bg-purple-50',
       badge: 'Penagihan',
       badgeColor: 'bg-purple-100 text-purple-700',
+    },
+    {
+      title: 'Histori Return / Retur',
+      desc: 'Riwayat retur pembelian (PO) dan retur penjualan (SO) yang digabung.',
+      path: '/history/retur',
+      icon: Undo2,
+      iconColor: 'text-rose-600',
+      iconBg: 'bg-rose-50',
+      badge: 'Retur',
+      badgeColor: 'bg-rose-100 text-rose-700',
     },
   ];
 
@@ -81,12 +92,12 @@ export const HistoryMenu: React.FC = () => {
 
   useHotkeys('down', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev + 3) % subMenus.length);
+    setFocusedIdx((prev) => (prev + 2) % subMenus.length);
   }, { enableOnFormTags: false });
 
   useHotkeys('up', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev - 3 + subMenus.length) % subMenus.length);
+    setFocusedIdx((prev) => (prev - 2 + subMenus.length) % subMenus.length);
   }, { enableOnFormTags: false });
 
   useHotkeys('enter', (e) => {
@@ -129,7 +140,7 @@ export const HistoryMenu: React.FC = () => {
       </div>
 
       {/* Grid Menu */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {subMenus.map((menu, idx) => {
           const Icon = menu.icon;
           const isFocused = idx === focusedIdx;
@@ -137,24 +148,24 @@ export const HistoryMenu: React.FC = () => {
             <button
               key={menu.path}
               onClick={() => navigate(menu.path)}
-              className={`card text-left p-6 flex gap-4 border transition-all duration-150 cursor-pointer ${
+              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${
                 isFocused
                   ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]'
                   : 'border-surface-700/50 hover:bg-surface-800'
               }`}
             >
               <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
-                <Icon size={20} />
+                <Icon size={24} />
               </div>
               <div className="flex-1 space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-bold text-base text-white">{menu.title}</h3>
+                  <h3 className="font-bold text-lg text-white">{menu.title}</h3>
                   <ChevronRight
-                    size={14}
+                    size={16}
                     className={isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'}
                   />
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{menu.desc}</p>
+                <p className="text-sm text-slate-400 leading-relaxed">{menu.desc}</p>
                 <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${menu.badgeColor}`}>
                   {menu.badge}
                 </span>
