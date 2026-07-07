@@ -31,7 +31,7 @@ stockAdjustmentRouter.get('/', authenticate, async (req: AuthRequest, res: Respo
 
 stockAdjustmentRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_GUDANG), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { product_id, adjustment_date, stock_after, alasan } = req.body;
+    const { product_id, adjustment_date, stock_after, alasan, staff_nama } = req.body;
     const product = await prisma.product.findUnique({ where: { id: product_id } });
     if (!product) { res.status(404).json({ error: 'Produk tidak ditemukan' }); return; }
 
@@ -50,7 +50,7 @@ stockAdjustmentRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF
         stock_before,
         stock_after,
         qty_delta,
-        staff_nama: req.user!.nama,
+        staff_nama: staff_nama || req.user!.nama,
         alasan,
         created_by: req.user!.id,
       },
@@ -58,3 +58,35 @@ stockAdjustmentRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF
     res.status(201).json(adjustment);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
+
+stockAdjustmentRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_GUDANG), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const adj = await prisma.stockAdjustment.findUnique({
+      where: { id: req.params.id as string }
+    });
+    if (!adj) { res.status(404).json({ error: 'Data penyesuaian tidak ditemukan' }); return; }
+
+    // Revert product stock delta
+    if (adj.product_id) {
+      const product = await prisma.product.findUnique({ where: { id: adj.product_id } });
+      if (product) {
+        const revertedStock = Number(product.stok) - Number(adj.qty_delta);
+        await prisma.product.update({
+          where: { id: adj.product_id },
+          data: { stok: revertedStock }
+        });
+      }
+    }
+
+    // Delete the adjustment record
+    await prisma.stockAdjustment.delete({
+      where: { id: req.params.id as string }
+    });
+
+    res.json({ message: 'Penyesuaian stok berhasil dihapus dan stok dikembalikan.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+

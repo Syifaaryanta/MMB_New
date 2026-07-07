@@ -56,6 +56,7 @@ export const MasterData: React.FC = () => {
 
   // Selected row indexing for keyboard nav
   const [selectedRowIdx, setSelectedRowIdx] = useState(0);
+  const [isTableFocused, setIsTableFocused] = useState(false);
 
   // Modal States
   const [showAddEditModal, setShowAddEditModal] = useState(false);
@@ -73,6 +74,12 @@ export const MasterData: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const formKodeRef = useRef<HTMLInputElement>(null);
+  const formNamaRef = useRef<HTMLInputElement>(null);
+  const formNoTelpRef = useRef<HTMLInputElement>(null);
+  const formAlamatRef = useRef<HTMLTextAreaElement>(null);
+  const formJatuhTempoRef = useRef<HTMLSelectElement>(null);
+  const formLimitKreditRef = useRef<HTMLInputElement>(null);
 
   const fetchRecords = async () => {
     setIsLoading(true);
@@ -96,6 +103,28 @@ export const MasterData: React.FC = () => {
     fetchRecords();
     setSelectedRowIdx(0);
   }, [activeTab, searchQuery, page]);
+
+  // Focus modal inputs on open
+  useEffect(() => {
+    if (showAddEditModal) {
+      setTimeout(() => {
+        if (isEditMode) {
+          formNamaRef.current?.focus();
+          formNamaRef.current?.select();
+        } else {
+          formKodeRef.current?.focus();
+          formKodeRef.current?.select();
+        }
+      }, 150);
+    }
+  }, [showAddEditModal, isEditMode]);
+
+  // Initial focus on search input on mount
+  useEffect(() => {
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 150);
+  }, []);
 
   // Tab switching handler
   const handleTabChange = (tab: 'customer' | 'supplier') => {
@@ -133,7 +162,15 @@ export const MasterData: React.FC = () => {
     const list = activeTab === 'customer' ? customers : suppliers;
     if (list.length === 0 || selectedRowIdx >= list.length) return;
     setShowDeleteConfirm(true);
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [activeTab, customers, suppliers, selectedRowIdx]);
+
+  // Y key: Confirm delete when confirmation modal is visible
+  useHotkeys('y', (e) => {
+    if (showDeleteConfirm) {
+      e.preventDefault();
+      handleDelete();
+    }
+  }, { enableOnFormTags: false }, [showDeleteConfirm, activeTab, customers, suppliers, selectedRowIdx]);
 
   // ArrowLeft / ArrowRight to slide tabs
   useHotkeys('left', (e) => {
@@ -150,27 +187,31 @@ export const MasterData: React.FC = () => {
 
   // ArrowUp / ArrowDown: Navigate items list
   useHotkeys('up', (e) => {
-    e.preventDefault();
-    if (selectedRowIdx > 0) setSelectedRowIdx(selectedRowIdx - 1);
-  }, { enableOnFormTags: false });
+    if (isTableFocused) {
+      e.preventDefault();
+      if (selectedRowIdx > 0) setSelectedRowIdx(selectedRowIdx - 1);
+    }
+  }, { enableOnFormTags: false }, [isTableFocused, selectedRowIdx]);
 
   useHotkeys('down', (e) => {
-    e.preventDefault();
-    const list = activeTab === 'customer' ? customers : suppliers;
-    if (selectedRowIdx < list.length - 1) setSelectedRowIdx(selectedRowIdx + 1);
-  }, { enableOnFormTags: false });
+    if (isTableFocused) {
+      e.preventDefault();
+      const list = activeTab === 'customer' ? customers : suppliers;
+      if (selectedRowIdx < list.length - 1) setSelectedRowIdx(selectedRowIdx + 1);
+    }
+  }, { enableOnFormTags: false }, [isTableFocused, selectedRowIdx, activeTab, customers, suppliers]);
 
   // PageUp / PageDown: Next/Prev pagination
   useHotkeys('pageup', (e) => {
     e.preventDefault();
     if (page > 1) setPage(page - 1);
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [page]);
 
   useHotkeys('pagedown', (e) => {
     e.preventDefault();
     const maxPage = Math.ceil(totalItems / limit);
     if (page < maxPage) setPage(page + 1);
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [page, totalItems, limit]);
 
   // Escape: clear search or exit modals
   useHotkeys('esc', (e) => {
@@ -179,12 +220,16 @@ export const MasterData: React.FC = () => {
       setShowAddEditModal(false);
     } else if (showDeleteConfirm) {
       setShowDeleteConfirm(false);
+    } else if (isTableFocused) {
+      setIsTableFocused(false);
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
     } else if (searchQuery) {
       setSearchQuery('');
     } else {
       navigate('/dashboard');
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [showAddEditModal, showDeleteConfirm, isTableFocused, searchQuery]);
 
   // Add / Edit actions
   const openAddModal = () => {
@@ -195,7 +240,7 @@ export const MasterData: React.FC = () => {
     setFormNama('');
     setFormAlamat('');
     setFormNoTelp('');
-    setFormJatuhTempo(1);
+    setFormJatuhTempo(0);
     setFormLimitKredit(10000000);
     setShowAddEditModal(true);
   };
@@ -207,7 +252,7 @@ export const MasterData: React.FC = () => {
     setFormNama(item.nama);
     setFormAlamat(item.alamat || '');
     setFormNoTelp(item.no_telp || '');
-    setFormJatuhTempo(item.jatuh_tempo_bulan || 1);
+    setFormJatuhTempo(item.jatuh_tempo_bulan || 0);
     setFormLimitKredit(item.limit_kredit || 10000000);
     setShowAddEditModal(true);
   };
@@ -268,25 +313,30 @@ export const MasterData: React.FC = () => {
   const activeList = activeTab === 'customer' ? customers : suppliers;
   const maxPages = Math.ceil(totalItems / limit);
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeList.length > 0) {
+        setIsTableFocused(true);
+        setSelectedRowIdx(0);
+        searchInputRef.current?.blur();
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white mb-2 transition-colors"
-          >
-            <ArrowLeft size={12} /> Dashboard (Esc)
-          </button>
-          <h1 className="text-2xl font-extrabold text-white">Kelola Master Data</h1>
-          <p className="text-slate-400 text-sm">Manajemen profil data master Pelanggan (Customer) dan Pemasok (Supplier).</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">Kelola Master Data</h1>
+          <p className="text-slate-555 text-sm mt-1">Manajemen profil data master Pelanggan (Customer) dan Pemasok (Supplier).</p>
         </div>
-
+        
         <div className="flex gap-2 text-xs">
           <button 
             onClick={openAddModal}
-            className="btn-primary flex items-center gap-1.5 bg-primary-600 hover:bg-primary-500 font-bold"
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/10 flex items-center gap-1.5"
           >
             <Plus size={14} />
             <span>Tambah Data (F2)</span>
@@ -294,7 +344,7 @@ export const MasterData: React.FC = () => {
           <button 
             onClick={triggerEdit}
             disabled={activeList.length === 0}
-            className="card bg-surface-800 hover:bg-surface-750 px-3.5 py-2 text-slate-300 font-bold border border-surface-700/60 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
           >
             <Edit3 size={14} />
             <span>Edit Data (F3)</span>
@@ -302,7 +352,7 @@ export const MasterData: React.FC = () => {
           <button 
             onClick={() => setShowDeleteConfirm(true)}
             disabled={activeList.length === 0}
-            className="btn-danger flex items-center gap-1.5 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-red-655 hover:text-red-700 hover:bg-red-50 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
           >
             <Trash2 size={14} />
             <span>Hapus / Deaktif (Del)</span>
@@ -311,13 +361,13 @@ export const MasterData: React.FC = () => {
       </div>
 
       {/* Tabs Control Board */}
-      <div className="flex gap-3 border-b border-surface-700/60 pb-px">
+      <div className="flex gap-3 border-b border-slate-200 pb-px">
         <button
           onClick={() => handleTabChange('customer')}
           className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${
             activeTab === 'customer'
-              ? 'border-primary-500 text-primary-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
           }`}
         >
           <Users size={16} />
@@ -327,8 +377,8 @@ export const MasterData: React.FC = () => {
           onClick={() => handleTabChange('supplier')}
           className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${
             activeTab === 'supplier'
-              ? 'border-primary-500 text-primary-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
           }`}
         >
           <Truck size={16} />
@@ -337,50 +387,47 @@ export const MasterData: React.FC = () => {
       </div>
 
       {/* Control Board */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 text-slate-800">
         {/* Search */}
-        <div className="relative">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Nama / Kode SKU (F1)</label>
+        <div className="relative flex-1 w-full">
+          <label className="block text-[10px] text-slate-555 mb-1 font-semibold uppercase tracking-wider">Cari Nama / Kode (F1)</label>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
+            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
+              autoFocus={true}
               placeholder={`Cari ${activeTab === 'customer' ? 'pelanggan' : 'supplier'}...`}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setPage(1);
+                setIsTableFocused(false);
               }}
-              className="input-field w-full pl-9 py-2 text-xs"
+              onKeyDown={handleSearchKeyDown}
+              className="input-field w-full pl-9 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
             />
           </div>
         </div>
 
         {/* Info badges */}
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex items-center gap-6 text-xs text-slate-700 shrink-0 self-end md:self-center md:pt-4">
           <div>
-            <span className="text-[10px] text-slate-450 block uppercase font-semibold">Total Item</span>
-            <span className="font-bold text-white">{totalItems} Data Terdaftar</span>
+            <span className="text-[10px] text-slate-400 block uppercase font-semibold">Total Item</span>
+            <span className="font-bold text-slate-900">{totalItems} Data Terdaftar</span>
           </div>
           <div>
-            <span className="text-[10px] text-slate-450 block uppercase font-semibold">Halaman</span>
-            <span className="font-bold text-slate-300">{page} dari {maxPages || 1}</span>
+            <span className="text-[10px] text-slate-400 block uppercase font-semibold">Halaman</span>
+            <span className="font-bold text-slate-900">{page} dari {maxPages || 1}</span>
           </div>
-        </div>
-
-        {/* Shortcuts Hints */}
-        <div className="text-right flex flex-col justify-end text-[10px] text-slate-500">
-          <p>Gunakan <kbd className="shortcut-badge">&larr;</kbd> <kbd className="shortcut-badge">&rarr;</kbd> untuk berpindah Tab.</p>
-          <p className="mt-1">Gunakan <kbd className="shortcut-badge">PgUp</kbd> <kbd className="shortcut-badge">PgDn</kbd> untuk pindah Halaman.</p>
         </div>
       </div>
 
       {/* Main Table */}
-      <div className="card p-0 overflow-hidden border border-surface-700/65 shadow-2xl">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
               <th className="p-4 w-12 text-center">No</th>
               <th className="p-4 w-40">Kode Master</th>
               <th className="p-4">Nama Lengkap</th>
@@ -391,10 +438,10 @@ export const MasterData: React.FC = () => {
               <th className="p-4 text-center">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-750">
+          <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={activeTab === 'customer' ? 8 : 7} className="p-8 text-center text-slate-400 italic">
+                <td colSpan={activeTab === 'customer' ? 8 : 7} className="p-8 text-center text-slate-500 italic">
                   Sedang mengambil data master...
                 </td>
               </tr>
@@ -406,37 +453,51 @@ export const MasterData: React.FC = () => {
               </tr>
             ) : (
               activeList.map((item, idx) => {
-                const isSelected = selectedRowIdx === idx;
+                const isSelected = selectedRowIdx === idx && isTableFocused;
                 const absoluteIdx = (page - 1) * limit + idx + 1;
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                  let base = "p-4 text-xs transition-all duration-150 border-b ";
+                  if (isSelected) {
+                    base += "bg-blue-100 text-blue-950 font-bold border-blue-300 ";
+                    if (pos === 'first') base += "border-l-4 border-blue-600 ";
+                  } else {
+                    base += "text-slate-800 border-slate-100 ";
+                  }
+                  return base;
+                };
 
                 return (
                   <tr
                     key={item.id}
-                    onClick={() => setSelectedRowIdx(idx)}
-                    className={`hover:bg-surface-750/30 cursor-pointer ${
-                      isSelected ? 'bg-surface-750/50 text-white font-semibold' : 'text-slate-350'
+                    onClick={() => {
+                      setSelectedRowIdx(idx);
+                      setIsTableFocused(true);
+                    }}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected ? 'bg-blue-100' : 'hover:bg-slate-50'
                     }`}
                   >
-                    <td className="p-4 text-center text-slate-500">{absoluteIdx}</td>
-                    <td className="p-4 font-mono font-bold text-slate-200">{item.kode}</td>
-                    <td className="p-4 font-bold text-slate-200">{item.nama}</td>
-                    <td className="p-4 text-slate-400">{item.no_telp || '-'}</td>
-                    <td className="p-4 text-slate-400 truncate max-w-xs">{item.alamat || '-'}</td>
-                    <td className="p-4 text-center font-semibold text-slate-400">
-                      {item.jatuh_tempo_bulan} Bulan
+                    <td className={`${getTdClass('first')} text-center font-mono ${isSelected ? 'text-blue-950' : 'text-slate-400'}`}>{absoluteIdx}</td>
+                    <td className={`${getTdClass('middle')} font-mono font-bold ${isSelected ? 'text-blue-950' : 'text-slate-800'}`}>{item.kode}</td>
+                    <td className={`${getTdClass('middle')} font-bold ${isSelected ? 'text-blue-950' : 'text-slate-800'}`}>{item.nama}</td>
+                    <td className={`${getTdClass('middle')} ${isSelected ? 'text-blue-950' : 'text-slate-600'}`}>{item.no_telp || '-'}</td>
+                    <td className={`${getTdClass('middle')} truncate max-w-xs ${isSelected ? 'text-blue-950' : 'text-slate-600'}`}>{item.alamat || '-'}</td>
+                    <td className={`${getTdClass('middle')} text-center font-medium ${isSelected ? 'text-blue-950' : 'text-slate-650'}`}>
+                      {item.jatuh_tempo_bulan === 0 ? 'Tunai' : `${item.jatuh_tempo_bulan} Bulan`}
                     </td>
                     {activeTab === 'customer' && (
-                      <td className="p-4 text-right font-mono text-white font-bold">
+                      <td className={`${getTdClass('middle')} text-right font-mono font-bold ${isSelected ? 'text-blue-950' : 'text-slate-900'}`}>
                         {formatCurrency((item as Customer).limit_kredit)}
                       </td>
                     )}
-                    <td className="p-4 text-center">
+                    <td className={`${getTdClass('last')} text-center`}>
                       {item.aktif ? (
-                        <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-700/30 inline-flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5">
                           <UserCheck size={9} /> Aktif
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-surface-900 text-slate-500 border border-surface-750 inline-flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 inline-flex items-center gap-0.5">
                           Non-Aktif
                         </span>
                       )}
@@ -455,18 +516,18 @@ export const MasterData: React.FC = () => {
           <button
             onClick={() => page > 1 && setPage(page - 1)}
             disabled={page === 1}
-            className="card bg-surface-800 hover:bg-surface-750 border border-surface-700/60 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-50"
+            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1"
           >
             <ChevronLeft size={14} />
             <span>Sebelumnya</span>
           </button>
 
-          <span className="text-slate-450">Halaman {page} dari {maxPages}</span>
+          <span className="text-slate-500">Halaman {page} dari {maxPages}</span>
 
           <button
             onClick={() => page < maxPages && setPage(page + 1)}
             disabled={page === maxPages}
-            className="card bg-surface-800 hover:bg-surface-750 border border-surface-700/60 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-50"
+            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1"
           >
             <span>Selanjutnya</span>
             <ChevronRight size={14} />
@@ -476,106 +537,130 @@ export const MasterData: React.FC = () => {
 
       {/* Form Add / Edit Modal */}
       {showAddEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowAddEditModal(false)} />
           <form 
             onSubmit={handleSave}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in space-y-4"
+            className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-md w-full mx-4 shadow-2xl animate-scale-in flex flex-col"
           >
-            <div className="flex justify-between items-center border-b border-surface-700 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <div className="bg-blue-600 !text-white px-6 py-4 flex justify-between items-center border-b border-blue-700">
+              <h3 className="text-base font-bold !text-white flex items-center gap-2">
                 <span>{isEditMode ? 'Edit Profil' : 'Tambah Baru'} - {activeTab === 'customer' ? 'Pelanggan' : 'Supplier'}</span>
               </h3>
               <button 
                 type="button"
                 onClick={() => setShowAddEditModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="!text-white/80 hover:!text-white transition-colors focus:outline-none"
               >
-                <X size={18} />
+                <X size={18} className="!text-white" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="p-6 space-y-4 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Kode Unik</label>
+                <label className="block text-slate-500 mb-1 font-semibold">Kode Unik</label>
                 <input
+                  ref={formKodeRef}
                   type="text"
                   required
                   disabled={isEditMode}
                   value={formKode}
                   onChange={(e) => setFormKode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formNamaRef.current?.focus())}
                   placeholder="Kode (misal: CUST-09 atau SUPP-11)"
-                  className="input-field w-full py-2"
+                  className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Nama Lengkap / Instansi</label>
+                <label className="block text-slate-500 mb-1 font-semibold">Nama Lengkap / Instansi</label>
                 <input
+                  ref={formNamaRef}
                   type="text"
                   required
                   value={formNama}
                   onChange={(e) => setFormNama(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formNoTelpRef.current?.focus())}
                   placeholder="Nama lengkap..."
-                  className="input-field w-full py-2"
+                  className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-semibold">No. Telpon / Handphone</label>
+                <label className="block text-slate-500 mb-1 font-semibold">No. Telpon / Handphone</label>
                 <input
+                  ref={formNoTelpRef}
                   type="text"
                   value={formNoTelp}
                   onChange={(e) => setFormNoTelp(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formAlamatRef.current?.focus())}
                   placeholder="No. Telp..."
-                  className="input-field w-full py-2"
+                  className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-semibold">Alamat Fisik</label>
+                <label className="block text-slate-500 mb-1 font-semibold">Alamat Fisik</label>
                 <textarea
+                  ref={formAlamatRef}
                   value={formAlamat}
                   onChange={(e) => setFormAlamat(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formJatuhTempoRef.current?.focus())}
                   rows={2}
                   placeholder="Alamat lengkap..."
-                  className="input-field w-full py-1.5 resize-none"
+                  className="input-field w-full py-2 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white resize-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">Jatuh Tempo (Bulan)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="12"
+                  <label className="block text-slate-500 mb-1 font-semibold">Termin Jatuh Tempo</label>
+                  <select
+                    ref={formJatuhTempoRef}
                     required
                     value={formJatuhTempo}
                     onChange={(e) => setFormJatuhTempo(Number(e.target.value))}
-                    className="input-field w-full py-2 text-center"
-                  />
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (activeTab === 'customer') {
+                          formLimitKreditRef.current?.focus();
+                        } else {
+                          handleSave(e);
+                        }
+                      }
+                    }}
+                    className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value={0}>Tunai</option>
+                    <option value={1}>1 Bulan</option>
+                    <option value={2}>2 Bulan</option>
+                    <option value={3}>3 Bulan</option>
+                  </select>
                 </div>
 
                 {activeTab === 'customer' && (
                   <div>
-                    <label className="block text-slate-400 mb-1 font-semibold">Limit Kredit (Rp)</label>
+                    <label className="block text-slate-500 mb-1 font-semibold">Limit Kredit (Rp)</label>
                     <input
+                      ref={formLimitKreditRef}
                       type="text"
                       required
                       value={formatRupiahInput(formLimitKredit)}
                       onChange={(e) => setFormLimitKredit(parseRupiahInput(e.target.value))}
-                      className="input-field w-full py-2 text-right font-mono"
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSave(e))}
+                      className="input-field w-full py-2.5 text-right font-mono border border-slate-355 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-surface-700 flex justify-between items-center text-xs">
-              <span className="text-slate-400">Tekan <kbd className="shortcut-badge">Esc</kbd> untuk batal</span>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs">
+              <span className="text-slate-400">Tekan <kbd className="bg-slate-100 border px-1 py-0.5 rounded text-slate-700 font-bold">Esc</kbd> untuk batal</span>
               <button 
                 type="submit" 
-                className="btn-primary py-2 px-5 font-bold"
+                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/10"
               >
                 Simpan Data
               </button>
@@ -586,28 +671,31 @@ export const MasterData: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in space-y-4">
-            <div className="flex items-center gap-3 text-danger-400 border-b border-surface-700 pb-3">
-              <AlertTriangle size={24} />
-              <h3 className="text-base font-bold text-white">Deaktivasi Master Data</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-sm w-full mx-4 shadow-2xl animate-scale-in flex flex-col">
+            <div className="flex items-center gap-3 bg-red-500/10 border-b border-red-500/20 px-6 py-4 text-red-655">
+              <AlertTriangle size={24} className="text-red-500 animate-bounce" />
+              <h3 className="text-base font-bold text-red-700">Deaktivasi Master Data</h3>
             </div>
 
-            <p className="text-xs text-slate-300">
-              Apakah Anda yakin ingin menonaktifkan data master {activeTab === 'customer' ? 'Pelanggan' : 'Supplier'} yang terpilih? 
-              Data ini tidak akan muncul dalam opsi transaksi masa depan.
-            </p>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Apakah Anda yakin ingin menonaktifkan data master {activeTab === 'customer' ? 'Pelanggan' : 'Supplier'} yang terpilih? 
+                Data ini tidak akan muncul dalam opsi transaksi masa depan.
+              </p>
+            </div>
 
-            <div className="pt-2 border-t border-surface-700 flex justify-end gap-2 text-xs">
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 text-xs">
               <button 
                 onClick={() => setShowDeleteConfirm(false)}
-                className="card bg-surface-700 hover:bg-surface-650 px-4 py-2 text-slate-300 font-bold border border-surface-600 rounded-lg"
+                className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all shadow-sm"
               >
                 Batal (Esc)
               </button>
               <button 
                 onClick={handleDelete}
-                className="btn-danger py-2 px-5 font-bold"
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 font-bold transition-all shadow-md"
               >
                 Ya, Non-Aktifkan
               </button>

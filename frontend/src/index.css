@@ -427,7 +427,13 @@ main .bg-success-600 *,
 main .bg-danger-600,
 main .bg-danger-600 *,
 main .bg-warning-600,
-main .bg-warning-600 * {
+main .bg-warning-600 *,
+main .bg-rose-600,
+main .bg-rose-600 *,
+main .bg-emerald-600,
+main .bg-emerald-600 *,
+main .bg-amber-600,
+main .bg-amber-600 * {
   color: #ffffff !important;
 }
 

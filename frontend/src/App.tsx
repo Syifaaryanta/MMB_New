@@ -33,6 +33,7 @@ import { ReturPembelian } from '@/pages/pembelian/ReturPembelian';
 import { HistoryMenu } from '@/pages/history/HistoryMenu';
 import { HistoryBarangMasuk } from '@/pages/history/HistoryBarangMasuk';
 import { HistoryBarangKeluar } from '@/pages/history/HistoryBarangKeluar';
+import { HistoryBarangInOut } from '@/pages/history/HistoryBarangInOut';
 import { HistoryReturn } from '@/pages/history/HistoryReturn';
 
 // Real Penjualan Pages
@@ -223,6 +224,7 @@ function App() {
                     <Route path="history" element={<HistoryMenu />} />
                     <Route path="history/barang-masuk" element={<HistoryBarangMasuk />} />
                     <Route path="history/barang-keluar" element={<HistoryBarangKeluar />} />
+                    <Route path="history/barang-inout" element={<HistoryBarangInOut />} />
                     <Route path="history/retur" element={<HistoryReturn />} />
                   </Route>
 

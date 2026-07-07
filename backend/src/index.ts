@@ -14,6 +14,7 @@ import { laporanRouter } from './routes/laporan.routes';
 import { stockAdjustmentRouter } from './routes/stockAdjustment.routes';
 import { saleReturnRouter } from './routes/saleReturn.routes';
 import { purchaseReturnRouter } from './routes/purchaseReturn.routes';
+import { historyRouter } from './routes/history.routes';
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use('/api/laporan', laporanRouter);
 app.use('/api/stock-adjustments', stockAdjustmentRouter);
 app.use('/api/sale-returns', saleReturnRouter);
 app.use('/api/purchase-returns', purchaseReturnRouter);
+app.use('/api/history', historyRouter);
 
 // 404 handler
 app.use((req, res) => {

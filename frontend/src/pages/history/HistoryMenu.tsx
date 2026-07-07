@@ -18,24 +18,12 @@ export const HistoryMenu: React.FC = () => {
 
   const subMenus = [
     {
-      title: 'Histori Barang Masuk',
-      desc: 'Log penerimaan barang ke gudang dari Purchase Order yang sudah diterima.',
-      path: '/history/barang-masuk',
-      icon: PackageCheck,
-      iconColor: 'text-emerald-600',
-      iconBg: 'bg-emerald-50',
-      badge: 'Gudang',
-      badgeColor: 'bg-emerald-100 text-emerald-700',
-    },
-    {
-      title: 'Histori Barang Keluar',
-      desc: 'Log pengiriman barang ke pelanggan dari Sales Order yang sudah selesai.',
-      path: '/history/barang-keluar',
-      icon: PackageMinus,
-      iconColor: 'text-rose-600',
-      iconBg: 'bg-rose-50',
-      badge: 'Gudang',
-      badgeColor: 'bg-rose-100 text-rose-700',
+      title: 'Histori Barang Masuk & Keluar',
+      desc: 'Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff.',
+      path: '/history/barang-inout',
+      icon: History,
+      iconColor: 'text-primary-600',
+      iconBg: 'bg-primary-50',
     },
     {
       title: 'Histori Penjualan',
@@ -44,8 +32,6 @@ export const HistoryMenu: React.FC = () => {
       icon: TrendingUp,
       iconColor: 'text-blue-600',
       iconBg: 'bg-blue-50',
-      badge: 'Penjualan',
-      badgeColor: 'bg-blue-100 text-blue-700',
     },
     {
       title: 'Histori Pembelian',
@@ -54,8 +40,6 @@ export const HistoryMenu: React.FC = () => {
       icon: ShoppingCart,
       iconColor: 'text-amber-600',
       iconBg: 'bg-amber-50',
-      badge: 'Pembelian',
-      badgeColor: 'bg-amber-100 text-amber-700',
     },
     {
       title: 'Histori Penagihan',
@@ -64,8 +48,6 @@ export const HistoryMenu: React.FC = () => {
       icon: CreditCard,
       iconColor: 'text-purple-600',
       iconBg: 'bg-purple-50',
-      badge: 'Penagihan',
-      badgeColor: 'bg-purple-100 text-purple-700',
     },
     {
       title: 'Histori Return / Retur',
@@ -74,8 +56,6 @@ export const HistoryMenu: React.FC = () => {
       icon: Undo2,
       iconColor: 'text-rose-600',
       iconBg: 'bg-rose-50',
-      badge: 'Retur',
-      badgeColor: 'bg-rose-100 text-rose-700',
     },
   ];
 
@@ -125,20 +105,6 @@ export const HistoryMenu: React.FC = () => {
         </p>
       </div>
 
-      {/* Keyboard hint */}
-      <div className="flex items-center gap-2 text-xs text-slate-500 bg-surface-800/50 border border-surface-700 rounded-lg px-4 py-2 w-fit">
-        <span>Navigasi:</span>
-        <kbd className="shortcut-badge">← →</kbd>
-        <kbd className="shortcut-badge">↑ ↓</kbd>
-        <span>pilih menu</span>
-        <span className="mx-1 text-slate-600">|</span>
-        <kbd className="shortcut-badge">Enter</kbd>
-        <span>buka</span>
-        <span className="mx-1 text-slate-600">|</span>
-        <kbd className="shortcut-badge">Esc</kbd>
-        <span>kembali ke Dashboard</span>
-      </div>
-
       {/* Grid Menu */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {subMenus.map((menu, idx) => {
@@ -157,8 +123,8 @@ export const HistoryMenu: React.FC = () => {
               <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
                 <Icon size={24} />
               </div>
-              <div className="flex-1 space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg text-white">{menu.title}</h3>
                   <ChevronRight
                     size={16}
@@ -166,9 +132,6 @@ export const HistoryMenu: React.FC = () => {
                   />
                 </div>
                 <p className="text-sm text-slate-400 leading-relaxed">{menu.desc}</p>
-                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${menu.badgeColor}`}>
-                  {menu.badge}
-                </span>
               </div>
             </button>
           );

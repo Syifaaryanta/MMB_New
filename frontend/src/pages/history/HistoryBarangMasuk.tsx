@@ -422,12 +422,12 @@ export const HistoryBarangMasuk: React.FC = () => {
         /* PO Detail Sheet */
         <div className="bg-white rounded-xl shadow-xl border border-emerald-200 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
           {/* Green Header Bar */}
-          <div className="bg-emerald-600 text-white px-6 py-4 flex justify-between items-center border-b border-emerald-700">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 bg-white/10 rounded-lg">
-                <FileText size={18} className="text-white" />
+          <div className="bg-emerald-600 !text-white px-6 py-3 flex justify-between items-center border-b border-emerald-700">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-white/10 rounded-md">
+                <FileText size={14} className="!text-white" />
               </div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-xs font-bold !text-white uppercase tracking-wider">
                 Detail Penerimaan: {activePo.no_order}
               </h2>
             </div>
@@ -436,9 +436,9 @@ export const HistoryBarangMasuk: React.FC = () => {
                 setActivePo(null);
                 setIsInfoHidden(false);
               }}
-              className="text-white/80 hover:text-white transition-colors focus:outline-none"
+              className="!text-white/80 hover:!text-white transition-colors focus:outline-none"
             >
-              <X size={20} />
+              <X size={16} className="!text-white" />
             </button>
           </div>
 

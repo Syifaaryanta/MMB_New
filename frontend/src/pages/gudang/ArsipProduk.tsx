@@ -155,9 +155,8 @@ export const ArsipProduk: React.FC = () => {
       {/* Toast Notifications */}
       <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
-          <div key={t.id} className={`pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-sm ${
-            t.type === 'success' ? 'bg-emerald-950/90 border-emerald-700/60 text-emerald-100' : 'bg-red-950/90 border-red-700/60 text-red-100'
-          }`}>
+          <div key={t.id} className={`pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-sm ${t.type === 'success' ? 'bg-emerald-950/90 border-emerald-700/60 text-emerald-100' : 'bg-red-950/90 border-red-700/60 text-red-100'
+            }`}>
             {t.type === 'success' ? <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-400" /> : <XCircle size={18} className="mt-0.5 shrink-0 text-red-400" />}
             <p className="text-sm font-medium flex-1">{t.message}</p>
             <button onClick={() => dismissToast(t.id)} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"><X size={14} /></button>
@@ -268,9 +267,8 @@ export const ArsipProduk: React.FC = () => {
                   <tr
                     key={p.id}
                     onClick={() => setSelectedIdx(idx)}
-                    className={`hover:bg-surface-800/40 cursor-pointer transition-colors ${
-                      idx === selectedIdx ? 'table-row-selected' : ''
-                    }`}
+                    className={`hover:bg-surface-800/40 cursor-pointer transition-colors ${idx === selectedIdx ? 'table-row-selected' : ''
+                      }`}
                   >
                     <td className="p-4 font-mono text-slate-300 font-semibold">{p.kode}</td>
                     <td className="p-4 font-bold text-white">{p.nama}</td>
