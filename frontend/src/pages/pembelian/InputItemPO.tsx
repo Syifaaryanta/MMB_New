@@ -78,6 +78,10 @@ export const InputItemPO: React.FC = () => {
   // Highlighted Row Index in Table
   const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
 
+  // Duplicate alert modal status
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateMsg, setDuplicateMsg] = useState('');
+
   // Focus Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
@@ -243,6 +247,14 @@ export const InputItemPO: React.FC = () => {
   const addItemToTable = () => {
     if (!selectedProd || !qty || !price) return;
 
+    // Check duplicate
+    const isDuplicate = items.some(item => item.product_id === selectedProd.id);
+    if (isDuplicate) {
+      setDuplicateMsg(`Barang "${selectedProd.nama}" sudah ada di daftar input PO!`);
+      setShowDuplicateModal(true);
+      return;
+    }
+
     const newItem: POItem = {
       product_id: selectedProd.id,
       product_kode: selectedProd.kode,
@@ -324,7 +336,7 @@ export const InputItemPO: React.FC = () => {
   }, { enableOnFormTags: true });
 
   // Delete row shortcut when a row is selected
-  useHotkeys('del', (e) => {
+  useHotkeys('delete, del', (e) => {
     e.preventDefault();
     if (selectedRowIdx !== null) {
       deleteRow(selectedRowIdx);
@@ -345,6 +357,15 @@ export const InputItemPO: React.FC = () => {
       setSelectedRowIdx((prev) => (prev === null ? 0 : Math.min(items.length - 1, prev + 1)));
     }
   }, { enableOnFormTags: false });
+
+  const handleDuplicateModalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' || e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowDuplicateModal(false);
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+  };
 
   const handleCancelConfirmModalKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -569,6 +590,7 @@ export const InputItemPO: React.FC = () => {
                       <tr
                         key={idx}
                         onClick={() => {
+                          (document.activeElement as HTMLElement)?.blur();
                           setSelectedRowIdx(idx);
                           setActiveStep('table');
                         }}
@@ -913,6 +935,39 @@ export const InputItemPO: React.FC = () => {
                 className="btn-primary py-2 px-4 text-xs bg-emerald-500 hover:bg-emerald-600 font-bold text-black"
               >
                 Konfirmasi & Masuk Receiving (Y)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Alert Modal */}
+      {showDuplicateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+          <div
+            tabIndex={0}
+            ref={(el) => el?.focus()}
+            onKeyDown={handleDuplicateModalKeyDown}
+            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+          >
+            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
+              <AlertTriangle size={28} className="text-amber-400" />
+              <h3 className="text-lg font-bold text-white">Barang Sudah Diinput</h3>
+            </div>
+            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
+              {duplicateMsg}
+            </p>
+            <div className="flex justify-center border-t border-surface-700/50 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  setTimeout(() => searchInputRef.current?.focus(), 50);
+                }}
+                className="btn-primary py-2 px-6 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
+                autoFocus
+              >
+                OK (Enter)
               </button>
             </div>
           </div>

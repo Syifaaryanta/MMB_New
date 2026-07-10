@@ -366,6 +366,19 @@ saleRouter.patch('/:id/nota', authenticate, async (req: AuthRequest, res: Respon
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// PATCH /api/sales/:id/ongkir - Update biaya pengiriman
+saleRouter.patch('/:id/ongkir', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { biaya_pengiriman } = req.body;
+    const sale = await prisma.sale.update({
+      where: { id: req.params.id as string },
+      data: { biaya_pengiriman: Number(biaya_pengiriman) },
+    });
+    res.json(sale);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+
 // GET /api/sales/customer-product-history - Get sales history of a specific product for a customer
 saleRouter.get('/customer-product-history/query', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {

@@ -26,6 +26,8 @@ model Profile {
   sales_created      Sale[]             @relation("SaleCreatedBy")
   payments_created   SalesPayment[]     @relation("PaymentCreatedBy")
   stock_adjustments  StockAdjustment[]  @relation("AdjustmentCreatedBy")
+  billing_sessions   BillingSession[]   @relation("BillingSessionCreatedBy")
+  supplier_payments  SupplierPayment[]  @relation("SupplierPaymentCreatedBy")
 
   @@map("profiles")
 }
@@ -133,11 +135,15 @@ model Purchase {
   created_at  DateTime       @default(now())
   updated_at  DateTime       @updatedAt
 
+  biaya_pengiriman Decimal          @default(0.00) @db.Decimal(15, 2)
+
   // Relations
-  supplier         Supplier         @relation(fields: [supplier_id], references: [id])
-  creator          Profile?         @relation("PurchaseCreatedBy", fields: [created_by], references: [id])
-  purchase_items   PurchaseItem[]
-  purchase_returns PurchaseReturn[]
+  supplier            Supplier            @relation(fields: [supplier_id], references: [id])
+  creator             Profile?            @relation("PurchaseCreatedBy", fields: [created_by], references: [id])
+  purchase_items      PurchaseItem[]
+  purchase_returns    PurchaseReturn[]
+  supplier_payments   SupplierPayment[]
+  billing_allocations BillingAllocation[]
 
   @@map("purchases")
 }
@@ -189,12 +195,15 @@ model Sale {
   created_at          DateTime   @default(now())
   updated_at          DateTime   @updatedAt
 
+  biaya_pengiriman Decimal          @default(0.00) @db.Decimal(15, 2)
+
   // Relations
-  customer       Customer       @relation(fields: [customer_id], references: [id])
-  creator        Profile?       @relation("SaleCreatedBy", fields: [created_by], references: [id])
-  sale_items     SaleItem[]
-  sales_payments SalesPayment[]
-  sale_returns   SaleReturn[]
+  customer            Customer            @relation(fields: [customer_id], references: [id])
+  creator             Profile?            @relation("SaleCreatedBy", fields: [created_by], references: [id])
+  sale_items          SaleItem[]
+  sales_payments      SalesPayment[]
+  sale_returns        SaleReturn[]
+  billing_allocations BillingAllocation[]
 
   @@map("sales")
 }
@@ -342,5 +351,61 @@ model PurchaseReturnItem {
   product      Product        @relation(fields: [product_id], references: [id])
 
   @@map("purchase_return_items")
+}
+
+model BillingSession {
+  id             String              @id @default(uuid())
+  session_date   DateTime            @db.Date
+  tipe           String              // "customer" atau "supplier"
+  target_id      String              // ID Customer / ID Supplier
+  target_nama    String              // Nama Customer / Nama Supplier
+  total_amount   Decimal             @db.Decimal(15, 2)
+  payment_method String              @default("cash") // "cash", "transfer", "cheque"
+  mode           String              @default("fifo") // "fifo" atau "manual"
+  catatan        String?             @db.Text
+  created_by     String?
+  created_at     DateTime            @default(now())
+
+  // Relations
+  creator        Profile?            @relation("BillingSessionCreatedBy", fields: [created_by], references: [id])
+  allocations    BillingAllocation[]
+
+  @@map("billing_sessions")
+}
+
+model BillingAllocation {
+  id                 String          @id @default(uuid())
+  billing_session_id String
+  sale_id            String?
+  purchase_id        String?
+  allocated_amount   Decimal         @db.Decimal(15, 2)
+  is_full_payment    Boolean         @default(false)
+  remaining_after    Decimal         @db.Decimal(15, 2)
+  created_at         DateTime        @default(now())
+
+  // Relations
+  session            BillingSession  @relation(fields: [billing_session_id], references: [id], onDelete: Cascade)
+  sale               Sale?           @relation(fields: [sale_id], references: [id])
+  purchase           Purchase?       @relation(fields: [purchase_id], references: [id])
+
+  @@map("billing_allocations")
+}
+
+model SupplierPayment {
+  id             String          @id @default(uuid())
+  purchase_id    String
+  payment_date   DateTime        @db.Date
+  amount         Decimal         @db.Decimal(15, 2)
+  payment_method String          @default("cash")
+  note           String?         @db.Text
+  created_by     String?
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+
+  // Relations
+  purchase       Purchase        @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  creator        Profile?        @relation("SupplierPaymentCreatedBy", fields: [created_by], references: [id])
+
+  @@map("supplier_payments")
 }
 

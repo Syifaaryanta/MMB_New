@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { CreditCard, FileSpreadsheet, History, FileCheck, ChevronRight, Wallet } from 'lucide-react';
+import { CreditCard, FileSpreadsheet, History, FileCheck, ChevronRight, Wallet, ShoppingBag } from 'lucide-react';
 
 interface PenagihanStats {
   totalPiutang: number;
@@ -40,13 +40,22 @@ export const PenagihanMenu: React.FC = () => {
       keyChar: '1',
     },
     {
+      title: 'Pelunasan Supplier (AP)',
+      desc: 'Kelola pembayaran hutang PO ke supplier dengan sistem angsuran FIFO atau Manual.',
+      path: '/penagihan/supplier',
+      icon: ShoppingBag,
+      iconColor: 'text-sky-500',
+      iconBg: 'bg-sky-50',
+      keyChar: '2',
+    },
+    {
       title: 'Manajemen Nota (3-Color)',
       desc: 'Ceklis serah terima fisik Nota Merah (Finance), Putih (Customer), & Kuning (Gudang).',
       path: '/penagihan/nota',
       icon: FileCheck,
       iconColor: 'text-amber-500',
       iconBg: 'bg-amber-50',
-      keyChar: '2',
+      keyChar: '3',
     },
     {
       title: 'History Pembayaran',
@@ -55,16 +64,16 @@ export const PenagihanMenu: React.FC = () => {
       icon: History,
       iconColor: 'text-emerald-500',
       iconBg: 'bg-emerald-50',
-      keyChar: '3',
+      keyChar: '4',
     },
     {
       title: 'Riwayat Penagihan (Log)',
       desc: 'Lihat seluruh log setoran cicilan piutang pelanggan secara kronologis.',
       path: '/penagihan/riwayat',
       icon: FileSpreadsheet,
-      iconColor: 'text-sky-500',
-      iconBg: 'bg-sky-50',
-      keyChar: '4',
+      iconColor: 'text-indigo-500',
+      iconBg: 'bg-indigo-50',
+      keyChar: '5',
     },
   ];
 
@@ -75,9 +84,10 @@ export const PenagihanMenu: React.FC = () => {
   });
 
   useHotkeys('1', () => navigate('/penagihan/piutang'));
-  useHotkeys('2', () => navigate('/penagihan/nota'));
-  useHotkeys('3', () => navigate('/penagihan/tunai'));
-  useHotkeys('4', () => navigate('/penagihan/riwayat'));
+  useHotkeys('2', () => navigate('/penagihan/supplier'));
+  useHotkeys('3', () => navigate('/penagihan/nota'));
+  useHotkeys('4', () => navigate('/penagihan/tunai'));
+  useHotkeys('5', () => navigate('/penagihan/riwayat'));
 
   // Keyboard Grid Navigation
   useHotkeys('right', (e) => {
@@ -92,12 +102,12 @@ export const PenagihanMenu: React.FC = () => {
 
   useHotkeys('down', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev < 2 ? prev + 2 : prev - 2));
+    setFocusedIdx((prev) => (prev + 2 < subMenus.length ? prev + 2 : prev % 2));
   }, { enableOnFormTags: false });
 
   useHotkeys('up', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev >= 2 ? prev - 2 : prev + 2));
+    setFocusedIdx((prev) => (prev >= 2 ? prev - 2 : prev + 4 < subMenus.length ? prev + 4 : prev));
   }, { enableOnFormTags: false });
 
   useHotkeys('enter', (e) => {
@@ -116,8 +126,8 @@ export const PenagihanMenu: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Modul Penagihan (AR)</h1>
-        <p className="text-slate-400">Monitoring piutang aktif, manajemen dokumen fisik nota, dan pencatatan kas masuk.</p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Modul Penagihan (AR & AP)</h1>
+        <p className="text-slate-400">Monitoring piutang aktif, pelunasan hutang supplier, manajemen dokumen fisik nota, dan pencatatan kas masuk/keluar.</p>
       </div>
 
       {/* Stats Cards */}
@@ -162,11 +172,10 @@ export const PenagihanMenu: React.FC = () => {
             <button
               key={menu.path}
               onClick={() => navigate(menu.path)}
-              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${
-                isFocused
+              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${isFocused
                   ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]'
                   : 'border-surface-700/50 hover:bg-surface-800'
-              }`}
+                }`}
             >
               <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
                 <Icon size={24} />
@@ -184,9 +193,6 @@ export const PenagihanMenu: React.FC = () => {
             </button>
           );
         })}
-      </div>
-      <div className="flex justify-end text-[11px] text-slate-500 mt-4">
-        <span>Gunakan <kbd className="shortcut-badge">←</kbd> <kbd className="shortcut-badge">→</kbd> <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> masuk, <kbd className="shortcut-badge">Esc</kbd> keluar</span>
       </div>
     </div>
   );

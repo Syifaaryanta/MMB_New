@@ -143,11 +143,10 @@ export const GudangMenu: React.FC = () => {
             <button
               key={menu.path}
               onClick={() => navigate(menu.path)}
-              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${
-                isFocused
+              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${isFocused
                   ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]'
                   : 'border-surface-700/50 hover:bg-surface-800'
-              }`}
+                }`}
             >
               <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
                 <Icon size={24} />
@@ -162,9 +161,6 @@ export const GudangMenu: React.FC = () => {
             </button>
           );
         })}
-      </div>
-      <div className="text-xs text-slate-500 text-right">
-        Gunakan <kbd className="shortcut-badge">←</kbd> <kbd className="shortcut-badge">→</kbd> <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih menu, <kbd className="shortcut-badge">Enter</kbd> untuk masuk, <kbd className="shortcut-badge">Esc</kbd> untuk keluar.
       </div>
     </div>
   );

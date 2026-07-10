@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatRupiahInput, parseRupiahInput } from '@/lib/utils';
-import { 
-  Users, 
-  Truck, 
-  Search, 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  Users,
+  Truck,
+  Search,
+  Plus,
+  Edit3,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
   X,
   AlertTriangle,
   ArrowLeft,
@@ -42,7 +42,7 @@ interface Supplier {
 export const MasterData: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'customer' | 'supplier'>('customer');
-  
+
   // Data lists
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -71,14 +71,18 @@ export const MasterData: React.FC = () => {
   const [formJatuhTempo, setFormJatuhTempo] = useState(1);
   const [formLimitKredit, setFormLimitKredit] = useState(10000000);
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteCheckState, setDeleteCheckState] = useState<{
+    status: 'idle' | 'checking' | 'cannot_delete' | 'can_delete';
+    amount: number;
+    targetItem: any | null;
+  }>({ status: 'idle', amount: 0, targetItem: null });
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const formKodeRef = useRef<HTMLInputElement>(null);
   const formNamaRef = useRef<HTMLInputElement>(null);
   const formNoTelpRef = useRef<HTMLInputElement>(null);
   const formAlamatRef = useRef<HTMLTextAreaElement>(null);
-  const formJatuhTempoRef = useRef<HTMLSelectElement>(null);
+  const formJatuhTempoRef = useRef<HTMLDivElement>(null);
   const formLimitKreditRef = useRef<HTMLInputElement>(null);
 
   const fetchRecords = async () => {
@@ -153,37 +157,73 @@ export const MasterData: React.FC = () => {
     if (list.length === 0 || selectedRowIdx >= list.length) return;
     openEditModal(list[selectedRowIdx]);
   };
+  // Delete Check trigger
+  const triggerDelete = async () => {
+    const list = activeTab === 'customer' ? customers : suppliers;
+    if (list.length === 0 || selectedRowIdx >= list.length) return;
+    const target = list[selectedRowIdx];
+    if (!target) return;
+
+    setDeleteCheckState({ status: 'checking', amount: 0, targetItem: target });
+
+    try {
+      if (activeTab === 'customer') {
+        const res = await api.get(`/customers/${target.id}`);
+        const balance = Number(res.data.saldo_piutang) || 0;
+        if (balance > 0) {
+          setDeleteCheckState({ status: 'cannot_delete', amount: balance, targetItem: target });
+        } else {
+          setDeleteCheckState({ status: 'can_delete', amount: 0, targetItem: target });
+        }
+      } else {
+        const res = await api.get('/payments/supplier/debt');
+        const supplierDebt = res.data.find((d: any) => d.supplier.id === target.id);
+        const balance = supplierDebt ? Number(supplierDebt.total_hutang) : 0;
+        if (balance > 0) {
+          setDeleteCheckState({ status: 'cannot_delete', amount: balance, targetItem: target });
+        } else {
+          setDeleteCheckState({ status: 'can_delete', amount: 0, targetItem: target });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setDeleteCheckState({ status: 'can_delete', amount: 0, targetItem: target });
+    }
+  };
+
   useHotkeys('f3', (e) => { e.preventDefault(); triggerEdit(); }, { enableOnFormTags: false });
   useHotkeys('f4', (e) => { e.preventDefault(); triggerEdit(); }, { enableOnFormTags: false });
 
   // Delete: Soft delete / deactivate record
-  useHotkeys('del', (e) => {
+  useHotkeys('del, delete', (e) => {
     e.preventDefault();
-    const list = activeTab === 'customer' ? customers : suppliers;
-    if (list.length === 0 || selectedRowIdx >= list.length) return;
-    setShowDeleteConfirm(true);
-  }, { enableOnFormTags: false }, [activeTab, customers, suppliers, selectedRowIdx]);
+    if (showAddEditModal || deleteCheckState.status !== 'idle') return;
+    triggerDelete();
+  }, { enableOnFormTags: false }, [activeTab, customers, suppliers, selectedRowIdx, showAddEditModal, deleteCheckState]);
 
-  // Y key: Confirm delete when confirmation modal is visible
-  useHotkeys('y', (e) => {
-    if (showDeleteConfirm) {
+  // Enter key in confirm/warning delete modals
+  useHotkeys('enter', (e) => {
+    if (deleteCheckState.status === 'can_delete') {
       e.preventDefault();
       handleDelete();
+    } else if (deleteCheckState.status === 'cannot_delete') {
+      e.preventDefault();
+      setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null });
     }
-  }, { enableOnFormTags: false }, [showDeleteConfirm, activeTab, customers, suppliers, selectedRowIdx]);
+  }, { enableOnFormTags: true }, [deleteCheckState, activeTab]);
 
   // ArrowLeft / ArrowRight to slide tabs
   useHotkeys('left', (e) => {
-    if (showAddEditModal || showDeleteConfirm) return;
+    if (showAddEditModal || deleteCheckState.status !== 'idle') return;
     e.preventDefault();
     if (activeTab === 'supplier') handleTabChange('customer');
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [showAddEditModal, deleteCheckState, activeTab]);
 
   useHotkeys('right', (e) => {
-    if (showAddEditModal || showDeleteConfirm) return;
+    if (showAddEditModal || deleteCheckState.status !== 'idle') return;
     e.preventDefault();
     if (activeTab === 'customer') handleTabChange('supplier');
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [showAddEditModal, deleteCheckState, activeTab]);
 
   // ArrowUp / ArrowDown: Navigate items list
   useHotkeys('up', (e) => {
@@ -218,8 +258,8 @@ export const MasterData: React.FC = () => {
     e.preventDefault();
     if (showAddEditModal) {
       setShowAddEditModal(false);
-    } else if (showDeleteConfirm) {
-      setShowDeleteConfirm(false);
+    } else if (deleteCheckState.status !== 'idle') {
+      setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null });
     } else if (isTableFocused) {
       setIsTableFocused(false);
       searchInputRef.current?.focus();
@@ -229,7 +269,7 @@ export const MasterData: React.FC = () => {
     } else {
       navigate('/dashboard');
     }
-  }, { enableOnFormTags: true }, [showAddEditModal, showDeleteConfirm, isTableFocused, searchQuery]);
+  }, { enableOnFormTags: true }, [showAddEditModal, deleteCheckState, isTableFocused, searchQuery]);
 
   // Add / Edit actions
   const openAddModal = () => {
@@ -287,18 +327,17 @@ export const MasterData: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    const list = activeTab === 'customer' ? customers : suppliers;
-    const target = list[selectedRowIdx];
+    const target = deleteCheckState.targetItem;
     if (!target) return;
 
     try {
       const endpoint = activeTab === 'customer' ? '/customers' : '/suppliers';
       await api.delete(`${endpoint}/${target.id}`);
-      setShowDeleteConfirm(false);
+      setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null });
       fetchRecords();
       alert(`Status master data ${activeTab === 'customer' ? 'Pelanggan' : 'Pemasok'} berhasil dinonaktifkan (Soft-Delete).`);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Gagal menghapus data.');
+      alert(err.response?.data?.error || 'Gagal menonaktifkan data master.');
     }
   };
 
@@ -332,16 +371,16 @@ export const MasterData: React.FC = () => {
           <h1 className="text-2xl font-extrabold text-slate-950">Kelola Master Data</h1>
           <p className="text-slate-555 text-sm mt-1">Manajemen profil data master Pelanggan (Customer) dan Pemasok (Supplier).</p>
         </div>
-        
+
         <div className="flex gap-2 text-xs">
-          <button 
+          <button
             onClick={openAddModal}
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/10 flex items-center gap-1.5"
           >
             <Plus size={14} />
             <span>Tambah Data (F2)</span>
           </button>
-          <button 
+          <button
             onClick={triggerEdit}
             disabled={activeList.length === 0}
             className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
@@ -349,8 +388,8 @@ export const MasterData: React.FC = () => {
             <Edit3 size={14} />
             <span>Edit Data (F3)</span>
           </button>
-          <button 
-            onClick={() => setShowDeleteConfirm(true)}
+          <button
+            onClick={triggerDelete}
             disabled={activeList.length === 0}
             className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-red-655 hover:text-red-700 hover:bg-red-50 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
           >
@@ -364,22 +403,20 @@ export const MasterData: React.FC = () => {
       <div className="flex gap-3 border-b border-slate-200 pb-px">
         <button
           onClick={() => handleTabChange('customer')}
-          className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${
-            activeTab === 'customer'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-          }`}
+          className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${activeTab === 'customer'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
         >
           <Users size={16} />
           <span>Master Pelanggan (Customer)</span>
         </button>
         <button
           onClick={() => handleTabChange('supplier')}
-          className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${
-            activeTab === 'supplier'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-          }`}
+          className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${activeTab === 'supplier'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
         >
           <Truck size={16} />
           <span>Master Supplier (Pemasok)</span>
@@ -473,10 +510,12 @@ export const MasterData: React.FC = () => {
                     onClick={() => {
                       setSelectedRowIdx(idx);
                       setIsTableFocused(true);
+                      if (document.activeElement instanceof HTMLElement) {
+                        document.activeElement.blur();
+                      }
                     }}
-                    className={`cursor-pointer transition-colors ${
-                      isSelected ? 'bg-blue-100' : 'hover:bg-slate-50'
-                    }`}
+                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-blue-100' : 'hover:bg-slate-50'
+                      }`}
                   >
                     <td className={`${getTdClass('first')} text-center font-mono ${isSelected ? 'text-blue-950' : 'text-slate-400'}`}>{absoluteIdx}</td>
                     <td className={`${getTdClass('middle')} font-mono font-bold ${isSelected ? 'text-blue-950' : 'text-slate-800'}`}>{item.kode}</td>
@@ -539,7 +578,7 @@ export const MasterData: React.FC = () => {
       {showAddEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowAddEditModal(false)} />
-          <form 
+          <form
             onSubmit={handleSave}
             className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-md w-full mx-4 shadow-2xl animate-scale-in flex flex-col"
           >
@@ -547,7 +586,7 @@ export const MasterData: React.FC = () => {
               <h3 className="text-base font-bold !text-white flex items-center gap-2">
                 <span>{isEditMode ? 'Edit Profil' : 'Tambah Baru'} - {activeTab === 'customer' ? 'Pelanggan' : 'Supplier'}</span>
               </h3>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowAddEditModal(false)}
                 className="!text-white/80 hover:!text-white transition-colors focus:outline-none"
@@ -566,7 +605,13 @@ export const MasterData: React.FC = () => {
                   disabled={isEditMode}
                   value={formKode}
                   onChange={(e) => setFormKode(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formNamaRef.current?.focus())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                      e.preventDefault();
+                      formNamaRef.current?.focus();
+                      formNamaRef.current?.select();
+                    }
+                  }}
                   placeholder="Kode (misal: CUST-09 atau SUPP-11)"
                   className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
@@ -580,7 +625,17 @@ export const MasterData: React.FC = () => {
                   required
                   value={formNama}
                   onChange={(e) => setFormNama(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formNoTelpRef.current?.focus())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                      e.preventDefault();
+                      formNoTelpRef.current?.focus();
+                      formNoTelpRef.current?.select();
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      formKodeRef.current?.focus();
+                      formKodeRef.current?.select();
+                    }
+                  }}
                   placeholder="Nama lengkap..."
                   className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
@@ -593,7 +648,16 @@ export const MasterData: React.FC = () => {
                   type="text"
                   value={formNoTelp}
                   onChange={(e) => setFormNoTelp(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formAlamatRef.current?.focus())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                      e.preventDefault();
+                      formAlamatRef.current?.focus();
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      formNamaRef.current?.focus();
+                      formNamaRef.current?.select();
+                    }
+                  }}
                   placeholder="No. Telp..."
                   className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
@@ -605,7 +669,19 @@ export const MasterData: React.FC = () => {
                   ref={formAlamatRef}
                   value={formAlamat}
                   onChange={(e) => setFormAlamat(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), formJatuhTempoRef.current?.focus())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      formJatuhTempoRef.current?.focus();
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      formNoTelpRef.current?.focus();
+                      formNoTelpRef.current?.select();
+                    } else if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      formJatuhTempoRef.current?.focus();
+                    }
+                  }}
                   rows={2}
                   placeholder="Alamat lengkap..."
                   className="input-field w-full py-2 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white resize-none"
@@ -615,28 +691,55 @@ export const MasterData: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-500 mb-1 font-semibold">Termin Jatuh Tempo</label>
-                  <select
+                  <div
                     ref={formJatuhTempoRef}
-                    required
-                    value={formJatuhTempo}
-                    onChange={(e) => setFormJatuhTempo(Number(e.target.value))}
+                    tabIndex={0}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      const list = [0, 1, 2, 3];
+                      const currIdx = list.indexOf(formJatuhTempo);
+                      if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        setFormJatuhTempo(list[(currIdx + 1) % list.length]);
+                      } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        setFormJatuhTempo(list[(currIdx - 1 + list.length) % list.length]);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        formAlamatRef.current?.focus();
+                      } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
                         e.preventDefault();
                         if (activeTab === 'customer') {
                           formLimitKreditRef.current?.focus();
+                          formLimitKreditRef.current?.select();
                         } else {
                           handleSave(e);
                         }
                       }
                     }}
-                    className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="flex gap-2 p-1 bg-slate-100 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 w-full"
                   >
-                    <option value={0}>Tunai</option>
-                    <option value={1}>1 Bulan</option>
-                    <option value={2}>2 Bulan</option>
-                    <option value={3}>3 Bulan</option>
-                  </select>
+                    {[
+                      { val: 0, label: 'Tunai' },
+                      { val: 1, label: '1 Bln' },
+                      { val: 2, label: '2 Bln' },
+                      { val: 3, label: '3 Bln' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() => {
+                          setFormJatuhTempo(opt.val);
+                          formJatuhTempoRef.current?.focus();
+                        }}
+                        className={`flex-1 py-1.5 text-[11px] font-bold rounded-md transition-all flex items-center justify-center ${formJatuhTempo === opt.val
+                          ? 'bg-blue-600 text-white shadow font-extrabold'
+                          : 'text-slate-550 hover:text-slate-700 bg-white border border-slate-200'
+                          }`}
+                      >
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {activeTab === 'customer' && (
@@ -648,7 +751,15 @@ export const MasterData: React.FC = () => {
                       required
                       value={formatRupiahInput(formLimitKredit)}
                       onChange={(e) => setFormLimitKredit(parseRupiahInput(e.target.value))}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSave(e))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          formJatuhTempoRef.current?.focus();
+                        } else if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSave(e);
+                        }
+                      }}
                       className="input-field w-full py-2.5 text-right font-mono border border-slate-355 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                   </div>
@@ -656,11 +767,17 @@ export const MasterData: React.FC = () => {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs">
-              <span className="text-slate-400">Tekan <kbd className="bg-slate-100 border px-1 py-0.5 rounded text-slate-700 font-bold">Esc</kbd> untuk batal</span>
-              <button 
-                type="submit" 
-                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/10"
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => setShowAddEditModal(false)}
+                className="px-4 py-2 text-xs font-bold border border-slate-250 rounded-lg text-slate-600 bg-white hover:bg-slate-50 shadow-sm flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-slate-300"
+              >
+                <span>Batal (Esc)</span>
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-500/10 focus:outline-none focus:ring-2 focus:ring-blue-450"
               >
                 Simpan Data
               </button>
@@ -669,35 +786,81 @@ export const MasterData: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
+      {/* Delete / Deactivate Checker Modals */}
+      {deleteCheckState.status === 'checking' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-sm w-full mx-4 shadow-2xl animate-scale-in flex flex-col">
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-xs" />
+          <div className="z-10 bg-white border border-slate-200 rounded-xl p-6 max-w-xs w-full shadow-2xl animate-scale-in text-center space-y-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+            <p className="text-xs font-bold text-slate-700">Memeriksa status piutang/hutang...</p>
+          </div>
+        </div>
+      )}
+
+      {deleteCheckState.status === 'cannot_delete' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null })} />
+          <div className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-sm w-full mx-4 shadow-2xl animate-scale-in flex flex-col text-slate-800">
+            <div className="flex items-center gap-3 bg-red-50 border-b border-red-100 px-6 py-4 text-red-750">
+              <AlertTriangle size={24} className="text-red-500 animate-bounce" />
+              <h3 className="text-sm font-black uppercase tracking-wider text-red-800">Tidak Bisa Dihapus</h3>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs font-semibold text-slate-650 leading-relaxed">
+              <p>
+                Data master <strong className="text-slate-900">{deleteCheckState.targetItem?.nama}</strong> tidak dapat dinonaktifkan karena masih memiliki saldo{' '}
+                <strong className="text-red-700">
+                  {activeTab === 'customer' ? 'piutang aktif' : 'hutang belum lunas'} sebesar {formatCurrency(deleteCheckState.amount)}
+                </strong>.
+              </p>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Harap selesaikan pelunasan seluruh transaksi sebelum menonaktifkan data master ini.
+              </p>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null })}
+                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                Tutup (Enter)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteCheckState.status === 'can_delete' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null })} />
+          <div className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-sm w-full mx-4 shadow-2xl animate-scale-in flex flex-col text-slate-800">
             <div className="flex items-center gap-3 bg-red-500/10 border-b border-red-500/20 px-6 py-4 text-red-655">
               <AlertTriangle size={24} className="text-red-500 animate-bounce" />
-              <h3 className="text-base font-bold text-red-700">Deaktivasi Master Data</h3>
+              <h3 className="text-sm font-black uppercase tracking-wider text-red-700">Deaktivasi Master Data</h3>
             </div>
 
             <div className="p-6 space-y-4">
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Apakah Anda yakin ingin menonaktifkan data master {activeTab === 'customer' ? 'Pelanggan' : 'Supplier'} yang terpilih? 
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                Apakah Anda yakin ingin menonaktifkan data master <strong className="text-slate-900">{deleteCheckState.targetItem?.nama}</strong>?
                 Data ini tidak akan muncul dalam opsi transaksi masa depan.
               </p>
             </div>
 
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 text-xs">
-              <button 
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all shadow-sm"
+              <button
+                type="button"
+                onClick={() => setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null })}
+                className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-350"
               >
                 Batal (Esc)
               </button>
-              <button 
+              <button
+                type="button"
                 onClick={handleDelete}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 font-bold transition-all shadow-md"
+                className="px-4 py-2 rounded-lg bg-red-650 hover:bg-red-700 text-red-600 font-bold transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-red-450"
               >
-                Ya, Non-Aktifkan
+                Ya, Non-Aktifkan (Enter)
               </button>
             </div>
           </div>

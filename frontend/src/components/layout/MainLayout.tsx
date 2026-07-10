@@ -29,6 +29,32 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const [focusedNavIdx, setFocusedNavIdx] = useState<number>(0);
   const [calendarFocused, setCalendarFocused] = useState(false);
 
+  const [realtimeDate, setRealtimeDate] = useState('');
+  const [realtimeClock, setRealtimeClock] = useState('');
+
+  React.useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+      const clockStr = now.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      setRealtimeDate(dateStr);
+      setRealtimeClock(clockStr);
+    };
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   React.useEffect(() => {
     const handleFocusChange = (e: Event) => {
       setCalendarFocused((e as CustomEvent).detail);
@@ -179,9 +205,8 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center px-0' : ''} ${
-                isFocused ? 'border-2 border-white bg-white/10 shadow-lg shadow-white/5 ring-1 ring-white/30' : ''
-              }`}
+              className={`nav-item ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center px-0' : ''} ${isFocused ? 'border-2 border-white bg-white/10 shadow-lg shadow-white/5 ring-1 ring-white/30' : ''
+                }`}
               title={isCollapsed ? item.label : undefined}
               onClick={() => setIsMobileOpen(false)}
             >
@@ -196,9 +221,8 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       <div className="p-4 border-t border-blue-600/30 flex flex-col gap-2">
         <Link
           to="/profile"
-          className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 text-blue-100 transition-colors ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
+          className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 text-blue-100 transition-colors ${isCollapsed ? 'justify-center' : ''
+            }`}
           title="User Profile (Ctrl+Shift+P)"
         >
           <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-sm font-semibold text-white">
@@ -213,9 +237,8 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         </Link>
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/20 hover:text-red-200 text-blue-200 transition-colors ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
+          className={`flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/20 hover:text-red-200 text-blue-200 transition-colors ${isCollapsed ? 'justify-center' : ''
+            }`}
           title="Keluar"
         >
           <LogOut size={20} />
@@ -268,12 +291,21 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Quick Status / Shortcuts Help info */}
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
-              <span>Shortcut Global:</span>
-              <kbd className="px-1.5 py-0.5 bg-surface-600 border border-surface-700 rounded font-mono text-[10px] text-slate-600">Ctrl+Shift+P</kbd>
-              <span>Profil</span>
+          <div className="flex items-center gap-6">
+            {/* Real-time Clock & Date */}
+            <div className="hidden sm:flex items-center gap-3">
+              {/* Attractive Real-time Clock */}
+              <div className="bg-surface-900/60 border border-surface-700/80 px-4 py-1.5 rounded-full text-slate-400 font-mono text-xs flex items-center gap-2.5 shadow-inner">
+                <span className="font-semibold text-slate-350 text-[11px]">{realtimeDate}</span>
+                <span className="text-surface-700 font-black">|</span>
+                <span className="font-extrabold text-blue-500 tracking-wider bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/15">{realtimeClock}</span>
+              </div>
+
+              {/* Small Keyboard Shortcut Badge */}
+              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 bg-surface-900/25 border border-surface-700/40 rounded-lg px-2.5 py-1" title="Tekan Ctrl+Shift+P untuk Profil">
+                <kbd className="px-1 py-0.5 bg-surface-700 border border-surface-650 rounded font-mono text-[9px] text-slate-300 font-bold uppercase shadow-sm">Ctrl+Shift+P</kbd>
+                <span className="font-semibold">Profil</span>
+              </div>
             </div>
 
             {/* Profile trigger */}

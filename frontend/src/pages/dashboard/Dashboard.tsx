@@ -390,7 +390,7 @@ export const Dashboard: React.FC = () => {
                           } catch { return str; }
                         }}
                       />
-                      <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => `Rp ${val / 1000000}M`} />
+                      <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => `Rp ${val / 1000000}Jt`} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#1e2535', borderColor: '#3d4f6b', borderRadius: '8px' }}
                         labelStyle={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}

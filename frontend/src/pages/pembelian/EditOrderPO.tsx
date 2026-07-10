@@ -220,12 +220,18 @@ export const EditOrderPO: React.FC = () => {
     if (!queryStr) return;
     setIsLoading(true);
     try {
-      const res = await api.get('/purchases?status=draft');
-      const allDrafts = res.data.data || [];
-      const match = allDrafts.find((d: any) => d.no_order.toLowerCase() === queryStr.trim().toLowerCase());
+      const res = await api.get('/purchases?limit=1000');
+      const allPos = res.data.data || [];
+      const match = allPos.find((d: any) => d.no_order.toLowerCase() === queryStr.trim().toLowerCase());
 
       if (!match) {
         setShowPoNotFoundPopup(true);
+        setIsLoading(false);
+        return;
+      }
+
+      if (match.status === 'received') {
+        showToast('PO ini sudah divalidasi/diterima di gudang dan tidak dapat diedit lagi', 'error');
         setIsLoading(false);
         return;
       }
@@ -624,7 +630,7 @@ export const EditOrderPO: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-white">Edit Order PO</h1>
-          <p className="text-slate-400">Ubah data Purchase Order yang berstatus Draft</p>
+          <p className="text-slate-400">Ubah data Purchase Order yang berstatus Draft atau Belum Diterima</p>
         </div>
         {activePo && (
           <div className="flex gap-2">
@@ -643,7 +649,7 @@ export const EditOrderPO: React.FC = () => {
           <div className="md:col-span-3 h-full bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center space-y-4">
             <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
               <Search size={18} className="text-primary-600" />
-              <span>Cari Draft PO</span>
+              <span>Cari PO</span>
             </h3>
             <form onSubmit={handlePoSearchSubmit} className="space-y-4">
               <div>
@@ -673,7 +679,7 @@ export const EditOrderPO: React.FC = () => {
             <div className="space-y-3">
               <h4 className="font-bold text-slate-800 uppercase tracking-wider">Petunjuk Edit PO</h4>
               <ul className="space-y-2 list-decimal list-inside text-slate-500 leading-relaxed">
-                <li>Cari nomor order PO bertipe <strong>Draft</strong> untuk melakukan perubahan.</li>
+                <li>Cari nomor order PO bertipe <strong>Draft</strong> atau <strong>Belum Diterima</strong> untuk melakukan perubahan.</li>
                 <li>Masukkan nomor order lengkap atau cari di menu <strong>Draft Order</strong>.</li>
                 <li>Modul ini memungkinkan penambahan barang, koreksi qty, harga beli, dan termin pembayaran sebelum order diselesaikan.</li>
               </ul>

@@ -10,70 +10,60 @@ import {
   DollarSign, 
   Calendar, 
   FileText, 
-  CreditCard,
+  ShoppingBag,
   AlertTriangle,
   CheckCircle,
   X,
   Printer,
-  Save,
   Truck
 } from 'lucide-react';
 
-interface Customer {
+interface Supplier {
   id: string;
   kode: string;
   nama: string;
   alamat: string;
   no_telp: string;
-  limit_kredit: string;
-  saldo_piutang: string;
+  aktif: boolean;
 }
 
-interface CustomerGroup {
-  customer: Customer;
-  total_piutang: number;
-  invoices: InvoiceDetail[];
+interface SupplierGroup {
+  supplier: Supplier;
+  total_hutang: number;
+  purchases: PurchaseDetail[];
 }
 
-interface InvoiceDetail {
+interface PurchaseDetail {
   id: string;
   no_order: string;
-  no_faktur: string | null;
   order_date: string;
-  due_date: string | null;
+  terms: string;
   subtotal: number;
-  biaya_pengiriman: string; // Decimal from database
-  extra_charge_amount?: string | number;
-  extra_charge_desc?: string | null;
+  biaya_pengiriman: string;
   paid_amount: number;
   remaining: number;
-  is_overdue: boolean;
-  diantar: boolean;
-  limit_bulan: number;
-  sender_note: string | null;
 }
 
-export const PiutangAktif: React.FC = () => {
+export const PelunasanSupplier: React.FC = () => {
   const navigate = useNavigate();
-  const [data, setData] = useState<CustomerGroup[]>([]);
-  const [filteredData, setFilteredData] = useState<CustomerGroup[]>([]);
+  const [data, setData] = useState<SupplierGroup[]>([]);
+  const [filteredData, setFilteredData] = useState<SupplierGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'lancar' | 'overdue'>('all');
 
-  // Expanded customers
-  const [expandedCustIds, setExpandedCustIds] = useState<Record<string, boolean>>({});
+  // Expanded suppliers
+  const [expandedSupplierIds, setExpandedSupplierIds] = useState<Record<string, boolean>>({});
 
   // Keyboard navigation
-  const [selectedCustIdx, setSelectedCustIdx] = useState<number>(0);
-  const [selectedInvoiceIdx, setSelectedInvoiceIdx] = useState<number | null>(null);
+  const [selectedSuppIdx, setSelectedSuppIdx] = useState<number>(0);
+  const [selectedPurchaseIdx, setSelectedPurchaseIdx] = useState<number | null>(null);
 
-  // Refs for focusing
+  // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal payment setoran (global / multi-nota)
+  // Modal payment setoran
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMode, setPaymentMode] = useState<'fifo' | 'manual'>('fifo');
   const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
@@ -82,10 +72,10 @@ export const PiutangAktif: React.FC = () => {
   const [paymentNote, setPaymentNote] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
 
-  // Modal invoice detail (F4)
+  // Modal PO detail (F4)
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null);
-  const [detailInvoice, setDetailInvoice] = useState<any | null>(null);
+  const [detailPurchaseId, setDetailPurchaseId] = useState<string | null>(null);
+  const [detailPurchase, setDetailPurchase] = useState<any | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   // Modal print receipt
@@ -95,8 +85,9 @@ export const PiutangAktif: React.FC = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get(`/payments/piutang?q=${searchQuery}`);
+      const res = await api.get(`/payments/supplier/debt?q=${searchQuery}`);
       setData(res.data);
+      setFilteredData(res.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -104,91 +95,49 @@ export const PiutangAktif: React.FC = () => {
     }
   };
 
-  // Fetch initial data
   useEffect(() => {
     fetchData();
   }, [searchQuery]);
 
-  // Apply status filter client side
+  // Reset selection
   useEffect(() => {
-    if (statusFilter === 'all') {
-      setFilteredData(data);
-      return;
-    }
-
-    const filtered = data
-      .map((group) => {
-        const matchingInvoices = group.invoices.filter((inv) => {
-          if (statusFilter === 'overdue') return inv.is_overdue;
-          if (statusFilter === 'lancar') return !inv.is_overdue;
-          return true;
-        });
-
-        return {
-          ...group,
-          invoices: matchingInvoices,
-          total_piutang: matchingInvoices.reduce((sum, inv) => sum + inv.remaining, 0),
-        };
-      })
-      .filter((group) => group.invoices.length > 0);
-
-    setFilteredData(filtered);
-  }, [data, statusFilter]);
-
-  // Reset selected indexes when filtered data changes
-  useEffect(() => {
-    setSelectedCustIdx(0);
-    setSelectedInvoiceIdx(null);
+    setSelectedSuppIdx(0);
+    setSelectedPurchaseIdx(null);
   }, [filteredData]);
 
-  // Keyboard Shortcuts
-  // F1: Focus Search Customer
+  // Shortcuts
   useHotkeys('f1', (e) => {
     e.preventDefault();
     searchInputRef.current?.focus();
     searchInputRef.current?.select();
   }, { enableOnFormTags: true });
 
-  // F3: Toggle Status Filter
-  useHotkeys('f3', (e) => {
-    e.preventDefault();
-    setStatusFilter((curr) => {
-      if (curr === 'all') return 'overdue';
-      if (curr === 'overdue') return 'lancar';
-      return 'all';
-    });
-  }, { enableOnFormTags: true });
-
-  // F4: Detail transaction nota
   useHotkeys('f4', (e) => {
     e.preventDefault();
     openDetailModal();
   }, { enableOnFormTags: false });
 
-  // F10: Process setoran payment
   useHotkeys('f10', (e) => {
     e.preventDefault();
     openPaymentModal();
   }, { enableOnFormTags: false });
 
-  // ArrowUp / ArrowDown: Navigation
   useHotkeys('up', (e) => {
     e.preventDefault();
     if (filteredData.length === 0) return;
 
-    if (selectedInvoiceIdx !== null && selectedInvoiceIdx > 0) {
-      setSelectedInvoiceIdx(selectedInvoiceIdx - 1);
-    } else if (selectedInvoiceIdx === 0) {
-      setSelectedInvoiceIdx(null); // return to customer head
-    } else if (selectedCustIdx > 0) {
-      const prevIdx = selectedCustIdx - 1;
-      setSelectedCustIdx(prevIdx);
-      const prevCust = filteredData[prevIdx];
-      // if previous customer is expanded, focus their last invoice
-      if (expandedCustIds[prevCust.customer.id] && prevCust.invoices.length > 0) {
-        setSelectedInvoiceIdx(prevCust.invoices.length - 1);
+    if (selectedPurchaseIdx !== null && selectedPurchaseIdx > 0) {
+      setSelectedPurchaseIdx(selectedPurchaseIdx - 1);
+    } else if (selectedPurchaseIdx === 0) {
+      setSelectedPurchaseIdx(null);
+    } else if (selectedSuppIdx > 0) {
+      const prevIdx = selectedSuppIdx - 1;
+      setSelectedSuppIdx(prevIdx);
+      const prevSupp = filteredData[prevIdx];
+      if (expandedSupplierIds[prevSupp.supplier.id] && prevSupp.purchases.length > 0) {
+        setSelectedPurchaseIdx(prevSupp.purchases.length - 1);
       } else {
-        setSelectedInvoiceIdx(null);
+        setSelectedPurchaseIdx(null);
       }
     }
   }, { enableOnFormTags: false });
@@ -197,30 +146,28 @@ export const PiutangAktif: React.FC = () => {
     e.preventDefault();
     if (filteredData.length === 0) return;
 
-    const currentCust = filteredData[selectedCustIdx];
-    const isExpanded = expandedCustIds[currentCust.customer.id];
+    const currentSupp = filteredData[selectedSuppIdx];
+    const isExpanded = expandedSupplierIds[currentSupp.supplier.id];
 
-    if (isExpanded && (selectedInvoiceIdx === null || selectedInvoiceIdx < currentCust.invoices.length - 1)) {
-      setSelectedInvoiceIdx(selectedInvoiceIdx === null ? 0 : selectedInvoiceIdx + 1);
-    } else if (selectedCustIdx < filteredData.length - 1) {
-      setSelectedCustIdx(selectedCustIdx + 1);
-      setSelectedInvoiceIdx(null);
+    if (isExpanded && (selectedPurchaseIdx === null || selectedPurchaseIdx < currentSupp.purchases.length - 1)) {
+      setSelectedPurchaseIdx(selectedPurchaseIdx === null ? 0 : selectedPurchaseIdx + 1);
+    } else if (selectedSuppIdx < filteredData.length - 1) {
+      setSelectedSuppIdx(selectedSuppIdx + 1);
+      setSelectedPurchaseIdx(null);
     }
   }, { enableOnFormTags: false });
 
-  // Enter: Expand/Collapse
   useHotkeys('enter', (e) => {
     if (showPaymentModal || showDetailModal || showReceiptModal) return;
     e.preventDefault();
     if (filteredData.length === 0) return;
-    const custId = filteredData[selectedCustIdx].customer.id;
-    setExpandedCustIds((prev) => ({
+    const suppId = filteredData[selectedSuppIdx].supplier.id;
+    setExpandedSupplierIds((prev) => ({
       ...prev,
-      [custId]: !prev[custId],
+      [suppId]: !prev[suppId],
     }));
   }, { enableOnFormTags: false });
 
-  // Escape: Reset search / return
   useHotkeys('esc', (e) => {
     e.preventDefault();
     if (showPaymentModal) {
@@ -237,22 +184,21 @@ export const PiutangAktif: React.FC = () => {
   }, { enableOnFormTags: true });
 
   const openDetailModal = async () => {
-    if (selectedCustIdx === null) return;
-    const customerGroup = filteredData[selectedCustIdx];
-    if (!customerGroup || selectedInvoiceIdx === null) return;
-    const inv = customerGroup.invoices[selectedInvoiceIdx];
-    if (!inv) return;
+    if (selectedSuppIdx === null || selectedPurchaseIdx === null) return;
+    const group = filteredData[selectedSuppIdx];
+    const pur = group.purchases[selectedPurchaseIdx];
+    if (!pur) return;
 
-    setDetailInvoiceId(inv.id);
+    setDetailPurchaseId(pur.id);
     setShowDetailModal(true);
     setIsLoadingDetail(true);
 
     try {
-      const res = await api.get(`/sales/${inv.id}`);
-      setDetailInvoice(res.data);
+      const res = await api.get(`/purchases/${pur.id}`);
+      setDetailPurchase(res.data);
     } catch (err) {
       console.error(err);
-      alert('Gagal mengambil detail invoice');
+      alert('Gagal mengambil detail PO');
       setShowDetailModal(false);
     } finally {
       setIsLoadingDetail(false);
@@ -260,11 +206,10 @@ export const PiutangAktif: React.FC = () => {
   };
 
   const openPaymentModal = () => {
-    if (selectedCustIdx === null) return;
-    const customerGroup = filteredData[selectedCustIdx];
-    if (!customerGroup) return;
+    if (selectedSuppIdx === null) return;
+    const group = filteredData[selectedSuppIdx];
+    if (!group) return;
 
-    // Reset payment values
     setPaymentMode('fifo');
     setPaymentAmount('');
     setPaymentMethod('cash');
@@ -272,19 +217,18 @@ export const PiutangAktif: React.FC = () => {
     setPaymentDate(new Date().toISOString().slice(0, 10));
 
     const initialManual: Record<string, number> = {};
-    customerGroup.invoices.forEach(inv => {
-      initialManual[inv.id] = 0;
+    group.purchases.forEach(pur => {
+      initialManual[pur.id] = 0;
     });
     setManualAmounts(initialManual);
 
     setShowPaymentModal(true);
   };
 
-  // Inline update for Travel/Bus Delivery Costs
-  const handleUpdateOngkir = async (saleId: string, amount: number) => {
+  const handleUpdateOngkir = async (purchaseId: string, amount: number) => {
     try {
-      await api.patch(`/sales/${saleId}/ongkir`, { biaya_pengiriman: amount });
-      fetchData(); // reload values
+      await api.patch(`/purchases/${purchaseId}/ongkir`, { biaya_pengiriman: amount });
+      fetchData();
     } catch (err) {
       console.error(err);
       alert('Gagal mengupdate ongkir');
@@ -293,11 +237,11 @@ export const PiutangAktif: React.FC = () => {
 
   const submitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    const customerGroup = filteredData[selectedCustIdx];
-    if (!customerGroup) return;
+    const group = filteredData[selectedSuppIdx];
+    if (!group) return;
 
     let payload: any = {
-      customer_id: customerGroup.customer.id,
+      supplier_id: group.supplier.id,
       payment_date: paymentDate,
       payment_method: paymentMethod,
       mode: paymentMode,
@@ -313,10 +257,10 @@ export const PiutangAktif: React.FC = () => {
     } else {
       const activeAllocations = Object.entries(manualAmounts)
         .filter(([_, amount]) => amount > 0)
-        .map(([sale_id, amount]) => ({ sale_id, amount }));
+        .map(([purchase_id, amount]) => ({ purchase_id, amount }));
 
       if (activeAllocations.length === 0) {
-        alert('Silakan isi nominal pembayaran minimal untuk satu nota.');
+        alert('Silakan isi nominal pembayaran minimal untuk satu nota PO.');
         return;
       }
       payload.allocations = activeAllocations;
@@ -324,21 +268,17 @@ export const PiutangAktif: React.FC = () => {
     }
 
     try {
-      const res = await api.post('/payments/session', payload);
+      const res = await api.post('/payments/supplier/session', payload);
       setShowPaymentModal(false);
-      fetchData(); // reload list
+      fetchData();
 
-      // Load session details for printing receipt
+      // Load session for receipt
       const sessionDetail = await api.get(`/payments/sessions/${res.data.billingSession.id}`);
       setReceiptSession(sessionDetail.data);
       setShowReceiptModal(true);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Gagal menyimpan setoran penagihan');
+      alert(err.response?.data?.error || 'Gagal menyimpan pembayaran ke supplier');
     }
-  };
-
-  const printReceipt = () => {
-    window.print();
   };
 
   const formatCurrency = (val: number) => {
@@ -358,21 +298,19 @@ export const PiutangAktif: React.FC = () => {
     });
   };
 
-  // Calculated variables for FIFO preview
   const getFifoAllocations = () => {
-    const customerGroup = filteredData[selectedCustIdx];
-    if (!customerGroup || paymentMode !== 'fifo' || !paymentAmount) return [];
+    const group = filteredData[selectedSuppIdx];
+    if (!group || paymentMode !== 'fifo' || !paymentAmount) return [];
 
     let remainingUang = Number(paymentAmount);
-    return customerGroup.invoices.map((inv) => {
-      const sisa = inv.remaining;
+    return group.purchases.map((pur) => {
+      const sisa = pur.remaining;
       const allocated = Math.min(remainingUang, sisa);
       remainingUang -= allocated;
 
       return {
-        id: inv.id,
-        no_order: inv.no_order,
-        no_faktur: inv.no_faktur,
+        id: pur.id,
+        no_order: pur.no_order,
         remaining: sisa,
         allocated,
         remainingAfter: sisa - allocated,
@@ -388,8 +326,8 @@ export const PiutangAktif: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Penagihan Piutang Customer (AR)</h1>
-          <p className="text-slate-400 text-sm">Monitoring daftar invoice kredit aktif, input biaya travel/bus, dan catat angsuran piutang global.</p>
+          <h1 className="text-2xl font-extrabold text-white">Pelunasan Hutang Supplier (AP)</h1>
+          <p className="text-slate-400 text-sm">Kelola pembayaran hutang PO ke supplier, input ongkir pengiriman, dan catat angsuran pembayaran.</p>
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
@@ -399,15 +337,15 @@ export const PiutangAktif: React.FC = () => {
             className="btn-primary flex items-center gap-1.5 disabled:opacity-50"
           >
             <DollarSign size={14} />
-            <span>Bayar Tagihan Multi-Nota (F10)</span>
+            <span>Bayar PO Multi-Nota (F10)</span>
           </button>
           <button 
             onClick={openDetailModal} 
-            disabled={selectedInvoiceIdx === null}
+            disabled={selectedPurchaseIdx === null}
             className="card bg-surface-800 hover:bg-surface-750 px-3 py-2 text-slate-300 font-bold border border-surface-700/60 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
           >
             <FileText size={14} />
-            <span>Detail Nota (F4)</span>
+            <span>Detail PO (F4)</span>
           </button>
         </div>
       </div>
@@ -416,13 +354,13 @@ export const PiutangAktif: React.FC = () => {
       <div className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search */}
         <div className="relative">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Pelanggan (F1)</label>
+          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Supplier (F1)</label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Nama pelanggan..."
+              placeholder="Nama supplier..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input-field w-full pl-9 py-2 text-xs"
@@ -430,39 +368,14 @@ export const PiutangAktif: React.FC = () => {
           </div>
         </div>
 
-        {/* Status Filter */}
-        <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Filter Status Piutang (F3)</label>
-          <div className="flex gap-1.5 p-1 bg-surface-900 border border-surface-750 rounded-lg text-xs">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${statusFilter === 'all' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Semua
-            </button>
-            <button
-              onClick={() => setStatusFilter('overdue')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${statusFilter === 'overdue' ? 'bg-danger-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Overdue
-            </button>
-            <button
-              onClick={() => setStatusFilter('lancar')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${statusFilter === 'lancar' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Lancar
-            </button>
-          </div>
-        </div>
-
         {/* Hints */}
-        <div className="text-right flex flex-col justify-end text-[10px] text-slate-400 space-y-1">
-          <p>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih pelanggan/nota.</p>
-          <p>Tekan <kbd className="shortcut-badge">Enter</kbd> untuk expand/collapse rincian invoice.</p>
+        <div className="text-right flex flex-col justify-end text-[10px] text-slate-400 space-y-1 col-span-2">
+          <p>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih supplier/PO.</p>
+          <p>Tekan <kbd className="shortcut-badge">Enter</kbd> untuk expand/collapse daftar PO.</p>
         </div>
       </div>
 
-      {/* Customer List Card Grid */}
+      {/* Supplier List */}
       {isLoading ? (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
@@ -471,18 +384,18 @@ export const PiutangAktif: React.FC = () => {
         </div>
       ) : filteredData.length === 0 ? (
         <div className="card p-12 text-center text-slate-500 italic text-xs border border-surface-700">
-          Tidak ada piutang aktif yang ditemukan berdasarkan filter pencarian.
+          Tidak ada hutang aktif ke supplier yang ditemukan.
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredData.map((group, cIdx) => {
-            const cust = group.customer;
-            const isExpanded = !!expandedCustIds[cust.id];
-            const isSelected = selectedCustIdx === cIdx && selectedInvoiceIdx === null;
+          {filteredData.map((group, sIdx) => {
+            const supp = group.supplier;
+            const isExpanded = !!expandedSupplierIds[supp.id];
+            const isSelected = selectedSuppIdx === sIdx && selectedPurchaseIdx === null;
 
             return (
               <div 
-                key={cust.id} 
+                key={supp.id} 
                 className={`card p-0 overflow-hidden border transition-all ${
                   isSelected ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-surface-700/60'
                 }`}
@@ -490,9 +403,9 @@ export const PiutangAktif: React.FC = () => {
                 {/* Header Row */}
                 <div 
                   onClick={() => {
-                    setSelectedCustIdx(cIdx);
-                    setSelectedInvoiceIdx(null);
-                    setExpandedCustIds(prev => ({ ...prev, [cust.id]: !prev[cust.id] }));
+                    setSelectedSuppIdx(sIdx);
+                    setSelectedPurchaseIdx(null);
+                    setExpandedSupplierIds(prev => ({ ...prev, [supp.id]: !prev[supp.id] }));
                   }}
                   className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-surface-750/30 ${
                     isSelected ? 'bg-surface-750/50' : 'bg-surface-800/40'
@@ -504,93 +417,71 @@ export const PiutangAktif: React.FC = () => {
                     </span>
                     <div>
                       <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                        {cust.nama}
-                        <span className="font-mono text-[10px] text-slate-400 bg-surface-900 px-1.5 py-0.5 rounded">{cust.kode}</span>
+                        {supp.nama}
+                        <span className="font-mono text-[10px] text-slate-400 bg-surface-900 px-1.5 py-0.5 rounded">{supp.kode}</span>
                       </h3>
-                      <p className="text-slate-400 text-xs mt-0.5 truncate max-w-md">{cust.alamat}</p>
+                      <p className="text-slate-400 text-xs mt-0.5 truncate max-w-md">{supp.alamat || '-'}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6 self-end sm:self-center text-right">
-                    <div>
-                      <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Limit Kredit</span>
-                      <span className="text-xs text-slate-300 font-semibold">{formatCurrency(Number(cust.limit_kredit))}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Total Piutang</span>
-                      <span className="text-sm font-black text-rose-400 currency">{formatCurrency(group.total_piutang)}</span>
-                    </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Total Hutang PO</span>
+                    <span className="text-sm font-black text-emerald-400 currency">{formatCurrency(group.total_hutang)}</span>
                   </div>
                 </div>
-                {/* Invoices expanded section */}
+
+                {/* Purchases Table */}
                 {isExpanded && (
                   <div className="border-t border-surface-700/60 bg-surface-900/30 overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="bg-surface-800/30 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-surface-750">
                           <th className="p-3 w-8 text-center">No</th>
-                          <th className="p-3">No. Faktur</th>
+                          <th className="p-3">No. PO</th>
                           <th className="p-3">Tgl Order</th>
-                          <th className="p-3">Jatuh Tempo</th>
-                          <th className="p-3 text-right">Subtotal Barang</th>
-                          <th className="p-3 text-right w-36">Biaya Tambahan (SO)</th>
-                          <th className="p-3 text-center w-36">Ongkir Travel/Bus</th>
-                          <th className="p-3 text-right">Total Nota</th>
+                          <th className="p-3">Subtotal Barang</th>
+                          <th className="p-3 text-center w-36">Ongkir PO</th>
+                          <th className="p-3 text-right">Total Tagihan</th>
                           <th className="p-3 text-right">Terbayar</th>
-                          <th className="p-3 text-right">Sisa Tagihan</th>
-                          <th className="p-3 text-center">Status</th>
+                          <th className="p-3 text-right">Sisa Hutang</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-750">
-                        {group.invoices.map((inv, iIdx) => {
-                          const isInvSelected = selectedCustIdx === cIdx && selectedInvoiceIdx === iIdx;
-                          const grandTotal = Number(inv.subtotal) + Number(inv.biaya_pengiriman);
-                          const itemsSubtotal = Number(inv.subtotal) - Number(inv.extra_charge_amount || 0);
- 
+                        {group.purchases.map((pur, pIdx) => {
+                          const isPurSelected = selectedSuppIdx === sIdx && selectedPurchaseIdx === pIdx;
+                          const grandTotal = Number(pur.subtotal) + Number(pur.biaya_pengiriman);
+
                           return (
                             <tr
-                              key={inv.id}
+                              key={pur.id}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedCustIdx(cIdx);
-                                setSelectedInvoiceIdx(iIdx);
+                                setSelectedSuppIdx(sIdx);
+                                setSelectedPurchaseIdx(pIdx);
                               }}
                               className={`hover:bg-surface-750/30 cursor-pointer ${
-                                isInvSelected ? 'bg-primary-950/20 text-white font-semibold' : 'text-slate-300'
+                                isPurSelected ? 'bg-primary-950/20 text-white font-semibold' : 'text-slate-300'
                               }`}
                             >
-                              <td className="p-3 text-center text-slate-500">{iIdx + 1}</td>
-                              <td className="p-3 font-mono font-bold text-slate-200">
-                                {inv.no_faktur || inv.no_order}
-                              </td>
-                              <td className="p-3">{formatDate(inv.order_date)}</td>
-                              <td className={`p-3 font-bold ${inv.is_overdue ? 'text-danger-400' : 'text-slate-400'}`}>
-                                {formatDate(inv.due_date)}
-                              </td>
-                              <td className="p-3 text-right font-mono">{formatCurrency(itemsSubtotal)}</td>
-                              <td className="p-3 text-right">
-                                <span className="font-mono block text-slate-300">{formatCurrency(Number(inv.extra_charge_amount || 0))}</span>
-                                {inv.extra_charge_desc && (
-                                  <span className="text-[9px] text-slate-400 block mt-0.5 truncate max-w-[120px] font-medium" title={inv.extra_charge_desc}>
-                                    {inv.extra_charge_desc}
-                                  </span>
-                                )}
-                              </td>
+                              <td className="p-3 text-center text-slate-500">{pIdx + 1}</td>
+                              <td className="p-3 font-mono font-bold text-slate-200">{pur.no_order}</td>
+                              <td className="p-3">{formatDate(pur.order_date)}</td>
+                              <td className="p-3 text-right font-mono">{formatCurrency(Number(pur.subtotal))}</td>
                               <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center justify-center gap-1">
                                   <Truck size={12} className="text-slate-400" />
                                   <input
                                     type="text"
-                                    defaultValue={formatRupiahInput(Number(inv.biaya_pengiriman))}
+                                    defaultValue={formatRupiahInput(Number(pur.biaya_pengiriman))}
                                     onBlur={(e) => {
                                       const val = parseRupiahInput(e.target.value);
-                                      handleUpdateOngkir(inv.id, val);
+                                      handleUpdateOngkir(pur.id, val);
                                     }}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
                                         e.preventDefault();
                                         const val = parseRupiahInput((e.target as HTMLInputElement).value);
-                                        handleUpdateOngkir(inv.id, val);
+                                        handleUpdateOngkir(pur.id, val);
                                         (e.target as HTMLInputElement).blur();
                                       }
                                     }}
@@ -599,19 +490,8 @@ export const PiutangAktif: React.FC = () => {
                                 </div>
                               </td>
                               <td className="p-3 text-right font-mono text-white font-bold">{formatCurrency(grandTotal)}</td>
-                              <td className="p-3 text-right font-mono text-emerald-400">{formatCurrency(Number(inv.paid_amount))}</td>
-                              <td className="p-3 text-right font-mono text-rose-400 font-bold">{formatCurrency(Number(inv.remaining))}</td>
-                              <td className="p-3 text-center">
-                                {inv.is_overdue ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-danger-950 text-danger-400 border border-danger-700/30 inline-flex items-center gap-1">
-                                    <AlertTriangle size={10} /> Overdue
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-700/30 inline-flex items-center gap-1">
-                                    <CheckCircle size={10} /> Lancar
-                                  </span>
-                                )}
-                              </td>
+                              <td className="p-3 text-right font-mono text-emerald-400">{formatCurrency(Number(pur.paid_amount))}</td>
+                              <td className="p-3 text-right font-mono text-rose-400 font-bold">{formatCurrency(Number(pur.remaining))}</td>
                             </tr>
                           );
                         })}
@@ -625,8 +505,8 @@ export const PiutangAktif: React.FC = () => {
         </div>
       )}
 
-      {/* Setoran Payment Modal (F10) */}
-      {showPaymentModal && filteredData[selectedCustIdx] && (
+      {/* Setoran Payment Modal */}
+      {showPaymentModal && filteredData[selectedSuppIdx] && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <form 
             onSubmit={submitPayment}
@@ -635,7 +515,7 @@ export const PiutangAktif: React.FC = () => {
             <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <DollarSign size={20} className="text-emerald-400" />
-                <span>Pencatatan Setoran Pembayaran Multi-Nota</span>
+                <span>Pencatatan Pembayaran Multi-PO Supplier</span>
               </h3>
               <button 
                 type="button" 
@@ -647,12 +527,11 @@ export const PiutangAktif: React.FC = () => {
             </div>
 
             <div className="p-3 bg-surface-900 border border-surface-750 rounded-lg text-xs space-y-1 shrink-0">
-              <p className="text-slate-400">Customer: <strong className="text-slate-200">{filteredData[selectedCustIdx].customer.nama} ({filteredData[selectedCustIdx].customer.kode})</strong></p>
-              <p className="text-slate-400">Total Piutang Aktif: <strong className="text-rose-400">{formatCurrency(filteredData[selectedCustIdx].total_piutang)}</strong></p>
+              <p className="text-slate-400">Supplier: <strong className="text-slate-200">{filteredData[selectedSuppIdx].supplier.nama}</strong></p>
+              <p className="text-slate-400">Total Hutang PO: <strong className="text-emerald-400">{formatCurrency(filteredData[selectedSuppIdx].total_hutang)}</strong></p>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-1 space-y-3 py-1">
-              {/* Payment Mode Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Mode Pembayaran</label>
                 <div className="flex gap-2">
@@ -665,7 +544,7 @@ export const PiutangAktif: React.FC = () => {
                         : 'bg-surface-900 border-surface-750 text-slate-400'
                     }`}
                   >
-                    FIFO Otomatis (Nota Terlama)
+                    FIFO Otomatis (PO Terlama)
                   </button>
                   <button
                     type="button"
@@ -676,13 +555,13 @@ export const PiutangAktif: React.FC = () => {
                         : 'bg-surface-900 border-surface-750 text-slate-400'
                     }`}
                   >
-                    Pilihan Manual Per Nota
+                    Pilihan Manual Per PO
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Tanggal Setoran</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Tanggal Pembayaran</label>
                 <input
                   type="date"
                   value={paymentDate}
@@ -692,34 +571,30 @@ export const PiutangAktif: React.FC = () => {
                 />
               </div>
 
-              {/* FIFO Mode Amount Input & Live Preview */}
               {paymentMode === 'fifo' ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1">Nominal Setoran (Rp)</label>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1">Nominal Pembayaran (Rp)</label>
                     <input
                       type="text"
                       value={formatRupiahInput(paymentAmount)}
                       onChange={(e) => setPaymentAmount(e.target.value ? parseRupiahInput(e.target.value) : '')}
                       required
                       autoFocus
-                      placeholder="Masukkan nominal setoran..."
                       className="input-field w-full py-2 text-xs font-mono text-right bg-surface-900 border-surface-750 text-emerald-400 font-bold"
                     />
                   </div>
 
-                  {/* FIFO Distribution Preview */}
                   {Number(paymentAmount) > 0 && (
                     <div className="border border-surface-700/60 rounded-lg overflow-hidden bg-surface-900/40 p-3 space-y-2">
-                      <h4 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Preview Distribusi Setoran (FIFO)</h4>
+                      <h4 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Preview Alokasi Pembayaran (FIFO)</h4>
                       <div className="space-y-1.5 max-h-[150px] overflow-y-auto text-[11px]">
                         {fifoAllocations.map((alloc) => (
                           <div key={alloc.id} className="flex justify-between items-center py-1 border-b border-surface-800 last:border-0">
-                            <span className="font-mono text-slate-300">{alloc.no_faktur || alloc.no_order}</span>
+                            <span className="font-mono text-slate-300">{alloc.no_order}</span>
                             <span className="text-slate-400">
-                              Tagihan: {formatCurrency(alloc.remaining)} →
+                              Hutang: {formatCurrency(alloc.remaining)} →
                               <strong className="text-emerald-400 ml-1">Bayar: {formatCurrency(alloc.allocated)}</strong>
-                              {alloc.remainingAfter === 0 && <span className="ml-1 text-emerald-500 font-bold">✓</span>}
                             </span>
                           </div>
                         ))}
@@ -728,32 +603,31 @@ export const PiutangAktif: React.FC = () => {
                   )}
                 </div>
               ) : (
-                /* Manual Mode Invoices Table Input */
                 <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Input Setoran Per Nota</label>
-                  <div className="border border-surface-700/60 rounded-lg overflow-hidden max-h-[220px] overflow-y-auto">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Input Pembayaran Per PO</label>
+                  <div className="border border-surface-700/60 rounded-lg overflow-hidden max-h-[200px] overflow-y-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead className="bg-surface-850 sticky top-0 border-b border-surface-700">
                         <tr className="text-slate-400 text-[10px] font-bold uppercase">
-                          <th className="p-2">No. Faktur</th>
-                          <th className="p-2 text-right">Sisa Tagihan</th>
-                          <th className="p-2 text-center w-36">Nominal Bayar</th>
+                          <th className="p-2">No. PO</th>
+                          <th className="p-2 text-right">Sisa Hutang</th>
+                          <th className="p-2 text-center w-36">Bayar</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-750">
-                        {filteredData[selectedCustIdx].invoices.map((inv) => (
-                          <tr key={inv.id} className="hover:bg-surface-750/10">
-                            <td className="p-2 font-mono">{inv.no_faktur || inv.no_order}</td>
-                            <td className="p-2 text-right font-mono text-rose-400">{formatCurrency(inv.remaining)}</td>
+                        {filteredData[selectedSuppIdx].purchases.map((pur) => (
+                          <tr key={pur.id}>
+                            <td className="p-2 font-mono">{pur.no_order}</td>
+                            <td className="p-2 text-right font-mono text-rose-400">{formatCurrency(pur.remaining)}</td>
                             <td className="p-1.5 text-center">
                               <input
                                 type="text"
-                                value={formatRupiahInput(manualAmounts[inv.id] || 0)}
+                                value={formatRupiahInput(manualAmounts[pur.id] || 0)}
                                 onChange={(e) => {
                                   const val = parseRupiahInput(e.target.value);
                                   setManualAmounts(prev => ({
                                     ...prev,
-                                    [inv.id]: val,
+                                    [pur.id]: val,
                                   }));
                                 }}
                                 className="input-field py-1 px-2 text-right text-xs font-mono w-28 bg-surface-900 border-surface-750 text-emerald-400 font-semibold"
@@ -765,7 +639,7 @@ export const PiutangAktif: React.FC = () => {
                     </table>
                   </div>
                   <div className="flex justify-between items-center text-xs p-2 bg-surface-900 border border-surface-750 rounded-lg">
-                    <span className="text-slate-400 uppercase font-bold text-[10px]">Total Setoran Manual</span>
+                    <span className="text-slate-400 uppercase font-bold text-[10px]">Total Bayar Manual</span>
                     <strong className="text-emerald-400 text-sm font-black">{formatCurrency(manualTotal)}</strong>
                   </div>
                 </div>
@@ -790,8 +664,8 @@ export const PiutangAktif: React.FC = () => {
                   value={paymentNote}
                   onChange={(e) => setPaymentNote(e.target.value)}
                   rows={2}
-                  placeholder="Keterangan transfer bank, no giro, dll..."
-                  className="input-field w-full py-1.5 text-xs resize-none bg-surface-900 border-surface-750 text-white"
+                  placeholder="Keterangan setoran..."
+                  className="input-field w-full py-1.5 text-xs bg-surface-900 border-surface-750 text-white"
                 />
               </div>
             </div>
@@ -802,26 +676,23 @@ export const PiutangAktif: React.FC = () => {
                 type="submit" 
                 className="btn-primary py-2 px-5 text-xs bg-emerald-600 hover:bg-emerald-500 font-bold"
               >
-                Simpan Setoran (Cetak Struk)
+                Simpan Pelunasan (Cetak Struk)
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Invoice Detail Modal (F4) */}
-      {showDetailModal && detailInvoiceId && (
+      {/* PO Detail Modal (F4) */}
+      {showDetailModal && detailPurchaseId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[85vh]">
             <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <FileText size={20} className="text-primary-400" />
-                <span>Rincian Nota Penjualan</span>
+                <span>Rincian Purchase Order (PO)</span>
               </h3>
-              <button 
-                onClick={() => setShowDetailModal(false)}
-                className="text-slate-400 hover:text-white"
-              >
+              <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
               </button>
             </div>
@@ -829,95 +700,66 @@ export const PiutangAktif: React.FC = () => {
             <div className="flex-1 overflow-y-auto py-4 space-y-4 text-xs">
               {isLoadingDetail ? (
                 <div className="py-12 text-center text-slate-500">Memuat rincian...</div>
-              ) : detailInvoice ? (
+              ) : detailPurchase ? (
                 <>
-                  {/* Meta Board */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-900 border border-surface-750 rounded-xl">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-surface-900 border border-surface-750 rounded-xl">
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">No Faktur</span>
-                      <strong className="text-slate-200 font-mono text-sm">{detailInvoice.no_faktur || detailInvoice.no_order}</strong>
+                      <span className="text-[10px] text-slate-400 block uppercase">No PO</span>
+                      <strong className="text-slate-200 font-mono text-sm">{detailPurchase.no_order}</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">Tanggal Order</span>
-                      <strong className="text-slate-200">{formatDate(detailInvoice.order_date)}</strong>
+                      <span className="text-[10px] text-slate-400 block uppercase">Tanggal PO</span>
+                      <strong className="text-slate-200">{formatDate(detailPurchase.order_date)}</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">Termin J.Tempo</span>
-                      <strong className="text-slate-200">{detailInvoice.limit_bulan > 0 ? `Kredit (${detailInvoice.limit_bulan} Bulan)` : 'Tunai'}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">Kirim</span>
-                      <strong className="text-slate-200">{detailInvoice.diantar ? '🚚 Diantar' : '🚶 Diambil'}</strong>
+                      <span className="text-[10px] text-slate-400 block uppercase">Termin</span>
+                      <strong className="text-slate-200 uppercase">{detailPurchase.terms}</strong>
                     </div>
                   </div>
 
-                  {/* Customer Panel */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-[10px] uppercase font-bold text-slate-400 border-b border-surface-750 pb-1 mb-1">Pelanggan</h4>
-                      <p className="font-bold text-white">{detailInvoice.customer_nama}</p>
-                      <p className="text-slate-400">{detailInvoice.customer_alamat}</p>
-                      <p className="text-slate-400">Telp: {detailInvoice.customer_telp || '-'}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-[10px] uppercase font-bold text-slate-400 border-b border-surface-750 pb-1 mb-1">Catatan Pengiriman</h4>
-                      <p className="italic text-slate-400">"{detailInvoice.sender_note || 'Tidak ada catatan khusus'}"</p>
-                    </div>
-                  </div>
-
-                  {/* Items List Table */}
                   <div className="border border-surface-700/60 rounded-lg overflow-hidden">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="bg-surface-850 text-slate-400 font-semibold uppercase text-[9px] border-b border-surface-700">
                           <th className="p-2 w-8 text-center">No</th>
-                          <th className="p-2">Kode SKU</th>
-                          <th className="p-2">Nama Barang</th>
-                          <th className="p-2 text-right w-16">Qty</th>
-                          <th className="p-2 text-right w-24">Harga</th>
-                          <th className="p-2 text-right w-24">Total</th>
+                          <th className="p-2">Barang</th>
+                          <th className="p-2 text-right">Qty</th>
+                          <th className="p-2 text-right">Harga Beli</th>
+                          <th className="p-2 text-right">Total</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-750">
-                        {detailInvoice.sale_items?.map((item: any, idx: number) => (
+                        {detailPurchase.purchase_items?.map((item: any, idx: number) => (
                           <tr key={item.id} className="text-slate-350">
                             <td className="p-2 text-center text-slate-500">{idx + 1}</td>
-                            <td className="p-2 font-mono">{item.product_kode}</td>
-                            <td className="p-2 font-bold text-slate-200">{item.product_nama}</td>
+                            <td className="p-2 font-bold text-slate-200">{item.product?.nama || 'Barang'}</td>
                             <td className="p-2 text-right font-semibold">{Number(item.qty)}</td>
-                            <td className="p-2 text-right font-mono">{formatCurrency(Number(item.unit_price))}</td>
-                            <td className="p-2 text-right font-mono text-white font-bold">{formatCurrency(Number(item.total))}</td>
+                            <td className="p-2 text-right font-mono">{formatCurrency(Number(item.harga_beli))}</td>
+                            <td className="p-2 text-right font-mono text-white font-bold">{formatCurrency(Number(item.subtotal))}</td>
                           </tr>
                         ))}
-                        {Number(detailInvoice.extra_charge_amount) !== 0 && (
+                        {Number(detailPurchase.biaya_pengiriman) !== 0 && (
                           <tr className="text-slate-400 font-semibold border-t border-surface-750/30">
-                            <td colSpan={5} className="p-2 text-right uppercase">Ongkir Ojol ({detailInvoice.extra_charge_desc || 'Gojek/Grab'})</td>
-                            <td className="p-2 text-right font-mono">{formatCurrency(Number(detailInvoice.extra_charge_amount))}</td>
-                          </tr>
-                        )}
-                        {Number(detailInvoice.biaya_pengiriman) !== 0 && (
-                          <tr className="text-slate-400 font-semibold border-t border-surface-750/30">
-                            <td colSpan={5} className="p-2 text-right uppercase">Ongkir Travel/Bus</td>
-                            <td className="p-2 text-right font-mono">{formatCurrency(Number(detailInvoice.biaya_pengiriman))}</td>
+                            <td colSpan={4} className="p-2 text-right uppercase">Biaya Pengiriman (Ongkir)</td>
+                            <td className="p-2 text-right font-mono">{formatCurrency(Number(detailPurchase.biaya_pengiriman))}</td>
                           </tr>
                         )}
                         <tr className="bg-surface-850 font-bold border-t border-surface-700">
-                          <td colSpan={5} className="p-2 text-right uppercase text-[9px]">Grand Total</td>
-                          <td className="p-2 text-right font-mono text-emerald-400 font-black text-sm">{formatCurrency(Number(detailInvoice.subtotal) + Number(detailInvoice.biaya_pengiriman))}</td>
+                          <td colSpan={4} className="p-2 text-right uppercase text-[9px]">Grand Total</td>
+                          <td className="p-2 text-right font-mono text-emerald-400 font-black text-sm">{formatCurrency(Number(detailPurchase.subtotal) + Number(detailPurchase.biaya_pengiriman))}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Payment Logs */}
                   <div>
-                    <h4 className="text-[10px] uppercase font-bold text-slate-400 border-b border-surface-750 pb-1 mb-1.5">Riwayat Angsuran Setoran</h4>
-                    {detailInvoice.sales_payments && detailInvoice.sales_payments.length > 0 ? (
+                    <h4 className="text-[10px] uppercase font-bold text-slate-400 border-b border-surface-750 pb-1 mb-1.5">Riwayat Pembayaran PO</h4>
+                    {detailPurchase.supplier_payments && detailPurchase.supplier_payments.length > 0 ? (
                       <div className="space-y-1.5">
-                        {detailInvoice.sales_payments.map((pay: any) => (
+                        {detailPurchase.supplier_payments.map((pay: any) => (
                           <div key={pay.id} className="p-2.5 bg-surface-900 border border-surface-750/50 rounded-lg flex justify-between items-center">
                             <div>
-                              <p className="font-bold text-slate-300">Setoran: {formatCurrency(Number(pay.amount))}</p>
+                              <p className="font-bold text-slate-300">Bayar: {formatCurrency(Number(pay.amount))}</p>
                               <p className="text-[10px] text-slate-400">Catatan: {pay.note || '-'}</p>
                             </div>
                             <div className="text-right text-[10px] text-slate-400">
@@ -928,12 +770,12 @@ export const PiutangAktif: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 italic">Belum ada angsuran tercatat untuk nota ini.</p>
+                      <p className="text-xs text-slate-500 italic">Belum ada pembayaran tercatat untuk PO ini.</p>
                     )}
                   </div>
                 </>
               ) : (
-                <div className="py-12 text-center text-danger-400">Gagal mengambil rincian detail.</div>
+                <div className="py-12 text-center text-danger-400">Gagal mengambil detail.</div>
               )}
             </div>
 
@@ -950,41 +792,36 @@ export const PiutangAktif: React.FC = () => {
         </div>
       )}
 
-      {/* Struk Cetak Pembayaran / Receipt Modal */}
+      {/* Struk Cetak Pembayaran AP Receipt Modal */}
       {showReceiptModal && receiptSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0 print:hidden">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Printer size={20} className="text-primary-400" />
-                <span>Bukti Setoran Pembayaran Piutang</span>
+                <span>Bukti Pengeluaran Kas (Pelunasan Supplier)</span>
               </h3>
-              <button 
-                onClick={() => setShowReceiptModal(false)}
-                className="text-slate-400 hover:text-white"
-              >
+              <button onClick={() => setShowReceiptModal(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
               </button>
             </div>
 
-            {/* Print Area */}
             <div className="flex-1 overflow-y-auto py-6 space-y-6 text-xs bg-white text-slate-900 p-8 rounded-lg mt-4 font-mono shadow-inner print:mt-0 print:p-0" id="print-receipt-area">
               <div className="text-center space-y-1">
                 <h2 className="text-xl font-extrabold tracking-wider uppercase text-slate-950">CV MAJU MULIA BERSAMA</h2>
                 <p className="text-xs text-slate-600">Suku Cadang & Sparepart AC Mobil Terlengkap</p>
-                <p className="text-[10px] text-slate-500 border-b border-slate-300 pb-2">Jl. Raya Timur Kudus, Indonesia | Telp: 0291-555-1234</p>
+                <p className="text-[10px] text-slate-500 border-b border-slate-300 pb-2">Bukti Pembayaran Hutang Dagang (AP)</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1">
-                  <p><strong>Customer:</strong> {receiptSession.allocations[0]?.sale?.customer?.nama || receiptSession.target_nama}</p>
-                  <p><strong>Alamat:</strong> {receiptSession.allocations[0]?.sale?.customer?.alamat || '-'}</p>
-                  <p><strong>Telp:</strong> {receiptSession.allocations[0]?.sale?.customer?.no_telp || '-'}</p>
+                  <p><strong>Supplier:</strong> {receiptSession.allocations[0]?.purchase?.supplier?.nama || receiptSession.target_nama}</p>
+                  <p><strong>Alamat:</strong> {receiptSession.allocations[0]?.purchase?.supplier?.alamat || '-'}</p>
                 </div>
                 <div className="space-y-1 text-right">
-                  <p><strong>Tanggal Setoran:</strong> {formatDate(receiptSession.session_date)}</p>
+                  <p><strong>Tanggal Bayar:</strong> {formatDate(receiptSession.session_date)}</p>
                   <p><strong>Metode Pembayaran:</strong> <span className="uppercase">{receiptSession.payment_method}</span></p>
-                  <p><strong>Kasir/Admin:</strong> {receiptSession.creator?.nama || '-'}</p>
+                  <p><strong>Admin:</strong> {receiptSession.creator?.nama || '-'}</p>
                 </div>
               </div>
 
@@ -993,23 +830,23 @@ export const PiutangAktif: React.FC = () => {
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-600 font-bold">
                       <th className="py-2 w-8 text-center">No</th>
-                      <th className="py-2">No. Nota</th>
-                      <th className="py-2">Tgl Order</th>
-                      <th className="py-2 text-right">Total Nota</th>
-                      <th className="py-2 text-right">Bayar Hari Ini</th>
-                      <th className="py-2 text-right">Sisa Tagihan</th>
+                      <th className="py-2">No. PO</th>
+                      <th className="py-2">Tgl PO</th>
+                      <th className="py-2 text-right">Total PO</th>
+                      <th className="py-2 text-right">Dibayar</th>
+                      <th className="py-2 text-right">Sisa Hutang</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {receiptSession.allocations.map((alloc: any, idx: number) => {
-                      const grandTotal = Number(alloc.sale.subtotal) + Number(alloc.sale.biaya_pengiriman);
+                      const grandTotal = Number(alloc.purchase.subtotal) + Number(alloc.purchase.biaya_pengiriman);
                       return (
                         <tr key={alloc.id}>
                           <td className="py-2 text-center text-slate-400">{idx + 1}</td>
-                          <td className="py-2 font-mono font-bold text-slate-900">{alloc.sale.no_faktur || alloc.sale.no_order}</td>
-                          <td className="py-2 text-slate-600">{formatDate(alloc.sale.order_date)}</td>
+                          <td className="py-2 font-mono font-bold text-slate-900">{alloc.purchase.no_order}</td>
+                          <td className="py-2 text-slate-600">{formatDate(alloc.purchase.order_date)}</td>
                           <td className="py-2 text-right font-mono">{formatCurrency(grandTotal)}</td>
-                          <td className="py-2 text-right font-mono text-emerald-700 font-bold">+{formatCurrency(Number(alloc.allocated_amount))}</td>
+                          <td className="py-2 text-right font-mono text-emerald-700 font-bold">-{formatCurrency(Number(alloc.allocated_amount))}</td>
                           <td className="py-2 text-right font-mono text-rose-600">{formatCurrency(Number(alloc.remaining_after))}</td>
                         </tr>
                       );
@@ -1020,7 +857,7 @@ export const PiutangAktif: React.FC = () => {
 
               <div className="flex flex-col items-end space-y-1.5">
                 <div className="flex justify-between w-64 text-xs">
-                  <span className="text-slate-600">Total Setoran:</span>
+                  <span className="text-slate-600">Total Dibayar:</span>
                   <strong className="text-emerald-700 font-black">{formatCurrency(Number(receiptSession.total_amount))}</strong>
                 </div>
                 <div className="flex justify-between w-64 text-[10px] text-slate-500 border-t border-slate-200 pt-1.5">
@@ -1029,30 +866,26 @@ export const PiutangAktif: React.FC = () => {
                 </div>
               </div>
 
-              {/* Signature Blocks */}
               <div className="grid grid-cols-2 gap-8 pt-8 text-center text-xs">
                 <div>
-                  <p className="text-slate-500">Penerima (Admin)</p>
+                  <p className="text-slate-500">Pihak Pertama (Admin MMB)</p>
                   <div className="h-16"></div>
                   <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">({receiptSession.creator?.nama || 'Budi Santoso'})</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Penyetor (Customer)</p>
+                  <p className="text-slate-500">Pihak Kedua (Supplier)</p>
                   <div className="h-16"></div>
-                  <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">({receiptSession.allocations[0]?.sale?.customer?.nama || 'Bengkel'})</p>
+                  <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">({receiptSession.allocations[0]?.purchase?.supplier?.nama || 'Supplier'})</p>
                 </div>
               </div>
             </div>
 
             <div className="pt-3 border-t border-surface-700 flex justify-end gap-2 shrink-0 print:hidden">
-              <button 
-                onClick={() => setShowReceiptModal(false)}
-                className="btn-secondary text-xs px-4"
-              >
+              <button onClick={() => setShowReceiptModal(false)} className="btn-secondary text-xs px-4">
                 Tutup (Esc)
               </button>
               <button 
-                onClick={printReceipt}
+                onClick={() => window.print()}
                 className="btn-primary flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 px-5 font-bold"
               >
                 <Printer size={14} />

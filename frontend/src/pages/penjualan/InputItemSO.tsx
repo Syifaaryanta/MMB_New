@@ -96,6 +96,11 @@ export const InputItemSO: React.FC = () => {
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
   const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
   const [showEmptyQtyAlert, setShowEmptyQtyAlert] = useState(false);
+
+  // Duplicate alert modal status
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateMsg, setDuplicateMsg] = useState('');
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -273,6 +278,15 @@ export const InputItemSO: React.FC = () => {
 
   const addItemToTable = () => {
     if (!selectedProd) return;
+
+    // Check duplicate
+    const isDuplicate = items.some(item => item.product_id === selectedProd.id);
+    if (isDuplicate) {
+      setDuplicateMsg(`Barang "${selectedProd.nama}" sudah ada di daftar input SO!`);
+      setShowDuplicateModal(true);
+      return;
+    }
+
     if (!qty || Number(qty) <= 0) {
       setShowEmptyQtyAlert(true);
       return;
@@ -646,6 +660,15 @@ export const InputItemSO: React.FC = () => {
     }
   };
 
+  const handleDuplicateModalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' || e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowDuplicateModal(false);
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+  };
+
   const handleCancelConfirmModalKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -825,7 +848,6 @@ export const InputItemSO: React.FC = () => {
                     <th className="p-4 text-right">Qty</th>
                     <th className="p-4 text-right">Harga Satuan</th>
                     <th className="p-4 text-right">Subtotal</th>
-                    <th className="p-4 text-center w-16">Aksi</th>
                   </tr>
                 </thead>
                   <tbody>
@@ -833,7 +855,7 @@ export const InputItemSO: React.FC = () => {
                       items.map((item, idx) => {
                         const isFocused = idx === selectedRowIdx && activeStep === 'table';
                         const rowBgClass = isFocused ? 'bg-blue-100' : idx === selectedRowIdx ? 'bg-slate-50' : 'hover:bg-slate-50';
-
+ 
                         const getTdClass = (pos: 'first' | 'middle' | 'last') => {
                           let base = "p-4 transition-all duration-150 border-b ";
                           if (isFocused) {
@@ -848,14 +870,15 @@ export const InputItemSO: React.FC = () => {
                           }
                           return base;
                         };
-
+ 
                         return (
                           <tr
                             key={item.product_id}
-                            onClick={() => {
-                              setSelectedRowIdx(idx);
-                              setActiveStep('table');
-                            }}
+                          onClick={() => {
+                            (document.activeElement as HTMLElement)?.blur();
+                            setSelectedRowIdx(idx);
+                            setActiveStep('table');
+                          }}
                             className={`cursor-pointer transition-all ${rowBgClass}`}
                           >
                             <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
@@ -865,26 +888,15 @@ export const InputItemSO: React.FC = () => {
                             <td className={getTdClass('middle') + " text-right font-mono text-slate-700"}>
                               {formatCurrency(item.unit_price)}
                             </td>
-                            <td className={getTdClass('middle') + " text-right font-mono text-slate-900 font-bold"}>
+                            <td className={getTdClass('last') + " text-right font-mono text-slate-900 font-bold"}>
                               {formatCurrency(item.total)}
-                            </td>
-                            <td className={getTdClass('last') + " text-center"}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteRow(idx);
-                                }}
-                                className="text-danger-400 p-1.5 hover:bg-danger-600/10 rounded-lg transition-colors"
-                              >
-                                <Trash2 size={14} />
-                              </button>
                             </td>
                           </tr>
                         );
                       })
                   ) : (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-500 text-xs italic">
+                      <td colSpan={6} className="p-8 text-center text-slate-500 text-xs italic">
                         Belum ada item belanja ditambahkan. Cari barang di atas atau tekan F2.
                       </td>
                     </tr>
@@ -1356,6 +1368,39 @@ export const InputItemSO: React.FC = () => {
                   Tutup (Enter)
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Alert Modal */}
+      {showDuplicateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+          <div
+            tabIndex={0}
+            ref={(el) => el?.focus()}
+            onKeyDown={handleDuplicateModalKeyDown}
+            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+          >
+            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
+              <AlertTriangle size={28} className="text-amber-400" />
+              <h3 className="text-lg font-bold text-white">Barang Sudah Diinput</h3>
+            </div>
+            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
+              {duplicateMsg}
+            </p>
+            <div className="flex justify-center border-t border-surface-700/50 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  setTimeout(() => searchInputRef.current?.focus(), 50);
+                }}
+                className="btn-primary py-2 px-6 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
+                autoFocus
+              >
+                OK (Enter)
+              </button>
             </div>
           </div>
         </div>

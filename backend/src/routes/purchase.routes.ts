@@ -115,8 +115,15 @@ purchaseRouter.post('/', authenticate, authorize(ROLES.ADMIN), async (req: AuthR
 // PUT /api/purchases/:id - Update PO
 purchaseRouter.put('/:id', authenticate, authorize(ROLES.ADMIN), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { supplier_id, order_date, terms, items } = req.body;
+    const { supplier_id, order_date, terms, items, status } = req.body;
     const subtotal = (items || []).reduce((sum: number, i: any) => sum + (i.qty * i.harga_beli), 0);
+
+    const current = await prisma.purchase.findUnique({ where: { id: req.params.id as string } });
+    if (!current) { res.status(404).json({ error: 'PO tidak ditemukan' }); return; }
+    if (current.status === 'received') {
+      res.status(400).json({ error: 'PO yang sudah divalidasi/diterima tidak dapat diedit' });
+      return;
+    }
 
     // Delete old items and recreate
     await prisma.purchaseItem.deleteMany({ where: { purchase_id: req.params.id as string } });
@@ -128,6 +135,7 @@ purchaseRouter.put('/:id', authenticate, authorize(ROLES.ADMIN), async (req: Aut
         order_date: new Date(order_date),
         terms,
         subtotal,
+        status: status || 'draft',
         purchase_items: {
           create: (items || []).map((item: any) => ({
             id: uuidv4(),
@@ -221,6 +229,18 @@ purchaseRouter.patch('/:id/receive', authenticate, authorize(ROLES.ADMIN, ROLES.
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
+// PATCH /api/purchases/:id/ongkir - Update biaya pengiriman
+purchaseRouter.patch('/:id/ongkir', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { biaya_pengiriman } = req.body;
+    const purchase = await prisma.purchase.update({
+      where: { id: req.params.id as string },
+      data: { biaya_pengiriman: Number(biaya_pengiriman) },
+    });
+    res.json(purchase);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // DELETE /api/purchases/:id - Delete draft PO only
 purchaseRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -231,3 +251,4 @@ purchaseRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: 
     res.json({ message: 'Draft PO dihapus' });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
+

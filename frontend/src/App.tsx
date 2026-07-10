@@ -50,6 +50,7 @@ import { PiutangAktif } from '@/pages/penagihan/PiutangAktif';
 import { ManajemenNota } from '@/pages/penagihan/ManajemenNota';
 import { HistoryPembayaran } from '@/pages/penagihan/HistoryPembayaran';
 import { RiwayatPenagihan } from '@/pages/penagihan/RiwayatPenagihan';
+import { PelunasanSupplier } from '@/pages/penagihan/PelunasanSupplier';
 
 // Real Laporan Pages
 import { LaporanMenu } from '@/pages/laporan/LaporanMenu';
@@ -214,6 +215,7 @@ function App() {
                   <Route element={<ProtectedRoute allowedRoles={['admin', 'sales']} />}>
                     <Route path="penagihan" element={<PenagihanMenu />} />
                     <Route path="penagihan/piutang" element={<PiutangAktif />} />
+                    <Route path="penagihan/supplier" element={<PelunasanSupplier />} />
                     <Route path="penagihan/nota" element={<ManajemenNota />} />
                     <Route path="penagihan/tunai" element={<HistoryPembayaran />} />
                     <Route path="penagihan/riwayat" element={<RiwayatPenagihan />} />

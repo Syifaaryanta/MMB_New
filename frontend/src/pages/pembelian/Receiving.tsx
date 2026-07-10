@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   CheckSquare, Search, Play, Check, AlertTriangle, X,
-  Package, PackageCheck, AlertCircle, Info, Minus, Plus,
+  Package, PackageCheck, AlertCircle, Info, Minus, Plus
 } from 'lucide-react';
 
 interface Purchase {
@@ -61,6 +61,9 @@ export const Receiving: React.FC = () => {
     return saved ? Number(saved) : 0;
   });
 
+  // Supplier info toggle state (F1 in checklist mode)
+  const [showSupplierInfo, setShowSupplierInfo] = useState(true);
+
   // Modal & UI States
   const [modalState, setModalState] = useState<ModalState>(() => {
     const saved = sessionStorage.getItem('receiving_modalState');
@@ -74,6 +77,9 @@ export const Receiving: React.FC = () => {
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const qtyTerimaRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const qtyRusakRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const rowRefs = useRef<Array<HTMLTableRowElement | null>>([]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -110,6 +116,7 @@ export const Receiving: React.FC = () => {
     }, 150);
     return () => clearInterval(timer);
   }, []);
+
   useEffect(() => {
     if (activePo) {
       sessionStorage.setItem('receiving_activePo', JSON.stringify(activePo));
@@ -133,6 +140,17 @@ export const Receiving: React.FC = () => {
   useEffect(() => {
     sessionStorage.setItem('receiving_modalState', modalState);
   }, [modalState]);
+
+  // Auto-scroll logic to follow highlighted row
+  useEffect(() => {
+    if (activePo && rowRefs.current[activeItemIdx]) {
+      rowRefs.current[activeItemIdx]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [activeItemIdx, activePo]);
+
   const filteredPurchases = purchases.filter((p) =>
     p.supplier?.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.no_order?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -163,6 +181,7 @@ export const Receiving: React.FC = () => {
       setReceiveStates(init);
       setActiveItemIdx(0);
       setModalState('none');
+      setShowSupplierInfo(true); // reset supplier info state on load
     } catch (err) { console.error(err); }
   };
 
@@ -237,6 +256,79 @@ export const Receiving: React.FC = () => {
     });
   };
 
+  // Custom keydown handlers for numeric inputs (Arrow keys logic)
+  const handleQtyTerimaKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, idx: number) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (idx > 0) {
+        const prevIdx = idx - 1;
+        setActiveItemIdx(prevIdx);
+        setTimeout(() => {
+          qtyTerimaRefs.current[prevIdx]?.focus();
+          qtyTerimaRefs.current[prevIdx]?.select();
+        }, 30);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (idx < poItems.length - 1) {
+        const nextIdx = idx + 1;
+        setActiveItemIdx(nextIdx);
+        setTimeout(() => {
+          qtyTerimaRefs.current[nextIdx]?.focus();
+          qtyTerimaRefs.current[nextIdx]?.select();
+        }, 30);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const state = receiveStates[poItems[idx].id];
+      if (state) {
+        updateItemState(poItems[idx].id, 'qty_terima', Math.max(0, state.qty_terima - 1));
+      }
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const state = receiveStates[poItems[idx].id];
+      if (state) {
+        updateItemState(poItems[idx].id, 'qty_terima', state.qty_terima + 1);
+      }
+    }
+  };
+
+  const handleQtyRusakKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, idx: number) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (idx > 0) {
+        const prevIdx = idx - 1;
+        setActiveItemIdx(prevIdx);
+        setTimeout(() => {
+          qtyRusakRefs.current[prevIdx]?.focus();
+          qtyRusakRefs.current[prevIdx]?.select();
+        }, 30);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (idx < poItems.length - 1) {
+        const nextIdx = idx + 1;
+        setActiveItemIdx(nextIdx);
+        setTimeout(() => {
+          qtyRusakRefs.current[nextIdx]?.focus();
+          qtyRusakRefs.current[nextIdx]?.select();
+        }, 30);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const state = receiveStates[poItems[idx].id];
+      if (state) {
+        updateItemState(poItems[idx].id, 'qty_rusak', Math.max(0, state.qty_rusak - 1));
+      }
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const state = receiveStates[poItems[idx].id];
+      if (state) {
+        updateItemState(poItems[idx].id, 'qty_rusak', Math.min(state.qty_terima, state.qty_rusak + 1));
+      }
+    }
+  };
+
   // ─── Keyboard Shortcuts ──────────────────────────────────────────────────────
 
   // Enter: open checklist in list mode
@@ -247,21 +339,84 @@ export const Receiving: React.FC = () => {
     }
   }, { enableOnFormTags: false }, [isTableFocused, selectedIdx, activePo, filteredPurchases, modalState]);
 
-  // F1: focus search
+  // Enter: focus Qty Datang input if in checklist mode with no focused input
+  useHotkeys('enter', (e) => {
+    if (activePo && modalState === 'none') {
+      const isInputFocused = document.activeElement?.tagName === 'INPUT';
+      if (!isInputFocused) {
+        e.preventDefault();
+        qtyTerimaRefs.current[activeItemIdx]?.focus();
+        qtyTerimaRefs.current[activeItemIdx]?.select();
+      }
+    }
+  }, { enableOnFormTags: true }, [activePo, activeItemIdx, modalState]);
+
+  // F1: focus search in list mode, or toggle PO Info card in checklist mode
   useHotkeys('f1', (e) => {
     e.preventDefault();
     if (!activePo) {
       setIsTableFocused(false);
       searchInputRef.current?.focus();
       searchInputRef.current?.select();
+    } else {
+      setShowSupplierInfo(prev => !prev);
     }
   }, { enableOnFormTags: true }, [activePo]);
+
+  // F2: focus first row of table in checklist mode
+  useHotkeys('f2', (e) => {
+    e.preventDefault();
+    if (activePo && poItems.length > 0) {
+      setActiveItemIdx(0);
+    }
+  }, { enableOnFormTags: true }, [activePo, poItems]);
 
   // F10: finalize
   useHotkeys('f10', (e) => {
     e.preventDefault();
     if (activePo && modalState === 'none') handleFinalizeClick();
   }, { enableOnFormTags: true }, [activePo, modalState]);
+
+  // PageUp / PageDown navigation
+  useHotkeys('pageup', (e) => {
+    if (activePo && modalState === 'none') {
+      e.preventDefault();
+      const prevIdx = Math.max(0, activeItemIdx - 5);
+      setActiveItemIdx(prevIdx);
+      if (document.activeElement?.tagName === 'INPUT') {
+        const isTerima = document.activeElement === qtyTerimaRefs.current[activeItemIdx];
+        setTimeout(() => {
+          if (isTerima) {
+            qtyTerimaRefs.current[prevIdx]?.focus();
+            qtyTerimaRefs.current[prevIdx]?.select();
+          } else {
+            qtyRusakRefs.current[prevIdx]?.focus();
+            qtyRusakRefs.current[prevIdx]?.select();
+          }
+        }, 30);
+      }
+    }
+  }, { enableOnFormTags: true }, [activePo, activeItemIdx, modalState]);
+
+  useHotkeys('pagedown', (e) => {
+    if (activePo && modalState === 'none') {
+      e.preventDefault();
+      const nextIdx = Math.min(poItems.length - 1, activeItemIdx + 5);
+      setActiveItemIdx(nextIdx);
+      if (document.activeElement?.tagName === 'INPUT') {
+        const isTerima = document.activeElement === qtyTerimaRefs.current[activeItemIdx];
+        setTimeout(() => {
+          if (isTerima) {
+            qtyTerimaRefs.current[nextIdx]?.focus();
+            qtyTerimaRefs.current[nextIdx]?.select();
+          } else {
+            qtyRusakRefs.current[nextIdx]?.focus();
+            qtyRusakRefs.current[nextIdx]?.select();
+          }
+        }, 30);
+      }
+    }
+  }, { enableOnFormTags: true }, [activePo, activeItemIdx, modalState, poItems]);
 
   // Arrow up/down navigation
   useHotkeys('up', (e) => {
@@ -372,7 +527,6 @@ export const Receiving: React.FC = () => {
                       <th className="p-4">Supplier</th>
                       <th className="p-4">Tanggal Order</th>
                       <th className="p-4 text-right">Subtotal</th>
-                      <th className="p-4 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -402,16 +556,7 @@ export const Receiving: React.FC = () => {
                           </td>
                           <td className={getTdClass('middle') + ' font-semibold'}>{p.supplier?.nama || '-'}</td>
                           <td className={getTdClass('middle')}>{formatDate(p.order_date)}</td>
-                          <td className={getTdClass('middle') + ' text-right font-black text-slate-900'}>{formatCurrency(Number(p.subtotal))}</td>
-                          <td className={getTdClass('last') + ' text-center'}>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleOpenChecklist(p); }}
-                              className="px-3 py-1 rounded bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-550 transition-colors inline-flex items-center gap-1 shadow-sm"
-                            >
-                              <Play size={12} className="!text-white" />
-                              <span className="!text-white">Proses Terima</span>
-                            </button>
-                          </td>
+                          <td className={getTdClass('last') + ' text-right font-black text-slate-900'}>{formatCurrency(Number(p.subtotal))}</td>
                         </tr>
                       );
                     })}
@@ -438,8 +583,8 @@ export const Receiving: React.FC = () => {
                 <PackageCheck size={18} className="text-white" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">Proses Penerimaan Barang · {activePo.no_order}</h2>
-                <p className="text-xs text-primary-200 mt-0.5">Input qty datang &amp; qty rusak untuk setiap item PO</p>
+                <h2 className="text-base font-bold text-white">Proses Penerimaan Barang · {activePo.no_order} ({activePo.supplier?.nama})</h2>
+                <p className="text-xs text-primary-200 mt-0.5 font-medium">Input qty datang &amp; qty rusak untuk setiap item PO</p>
               </div>
             </div>
             <button onClick={() => setActivePo(null)} className="text-white/80 hover:text-white transition-colors">
@@ -448,80 +593,92 @@ export const Receiving: React.FC = () => {
           </div>
 
           <div className="p-4 bg-slate-50/50 space-y-4">
-            {/* PO Info Card */}
-            <div className="border border-blue-200 bg-gradient-to-r from-blue-50/30 via-white to-blue-50/30 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-slate-800 shadow-sm">
-              <div>
-                <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nomor PO</span>
-                <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.no_order}</span>
+            {/* PO Info Card - Hideable via F1 toggle */}
+            {showSupplierInfo && (
+              <div className="border border-blue-200 bg-gradient-to-r from-blue-50/30 via-white to-blue-50/30 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-slate-800 shadow-sm animate-slide-down">
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nomor PO</span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.no_order}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Supplier</span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activePo.supplier?.nama}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Order</span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activePo.order_date)}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Termin</span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">{activePo.terms || '-'}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Supplier</span>
-                <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activePo.supplier?.nama}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Order</span>
-                <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activePo.order_date)}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Termin</span>
-                <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">{activePo.terms || '-'}</span>
-              </div>
-            </div>
+            )}
 
-            {/* Legend */}
-            <div className="flex flex-wrap items-center gap-3 text-[11px]">
-              <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                <Info size={12} className="text-slate-400" />
-                Keterangan status:
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
-                <Check size={10} /> Sesuai
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-semibold">
-                <Minus size={10} /> Kurang
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700 font-semibold">
-                <AlertTriangle size={10} /> Ada Rusak
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold">
-                <Plus size={10} /> Lebih
-              </span>
-            </div>
+            {/* Legend & Helpers - Hideable via F1 toggle */}
+            {showSupplierInfo && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] bg-slate-100 p-2.5 rounded-lg border border-slate-200 animate-slide-down">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+                    <Info size={12} className="text-slate-450" />
+                    Keterangan status:
+                  </span>
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
+                    Sesuai
+                  </span>
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 font-bold">
+                    Kurang
+                  </span>
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 font-bold">
+                    Ada Rusak
+                  </span>
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold">
+                    Lebih
+                  </span>
+                </div>
+                <div className="text-slate-500 font-semibold flex flex-wrap gap-1.5 justify-end">
+                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase"><kbd>F1</kbd> Info PO</span>
+                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase"><kbd>F2</kbd> Baris Pertama</span>
+                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase"><kbd>Enter</kbd> Masuk Qty</span>
+                </div>
+              </div>
+            )}
 
-            {/* Retur note banner */}
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-xs">
-              <AlertCircle size={14} className="mt-0.5 shrink-0 text-amber-600" />
-              <span>
-                <strong>Catatan:</strong> Barang rusak/cacat yang diinput di kolom <em>Qty Rusak</em> tidak akan masuk ke stok aktif gudang.
-                Pencatatan &amp; pembuatan <strong>nota retur ke supplier</strong> akan tersedia setelah modul Retur Pembelian dibuat.
-              </span>
-            </div>
+            {/* Retur note banner - Hideable via F1 toggle */}
+            {showSupplierInfo && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-xs animate-slide-down">
+                <AlertCircle size={14} className="mt-0.5 shrink-0 text-amber-600" />
+                <span>
+                  <strong>Instruksi Keyboard:</strong> Gunakan <kbd className="shortcut-badge text-[9px] font-mono">↑ / ↓</kbd> untuk berpindah baris. Tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> untuk memfokuskan kursor ke Qty Datang. Isi nilainya, lalu tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> lagi untuk berpindah ke Qty Rusak. Tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> sekali lagi untuk menyimpan dan beralih ke baris berikutnya. Tekan <kbd className="shortcut-badge text-[9px] font-mono">← / →</kbd> saat input aktif untuk menambah / mengurangi kuantitas.
+                </span>
+              </div>
+            )}
 
             {/* Items Table */}
-            <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
-              <div className="border-b border-slate-100 px-4 py-2.5 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Daftar Verifikasi Barang</h3>
+            <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="border-b border-slate-100 px-4 py-2.5 flex justify-between items-center bg-slate-50/50">
+                <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Tabel Verifikasi Penerimaan Barang</h3>
                 <span className="text-[10px] text-slate-500 font-semibold hidden sm:inline">
-                  Klik baris atau gunakan <kbd className="shortcut-badge text-[9px] font-mono">↑↓</kbd> untuk navigasi
+                  Gunakan <kbd className="shortcut-badge text-[9px] font-mono">PgUp / PgDn</kbd> untuk scroll cepat
                 </span>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Overflow Container with Height Limit for Local Scrolling */}
+              <div className="overflow-x-auto max-h-[480px] overflow-y-auto">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-primary-600 text-white font-bold text-xs uppercase">
-                      <th className="p-3 w-10 text-center">#</th>
-                      <th className="p-3 w-32">Kode SKU</th>
-                      <th className="p-3">Nama Barang</th>
-                      <th className="p-3 text-center w-16">Satuan</th>
-                      <th className="p-3 text-right w-24">Qty PO</th>
-                      <th className="p-3 text-center w-36">Qty Datang</th>
-                      <th className="p-3 text-center w-36">Qty Rusak</th>
-                      <th className="p-3 text-right w-24">Qty Layak</th>
-                      <th className="p-3 w-8 text-center">Status</th>
+                  <thead className="sticky top-0 bg-primary-600 text-white font-bold text-xs uppercase z-10 shadow-sm">
+                    <tr>
+                      <th className="p-3.5 w-10 text-center">#</th>
+                      <th className="p-3.5 w-32">Kode SKU</th>
+                      <th className="p-3.5">Nama Barang</th>
+                      <th className="p-3.5 text-right w-24">Qty PO</th>
+                      <th className="p-3.5 text-center w-32" style={{ textAlign: 'center' }}>Qty Datang</th>
+                      <th className="p-3.5 text-center w-32" style={{ textAlign: 'center' }}>Qty Rusak</th>
+                      <th className="p-3.5 text-right w-24">Qty Layak</th>
+                      <th className="p-3.5 w-8 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-blue-100 bg-white">
+                  <tbody className="divide-y divide-blue-50 bg-white">
                     {poItems.map((item, idx) => {
                       const state = receiveStates[item.id] || { qty_terima: Number(item.qty), qty_rusak: 0, catatan: '' };
                       const isActive = idx === activeItemIdx;
@@ -530,92 +687,100 @@ export const Receiving: React.FC = () => {
                       const status = getItemStatus(item);
 
                       const statusBadge = {
-                        ok:     <span className="flex items-center justify-center gap-1 text-emerald-700"><Check size={11} /></span>,
-                        kurang: <span className="flex items-center justify-center gap-1 text-amber-600"><Minus size={11} /></span>,
-                        lebih:  <span className="flex items-center justify-center gap-1 text-blue-600"><Plus size={11} /></span>,
-                        rusak:  <span className="flex items-center justify-center gap-1 text-red-600"><AlertTriangle size={11} /></span>,
+                        ok:     <span className="flex items-center justify-center text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5 text-[10px]">Sesuai</span>,
+                        kurang: <span className="flex items-center justify-center text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 text-[10px]">Kurang</span>,
+                        lebih:  <span className="flex items-center justify-center text-blue-700 font-bold bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 text-[10px]">Lebih</span>,
+                        rusak:  <span className="flex items-center justify-center text-red-600 font-bold bg-red-50 border border-red-100 rounded px-1.5 py-0.5 text-[10px]">Rusak</span>,
                       }[status];
 
-                      const rowBg = isActive ? 'bg-blue-50/60' : 'hover:bg-slate-50/60';
-                      const borderLeft = isActive ? 'border-l-2 border-primary-500' : '';
+                      const rowBg = isActive ? 'bg-blue-100/60 font-medium' : 'hover:bg-slate-50/50';
+                      const borderLeft = isActive ? 'border-l-4 border-primary-600' : 'border-l-4 border-transparent';
 
                       return (
                         <tr
                           key={item.id}
+                          ref={(el) => { rowRefs.current[idx] = el; }}
                           onClick={() => setActiveItemIdx(idx)}
                           className={`cursor-pointer transition-colors ${rowBg}`}
                         >
-                          <td className={`p-3 text-center text-slate-500 font-mono ${borderLeft}`}>{idx + 1}</td>
-                          <td className="p-3">
+                          <td className={`p-3.5 text-center text-slate-500 font-mono transition-all ${borderLeft}`}>{idx + 1}</td>
+                          <td className="p-3.5">
                             <span className="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-50 text-primary-700 border border-blue-100">
                               {item.product?.kode || '-'}
                             </span>
                           </td>
-                          <td className="p-3 font-semibold text-slate-900">{item.product?.nama || '-'}</td>
-                          <td className="p-3 text-center text-slate-500">{item.product?.satuan}</td>
-                          <td className="p-3 text-right font-bold text-slate-700">{qtyPo}</td>
+                          <td className="p-3.5 font-bold text-slate-900 text-xs">{item.product?.nama || '-'}</td>
+                          <td className="p-3.5 text-right font-bold text-slate-700 font-mono text-xs">{qtyPo}</td>
 
-                          {/* Qty Datang input */}
-                          <td className="p-2 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); updateItemState(item.id, 'qty_terima', Math.max(0, state.qty_terima - 1)); }}
-                                className="w-6 h-6 rounded border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
-                              ><Minus size={10} /></button>
+                          {/* Qty Datang input - NO PLUS/MINUS BUTTONS */}
+                          <td className="p-2 text-center w-32" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center">
                               <input
+                                ref={(el) => { qtyTerimaRefs.current[idx] = el; }}
                                 type="number"
                                 min={0}
                                 value={state.qty_terima}
-                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => updateItemState(item.id, 'qty_terima', Math.max(0, Number(e.target.value)))}
-                                className="w-16 text-center text-xs font-bold border border-blue-200 rounded-lg px-2 py-1 bg-blue-50 text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    qtyRusakRefs.current[idx]?.focus();
+                                    qtyRusakRefs.current[idx]?.select();
+                                  } else {
+                                    handleQtyTerimaKeyDown(e, idx);
+                                  }
+                                }}
+                                onFocus={() => setActiveItemIdx(idx)}
+                                className="w-20 text-center text-xs font-bold border border-blue-200 rounded-lg px-2.5 py-1.5 bg-blue-50 text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-mono"
                               />
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); updateItemState(item.id, 'qty_terima', state.qty_terima + 1); }}
-                                className="w-6 h-6 rounded border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
-                              ><Plus size={10} /></button>
                             </div>
                           </td>
 
-                          {/* Qty Rusak input */}
-                          <td className="p-2 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); updateItemState(item.id, 'qty_rusak', Math.max(0, state.qty_rusak - 1)); }}
-                                className="w-6 h-6 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors"
-                              ><Minus size={10} /></button>
+                          {/* Qty Rusak input - NO PLUS/MINUS BUTTONS */}
+                          <td className="p-2 text-center w-32" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center">
                               <input
+                                ref={(el) => { qtyRusakRefs.current[idx] = el; }}
                                 type="number"
                                 min={0}
                                 value={state.qty_rusak}
-                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => updateItemState(item.id, 'qty_rusak', Math.max(0, Number(e.target.value)))}
-                                className={`w-16 text-center text-xs font-bold border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 ${
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (idx < poItems.length - 1) {
+                                      const nextIdx = idx + 1;
+                                      setActiveItemIdx(nextIdx);
+                                      setTimeout(() => {
+                                        qtyTerimaRefs.current[nextIdx]?.focus();
+                                        qtyTerimaRefs.current[nextIdx]?.select();
+                                      }, 50);
+                                    } else {
+                                      qtyRusakRefs.current[idx]?.blur();
+                                    }
+                                  } else {
+                                    handleQtyRusakKeyDown(e, idx);
+                                  }
+                                }}
+                                onFocus={() => setActiveItemIdx(idx)}
+                                className={`w-20 text-center text-xs font-bold border rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 font-mono ${
                                   state.qty_rusak > 0
                                     ? 'border-red-300 bg-red-50 text-red-800 focus:ring-red-400 focus:border-red-400'
-                                    : 'border-slate-200 bg-slate-50 text-slate-600 focus:ring-slate-300'
+                                    : 'border-slate-200 bg-slate-50 text-slate-650 focus:ring-slate-300'
                                 }`}
                               />
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); updateItemState(item.id, 'qty_rusak', Math.min(state.qty_terima, state.qty_rusak + 1)); }}
-                                className="w-6 h-6 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors"
-                              ><Plus size={10} /></button>
                             </div>
                           </td>
 
                           {/* Qty Layak (calculated) */}
-                          <td className="p-3 text-right">
+                          <td className="p-3.5 text-right font-mono text-xs">
                             <span className={`font-bold ${qtyLayak < qtyPo ? 'text-amber-700' : 'text-emerald-700'}`}>
                               {qtyLayak}
                             </span>
                           </td>
 
                           {/* Status badge */}
-                          <td className="p-3 text-center">{statusBadge}</td>
+                          <td className="p-3.5 text-center">{statusBadge}</td>
                         </tr>
                       );
                     })}
@@ -626,12 +791,12 @@ export const Receiving: React.FC = () => {
               {/* Footer Actions */}
               <div className="bg-slate-50/50 border-t border-blue-200 p-3.5 flex flex-wrap justify-between items-center gap-3">
                 {/* Quick stats */}
-                <div className="flex items-center gap-3 text-[11px] text-slate-600">
-                  <span>{poItems.length} item</span>
+                <div className="flex items-center gap-3 text-[11px] text-slate-650 font-semibold">
+                  <span>{poItems.length} Item Barang</span>
                   {summary.itemsWithIssue > 0 && (
-                    <span className="flex items-center gap-1 text-amber-700 font-semibold">
+                    <span className="flex items-center gap-1 text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
                       <AlertTriangle size={11} />
-                      {summary.itemsWithIssue} item bermasalah
+                      {summary.itemsWithIssue} Item Bermasalah
                     </span>
                   )}
                 </div>
@@ -649,8 +814,7 @@ export const Receiving: React.FC = () => {
                     className="px-5 py-2.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-550 transition-all shadow-md shadow-emerald-500/10 flex items-center gap-1.5"
                   >
                     <Check size={14} className="!text-white" />
-                    <span className="!text-white">Selesaikan Penerimaan</span>
-                    <kbd className="text-[10px] text-emerald-200 font-bold font-mono uppercase bg-emerald-700 border border-emerald-500 px-1 py-0.5 rounded">F10</kbd>
+                    <span className="!text-white">Selesaikan Penerimaan (F10)</span>
                   </button>
                 </div>
               </div>
@@ -662,11 +826,11 @@ export const Receiving: React.FC = () => {
       {/* ── SUMMARY CONFIRMATION MODAL ── */}
       {modalState === 'summary' && activePo && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+          <div className="bg-white rounded-2xl max-w-md w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden border border-slate-200">
             {/* Modal Header */}
             <div className="bg-primary-600 text-white px-6 py-5 flex flex-col items-center justify-center gap-2">
-              <Package size={28} className="text-white" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Rangkuman Penerimaan</h3>
+              <Package size={28} className="text-white animate-pulse" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Rangkuman Penerimaan Gudang</h3>
               <p className="text-xs text-primary-200 font-mono">{activePo.no_order}</p>
             </div>
 
@@ -678,7 +842,7 @@ export const Receiving: React.FC = () => {
                   <p className="text-xl font-extrabold text-slate-800 mt-0.5">{summary.totalPo}</p>
                 </div>
                 <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Qty Layak → Stok</p>
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Qty Layak (Stok)</p>
                   <p className="text-xl font-extrabold text-emerald-700 mt-0.5">{summary.totalLayak}</p>
                 </div>
                 {summary.totalKurang > 0 && (
@@ -703,15 +867,15 @@ export const Receiving: React.FC = () => {
                 </div>
               )}
 
-              <p className="text-xs text-slate-500 text-center leading-relaxed">
+              <p className="text-xs text-slate-500 text-center leading-relaxed font-semibold">
                 Konfirmasi akan menambahkan <strong className="text-emerald-700">{summary.totalLayak} unit</strong> ke stok gudang dan menutup PO <strong>{activePo.no_order}</strong>.
               </p>
 
-              <div className="flex justify-center gap-3 pt-2 border-t border-slate-100">
+              <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setModalState('none')}
-                  className="px-5 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
+                  className="px-5 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
                 >
                   Batal (Esc)
                 </button>

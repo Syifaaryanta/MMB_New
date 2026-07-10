@@ -859,7 +859,7 @@ export const HistoryBarangInOut: React.FC = () => {
             </div>
           </div>
         </div>
-      ) : (
+      ) : activeAdj ? (
         /* Stock Adjustment Detail Modal Component */
         <div className="bg-white rounded-xl shadow-2xl border border-amber-100 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
           <div className="bg-amber-600 !text-white px-6 py-3 flex justify-between items-center border-b border-amber-700">
@@ -939,7 +939,7 @@ export const HistoryBarangInOut: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Popup Delete Adjustment Confirmation Modal */}
       {deleteAdjTarget && (
