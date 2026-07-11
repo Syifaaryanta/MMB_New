@@ -303,8 +303,6 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
 
               {/* Small Keyboard Shortcut Badge */}
               <div className="flex items-center gap-1.5 text-[10px] text-slate-500 bg-surface-900/25 border border-surface-700/40 rounded-lg px-2.5 py-1" title="Tekan Ctrl+Shift+P untuk Profil">
-                <kbd className="px-1 py-0.5 bg-surface-700 border border-surface-650 rounded font-mono text-[9px] text-slate-300 font-bold uppercase shadow-sm">Ctrl+Shift+P</kbd>
-                <span className="font-semibold">Profil</span>
               </div>
             </div>
 
