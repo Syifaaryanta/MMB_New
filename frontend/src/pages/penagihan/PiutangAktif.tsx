@@ -62,6 +62,9 @@ export const PiutangAktif: React.FC = () => {
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'lancar' | 'overdue'>('all');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedFilterOptionIdx, setSelectedFilterOptionIdx] = useState<number>(0);
+  const filterModalRef = useRef<HTMLDivElement>(null);
 
   // Expanded customers
   const [expandedCustIds, setExpandedCustIds] = useState<Record<string, boolean>>({});
@@ -72,6 +75,14 @@ export const PiutangAktif: React.FC = () => {
 
   // Refs for focusing
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const paymentModeFifoRef = useRef<HTMLButtonElement>(null);
+  const paymentModeManualRef = useRef<HTMLButtonElement>(null);
+  const paymentDateRef = useRef<HTMLInputElement>(null);
+  const paymentAmountRef = useRef<HTMLInputElement>(null);
+  const paymentMethodCashRef = useRef<HTMLButtonElement>(null);
+  const paymentMethodTransferRef = useRef<HTMLButtonElement>(null);
+  const paymentMethodChequeRef = useRef<HTMLButtonElement>(null);
+  const paymentNoteRef = useRef<HTMLTextAreaElement>(null);
 
   // Modal payment setoran (global / multi-nota)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -92,6 +103,15 @@ export const PiutangAktif: React.FC = () => {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [receiptSession, setReceiptSession] = useState<any | null>(null);
 
+  // Modal print billing
+  const [showBillingPrintModal, setShowBillingPrintModal] = useState(false);
+  const [printBillingGroup, setPrintBillingGroup] = useState<CustomerGroup | null>(null);
+
+  // Customer search selection popup modal
+  const [showSearchPopup, setShowSearchPopup] = useState(false);
+  const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
+  const searchPopupRef = useRef<HTMLDivElement>(null);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -108,6 +128,38 @@ export const PiutangAktif: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [searchQuery]);
+
+  // Focus filter modal when opened
+  useEffect(() => {
+    if (showFilterModal) {
+      setTimeout(() => {
+        filterModalRef.current?.focus();
+      }, 50);
+    }
+  }, [showFilterModal]);
+
+  // Focus search input on mount
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
+  // Focus search popup when opened
+  useEffect(() => {
+    if (showSearchPopup) {
+      setTimeout(() => {
+        searchPopupRef.current?.focus();
+      }, 50);
+    }
+  }, [showSearchPopup]);
+
+  // Focus FIFO mode button when payment modal opened
+  useEffect(() => {
+    if (showPaymentModal) {
+      setTimeout(() => {
+        paymentModeFifoRef.current?.focus();
+      }, 50);
+    }
+  }, [showPaymentModal]);
 
   // Apply status filter client side
   useEffect(() => {
@@ -149,14 +201,15 @@ export const PiutangAktif: React.FC = () => {
     searchInputRef.current?.select();
   }, { enableOnFormTags: true });
 
-  // F3: Toggle Status Filter
+  // F3: Toggle Status Filter Popup
   useHotkeys('f3', (e) => {
     e.preventDefault();
-    setStatusFilter((curr) => {
-      if (curr === 'all') return 'overdue';
-      if (curr === 'overdue') return 'lancar';
-      return 'all';
-    });
+    if (showFilterModal) {
+      setShowFilterModal(false);
+    } else {
+      setSelectedFilterOptionIdx(['all', 'overdue', 'lancar'].indexOf(statusFilter));
+      setShowFilterModal(true);
+    }
   }, { enableOnFormTags: true });
 
   // F4: Detail transaction nota
@@ -174,6 +227,10 @@ export const PiutangAktif: React.FC = () => {
   // ArrowUp / ArrowDown: Navigation
   useHotkeys('up', (e) => {
     e.preventDefault();
+    if (showFilterModal) {
+      setSelectedFilterOptionIdx((curr) => (curr > 0 ? curr - 1 : 2));
+      return;
+    }
     if (filteredData.length === 0) return;
 
     if (selectedInvoiceIdx !== null && selectedInvoiceIdx > 0) {
@@ -195,6 +252,10 @@ export const PiutangAktif: React.FC = () => {
 
   useHotkeys('down', (e) => {
     e.preventDefault();
+    if (showFilterModal) {
+      setSelectedFilterOptionIdx((curr) => (curr < 2 ? curr + 1 : 0));
+      return;
+    }
     if (filteredData.length === 0) return;
 
     const currentCust = filteredData[selectedCustIdx];
@@ -208,9 +269,32 @@ export const PiutangAktif: React.FC = () => {
     }
   }, { enableOnFormTags: false });
 
-  // Enter: Expand/Collapse
+  // Enter: Expand/Collapse or Confirm Filter selection or Focus input field
   useHotkeys('enter', (e) => {
-    if (showPaymentModal || showDetailModal || showReceiptModal) return;
+    if (showFilterModal) {
+      e.preventDefault();
+      const options: ('all' | 'overdue' | 'lancar')[] = ['all', 'overdue', 'lancar'];
+      setStatusFilter(options[selectedFilterOptionIdx]);
+      setShowFilterModal(false);
+      return;
+    }
+    if (showSearchPopup) return;
+    if (showPaymentModal || showDetailModal || showReceiptModal || showBillingPrintModal) return;
+
+    if (selectedInvoiceIdx !== null) {
+      e.preventDefault();
+      const customerGroup = filteredData[selectedCustIdx];
+      if (customerGroup && customerGroup.invoices[selectedInvoiceIdx]) {
+        const selectedInv = customerGroup.invoices[selectedInvoiceIdx];
+        const inputEl = document.getElementById(`input-pengiriman-${selectedInv.id}`) as HTMLInputElement;
+        if (inputEl) {
+          inputEl.focus();
+          inputEl.select();
+        }
+      }
+      return;
+    }
+
     e.preventDefault();
     if (filteredData.length === 0) return;
     const custId = filteredData[selectedCustIdx].customer.id;
@@ -223,7 +307,14 @@ export const PiutangAktif: React.FC = () => {
   // Escape: Reset search / return
   useHotkeys('esc', (e) => {
     e.preventDefault();
-    if (showPaymentModal) {
+    if (showSearchPopup) {
+      setShowSearchPopup(false);
+      searchInputRef.current?.focus();
+    } else if (showFilterModal) {
+      setShowFilterModal(false);
+    } else if (showBillingPrintModal) {
+      setShowBillingPrintModal(false);
+    } else if (showPaymentModal) {
       setShowPaymentModal(false);
     } else if (showDetailModal) {
       setShowDetailModal(false);
@@ -235,6 +326,44 @@ export const PiutangAktif: React.FC = () => {
       navigate('/penagihan');
     }
   }, { enableOnFormTags: true });
+
+  // P key: Print receipt when receipt modal is active
+  useHotkeys('p', (e) => {
+    if (showReceiptModal) {
+      e.preventDefault();
+      printReceipt();
+    }
+  }, { enableOnFormTags: true });
+
+  const handleSearchPopupKeyDown = (e: React.KeyboardEvent) => {
+    if (filteredData.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setPopupFocusedIndex((prev) => (prev + 1) % filteredData.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setPopupFocusedIndex((prev) => (prev - 1 + filteredData.length) % filteredData.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const targetGroup = filteredData[popupFocusedIndex];
+      setSelectedCustIdx(popupFocusedIndex);
+      setExpandedCustIds((prev) => ({
+        ...prev,
+        [targetGroup.customer.id]: true,
+      }));
+      if (targetGroup.invoices.length > 0) {
+        setSelectedInvoiceIdx(0);
+      } else {
+        setSelectedInvoiceIdx(null);
+      }
+      setShowSearchPopup(false);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowSearchPopup(false);
+      searchInputRef.current?.focus();
+    }
+  };
 
   const openDetailModal = async () => {
     if (selectedCustIdx === null) return;
@@ -291,8 +420,7 @@ export const PiutangAktif: React.FC = () => {
     }
   };
 
-  const submitPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const savePayment = async (shouldPrint: boolean) => {
     const customerGroup = filteredData[selectedCustIdx];
     if (!customerGroup) return;
 
@@ -328,13 +456,22 @@ export const PiutangAktif: React.FC = () => {
       setShowPaymentModal(false);
       fetchData(); // reload list
 
-      // Load session details for printing receipt
-      const sessionDetail = await api.get(`/payments/sessions/${res.data.billingSession.id}`);
-      setReceiptSession(sessionDetail.data);
-      setShowReceiptModal(true);
+      if (shouldPrint) {
+        // Load session details for printing receipt
+        const sessionDetail = await api.get(`/payments/sessions/${res.data.billingSession.id}`);
+        setReceiptSession(sessionDetail.data);
+        setShowReceiptModal(true);
+      } else {
+        alert('Setoran berhasil disimpan.');
+      }
     } catch (err: any) {
       alert(err.response?.data?.error || 'Gagal menyimpan setoran penagihan');
     }
+  };
+
+  const submitPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await savePayment(true);
   };
 
   const printReceipt = () => {
@@ -396,26 +533,18 @@ export const PiutangAktif: React.FC = () => {
           <button 
             onClick={openPaymentModal} 
             disabled={filteredData.length === 0}
-            className="btn-primary flex items-center gap-1.5 disabled:opacity-50"
+            className="btn-primary flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
             <DollarSign size={14} />
             <span>Bayar Tagihan Multi-Nota (F10)</span>
-          </button>
-          <button 
-            onClick={openDetailModal} 
-            disabled={selectedInvoiceIdx === null}
-            className="card bg-surface-800 hover:bg-surface-750 px-3 py-2 text-slate-300 font-bold border border-surface-700/60 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
-          >
-            <FileText size={14} />
-            <span>Detail Nota (F4)</span>
           </button>
         </div>
       </div>
 
       {/* Control Board */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="card p-4 flex flex-col md:flex-row md:items-end gap-4">
         {/* Search */}
-        <div className="relative">
+        <div className="relative flex-grow">
           <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Pelanggan (F1)</label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
@@ -425,40 +554,38 @@ export const PiutangAktif: React.FC = () => {
               placeholder="Nama pelanggan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (filteredData.length > 0) {
+                    setPopupFocusedIndex(0);
+                    setShowSearchPopup(true);
+                  }
+                }
+              }}
               className="input-field w-full pl-9 py-2 text-xs"
             />
           </div>
         </div>
 
-        {/* Status Filter */}
-        <div>
+        {/* Status Filter Trigger */}
+        <div className="w-full md:w-64">
           <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Filter Status Piutang (F3)</label>
-          <div className="flex gap-1.5 p-1 bg-surface-900 border border-surface-750 rounded-lg text-xs">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${statusFilter === 'all' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Semua
-            </button>
-            <button
-              onClick={() => setStatusFilter('overdue')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${statusFilter === 'overdue' ? 'bg-danger-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Overdue
-            </button>
-            <button
-              onClick={() => setStatusFilter('lancar')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${statusFilter === 'lancar' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              Lancar
-            </button>
-          </div>
-        </div>
-
-        {/* Hints */}
-        <div className="text-right flex flex-col justify-end text-[10px] text-slate-400 space-y-1">
-          <p>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih pelanggan/nota.</p>
-          <p>Tekan <kbd className="shortcut-badge">Enter</kbd> untuk expand/collapse rincian invoice.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFilterOptionIdx(['all', 'overdue', 'lancar'].indexOf(statusFilter));
+              setShowFilterModal(true);
+            }}
+            className="input-field w-full py-2 px-3 text-xs flex justify-between items-center text-slate-350 bg-surface-900 border border-surface-750 hover:bg-surface-750 hover:text-white transition-all text-left font-bold cursor-pointer"
+          >
+            <span>
+              {statusFilter === 'all' && 'Semua'}
+              {statusFilter === 'overdue' && 'Overdue'}
+              {statusFilter === 'lancar' && 'Hampir'}
+            </span>
+            <ChevronDown size={14} className="text-slate-500" />
+          </button>
         </div>
       </div>
 
@@ -512,6 +639,18 @@ export const PiutangAktif: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-6 self-end sm:self-center text-right">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPrintBillingGroup(group);
+                        setShowBillingPrintModal(true);
+                      }}
+                      className="btn-primary py-1.5 px-3 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Printer size={12} />
+                      <span>Cetak Penagihan</span>
+                    </button>
+
                     <div>
                       <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Limit Kredit</span>
                       <span className="text-xs text-slate-300 font-semibold">{formatCurrency(Number(cust.limit_kredit))}</span>
@@ -528,17 +667,17 @@ export const PiutangAktif: React.FC = () => {
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="bg-surface-800/30 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-surface-750">
-                          <th className="p-3 w-8 text-center">No</th>
-                          <th className="p-3">No. Faktur</th>
-                          <th className="p-3">Tgl Order</th>
-                          <th className="p-3">Jatuh Tempo</th>
-                          <th className="p-3 text-right">Subtotal Barang</th>
+                          <th className="p-3 w-10 text-center">No</th>
+                          <th className="p-3 w-32">No. Faktur</th>
+                          <th className="p-3 w-28">Tgl Order</th>
+                          <th className="p-3 w-28">Jatuh Tempo</th>
+                          <th className="p-3 text-right w-32">Subtotal Barang</th>
                           <th className="p-3 text-right w-36">Biaya Tambahan (SO)</th>
-                          <th className="p-3 text-center w-36">Ongkir Travel/Bus</th>
-                          <th className="p-3 text-right">Total Nota</th>
-                          <th className="p-3 text-right">Terbayar</th>
-                          <th className="p-3 text-right">Sisa Tagihan</th>
-                          <th className="p-3 text-center">Status</th>
+                          <th className="p-3 text-center w-36">Pengiriman</th>
+                          <th className="p-3 text-right w-32">Total Nota</th>
+                          <th className="p-3 text-right w-32">Terbayar</th>
+                          <th className="p-3 text-right w-32">Sisa Tagihan</th>
+                          <th className="p-3 text-center w-28">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-750">
@@ -546,6 +685,15 @@ export const PiutangAktif: React.FC = () => {
                           const isInvSelected = selectedCustIdx === cIdx && selectedInvoiceIdx === iIdx;
                           const grandTotal = Number(inv.subtotal) + Number(inv.biaya_pengiriman);
                           const itemsSubtotal = Number(inv.subtotal) - Number(inv.extra_charge_amount || 0);
+
+                          const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                            let base = "p-3 transition-all duration-150 border-b border-surface-750 ";
+                            if (isInvSelected) {
+                              base = "p-3 transition-all duration-150 border-b border-blue-300 bg-blue-100 ";
+                              if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                            }
+                            return base;
+                          };
  
                           return (
                             <tr
@@ -556,59 +704,91 @@ export const PiutangAktif: React.FC = () => {
                                 setSelectedInvoiceIdx(iIdx);
                               }}
                               className={`hover:bg-surface-750/30 cursor-pointer ${
-                                isInvSelected ? 'bg-primary-950/20 text-white font-semibold' : 'text-slate-300'
+                                isInvSelected ? 'bg-blue-100' : 'text-slate-300'
                               }`}
                             >
-                              <td className="p-3 text-center text-slate-500">{iIdx + 1}</td>
-                              <td className="p-3 font-mono font-bold text-slate-200">
+                              <td className={`${getTdClass('first')} text-center ${isInvSelected ? 'text-primary-950 font-bold' : 'text-slate-500'}`}>
+                                {iIdx + 1}
+                              </td>
+                              <td className={`${getTdClass('middle')} font-mono font-bold ${isInvSelected ? 'text-primary-950' : 'text-slate-200'}`}>
                                 {inv.no_faktur || inv.no_order}
                               </td>
-                              <td className="p-3">{formatDate(inv.order_date)}</td>
-                              <td className={`p-3 font-bold ${inv.is_overdue ? 'text-danger-400' : 'text-slate-400'}`}>
+                              <td className={`${getTdClass('middle')} ${isInvSelected ? 'text-slate-800' : ''}`}>
+                                {formatDate(inv.order_date)}
+                              </td>
+                              <td className={`${getTdClass('middle')} font-bold ${
+                                isInvSelected 
+                                  ? (inv.is_overdue ? 'text-danger-700' : 'text-slate-750') 
+                                  : (inv.is_overdue ? 'text-danger-400' : 'text-slate-400')
+                              }`}>
                                 {formatDate(inv.due_date)}
                               </td>
-                              <td className="p-3 text-right font-mono">{formatCurrency(itemsSubtotal)}</td>
-                              <td className="p-3 text-right">
-                                <span className="font-mono block text-slate-300">{formatCurrency(Number(inv.extra_charge_amount || 0))}</span>
+                              <td className={`${getTdClass('middle')} text-right font-mono ${isInvSelected ? 'text-slate-800' : ''}`}>
+                                {formatCurrency(itemsSubtotal)}
+                              </td>
+                              <td className={`${getTdClass('middle')} text-right`}>
+                                <span className={`font-mono block ${isInvSelected ? 'text-slate-800' : 'text-slate-300'}`}>
+                                  {formatCurrency(Number(inv.extra_charge_amount || 0))}
+                                </span>
                                 {inv.extra_charge_desc && (
-                                  <span className="text-[9px] text-slate-400 block mt-0.5 truncate max-w-[120px] font-medium" title={inv.extra_charge_desc}>
+                                  <span className={`text-[9px] block mt-0.5 truncate max-w-[120px] font-medium ${isInvSelected ? 'text-slate-650' : 'text-slate-450'}`} title={inv.extra_charge_desc}>
                                     {inv.extra_charge_desc}
                                   </span>
                                 )}
                               </td>
-                              <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center justify-center gap-1">
-                                  <Truck size={12} className="text-slate-400" />
-                                  <input
-                                    type="text"
-                                    defaultValue={formatRupiahInput(Number(inv.biaya_pengiriman))}
-                                    onBlur={(e) => {
-                                      const val = parseRupiahInput(e.target.value);
+                              <td className={`${getTdClass('middle')} text-center`} onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  id={`input-pengiriman-${inv.id}`}
+                                  key={`${inv.id}-${inv.biaya_pengiriman}`}
+                                  type="text"
+                                  defaultValue={formatRupiahInput(Number(inv.biaya_pengiriman))}
+                                  onFocus={(e) => e.target.select()}
+                                  onBlur={(e) => {
+                                    const val = parseRupiahInput(e.target.value);
+                                    if (val !== Number(inv.biaya_pengiriman)) {
                                       handleUpdateOngkir(inv.id, val);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        const val = parseRupiahInput((e.target as HTMLInputElement).value);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const val = parseRupiahInput((e.target as HTMLInputElement).value);
+                                      if (val !== Number(inv.biaya_pengiriman)) {
                                         handleUpdateOngkir(inv.id, val);
-                                        (e.target as HTMLInputElement).blur();
                                       }
-                                    }}
-                                    className="input-field py-1 px-2 text-right text-xs font-mono w-24 bg-surface-900 border-surface-700/60"
-                                  />
-                                </div>
+                                      
+                                      // Blur input
+                                      (e.target as HTMLInputElement).blur();
+
+                                      // Move highlighting to the next row
+                                      const currentGroup = filteredData[selectedCustIdx];
+                                      if (currentGroup && selectedInvoiceIdx !== null && selectedInvoiceIdx < currentGroup.invoices.length - 1) {
+                                        setSelectedInvoiceIdx(selectedInvoiceIdx + 1);
+                                      }
+                                    }
+                                  }}
+                                  className={`input-field py-1 px-2 text-right text-xs font-mono w-28 text-white font-bold focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all ${
+                                    isInvSelected ? 'bg-primary-955/80 border-primary-600' : 'bg-surface-900 border-primary-500/40'
+                                  }`}
+                                />
                               </td>
-                              <td className="p-3 text-right font-mono text-white font-bold">{formatCurrency(grandTotal)}</td>
-                              <td className="p-3 text-right font-mono text-emerald-400">{formatCurrency(Number(inv.paid_amount))}</td>
-                              <td className="p-3 text-right font-mono text-rose-400 font-bold">{formatCurrency(Number(inv.remaining))}</td>
-                              <td className="p-3 text-center">
+                              <td className={`${getTdClass('middle')} text-right font-mono font-bold ${isInvSelected ? 'text-primary-950' : 'text-white'}`}>
+                                {formatCurrency(grandTotal)}
+                              </td>
+                              <td className={`${getTdClass('middle')} text-right font-mono ${isInvSelected ? 'text-emerald-700 font-bold' : 'text-emerald-400'}`}>
+                                {formatCurrency(Number(inv.paid_amount))}
+                              </td>
+                              <td className={`${getTdClass('middle')} text-right font-mono font-bold ${isInvSelected ? 'text-rose-700' : 'text-rose-400'}`}>
+                                {formatCurrency(Number(inv.remaining))}
+                              </td>
+                              <td className={`${getTdClass('last')} text-center`}>
                                 {inv.is_overdue ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-danger-950 text-danger-400 border border-danger-700/30 inline-flex items-center gap-1">
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-danger-955 text-danger-400 border border-danger-700/30 inline-flex items-center gap-1">
                                     <AlertTriangle size={10} /> Overdue
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-700/30 inline-flex items-center gap-1">
-                                    <CheckCircle size={10} /> Lancar
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-yellow-955 text-yellow-400 border border-yellow-700/30 inline-flex items-center gap-1">
+                                    <CheckCircle size={10} /> Hampir
                                   </span>
                                 )}
                               </td>
@@ -625,55 +805,227 @@ export const PiutangAktif: React.FC = () => {
         </div>
       )}
 
-      {/* Setoran Payment Modal (F10) */}
-      {showPaymentModal && filteredData[selectedCustIdx] && (
+      {/* Customer Selection Search Popup Modal */}
+      {showSearchPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <form 
-            onSubmit={submitPayment}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl animate-scale-in space-y-4 max-h-[90vh] flex flex-col"
+          <div 
+            ref={searchPopupRef}
+            tabIndex={0}
+            onKeyDown={handleSearchPopupKeyDown}
+            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col text-slate-200"
           >
-            <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <DollarSign size={20} className="text-emerald-400" />
-                <span>Pencatatan Setoran Pembayaran Multi-Nota</span>
+            <div className="flex justify-between items-center w-full border-b border-surface-700 pb-3 shrink-0">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Search size={18} />
+                <span>Pilih Pelanggan (Customer)</span>
               </h3>
               <button 
-                type="button" 
-                onClick={() => setShowPaymentModal(false)}
-                className="text-slate-400 hover:text-white"
+                onClick={() => {
+                  setShowSearchPopup(false);
+                  searchInputRef.current?.focus();
+                }} 
+                className="text-slate-400 hover:text-white cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-3 bg-surface-900 border border-surface-750 rounded-lg text-xs space-y-1 shrink-0">
-              <p className="text-slate-400">Customer: <strong className="text-slate-200">{filteredData[selectedCustIdx].customer.nama} ({filteredData[selectedCustIdx].customer.kode})</strong></p>
-              <p className="text-slate-400">Total Piutang Aktif: <strong className="text-rose-400">{formatCurrency(filteredData[selectedCustIdx].total_piutang)}</strong></p>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
+              {filteredData.map((group, idx) => (
+                <button
+                  type="button"
+                  key={group.customer.id}
+                  onClick={() => {
+                    setSelectedCustIdx(idx);
+                    setExpandedCustIds((prev) => ({ ...prev, [group.customer.id]: true }));
+                    if (group.invoices.length > 0) {
+                      setSelectedInvoiceIdx(0);
+                    } else {
+                      setSelectedInvoiceIdx(null);
+                    }
+                    setShowSearchPopup(false);
+                  }}
+                  onMouseEnter={() => setPopupFocusedIndex(idx)}
+                  className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${
+                    idx === popupFocusedIndex
+                      ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                      : 'border-surface-700 hover:bg-surface-750 text-slate-350 bg-surface-900'
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold text-white">{group.customer.nama}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Alamat: {group.customer.alamat || '-'}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Kode: {group.customer.kode}</span>
+                    <span className="text-[11px] font-bold text-rose-400 block mt-0.5">Piutang: {formatCurrency(group.total_piutang)}</span>
+                  </div>
+                </button>
+              ))}
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3 py-1">
+            <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[10px] text-slate-500 shrink-0">
+              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
+              <span><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Status Modal (F3) */}
+      {showFilterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+          <div 
+            ref={filterModalRef}
+            tabIndex={0}
+            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in space-y-4 outline-none"
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedFilterOptionIdx((curr) => (curr > 0 ? curr - 1 : 2));
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedFilterOptionIdx((curr) => (curr < 2 ? curr + 1 : 0));
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const options: ('all' | 'overdue' | 'lancar')[] = ['all', 'overdue', 'lancar'];
+                setStatusFilter(options[selectedFilterOptionIdx]);
+                setShowFilterModal(false);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setShowFilterModal(false);
+              }
+            }}
+          >
+            <div className="flex justify-between items-center border-b border-surface-700 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span>Filter Status Piutang (F3)</span>
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setShowFilterModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { key: 'all', label: 'Semua Status', color: 'bg-primary-600' },
+                { key: 'overdue', label: 'Overdue (Jatuh Tempo)', color: 'bg-danger-600' },
+                { key: 'lancar', label: 'Hampir', color: 'bg-yellow-500' },
+              ].map((opt, idx) => {
+                const isSelected = selectedFilterOptionIdx === idx;
+                const isCurrent = statusFilter === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter(opt.key as any);
+                      setShowFilterModal(false);
+                    }}
+                    onMouseEnter={() => setSelectedFilterOptionIdx(idx)}
+                    className={`w-full text-left p-3 rounded-lg border text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary-600/10 border-primary-500 text-primary-400 font-semibold'
+                        : 'bg-surface-900 border-surface-750 text-slate-400 hover:bg-surface-850 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={`w-2.5 h-2.5 rounded-full ${opt.color}`} />
+                      <span>{opt.label}</span>
+                    </div>
+                    {isCurrent && (
+                      <span className="text-[10px] text-primary-500 font-normal italic">Aktif</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="pt-2 text-[10px] text-slate-500 flex justify-between">
+              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
+              <span><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Setoran Payment Modal (F10) */}
+      {showPaymentModal && filteredData[selectedCustIdx] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+          <form 
+            onSubmit={submitPayment}
+            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden"
+          >
+            {/* Header with Blue Color */}
+            <div className="bg-blue-600 px-6 py-4 flex justify-between items-center text-white shrink-0">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <DollarSign size={18} />
+                <span>Pencatatan Setoran Pembayaran Multi-Nota</span>
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setShowPaymentModal(false)}
+                className="text-blue-100 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 flex-1 overflow-y-auto space-y-4 text-slate-800">
+              {/* Customer Info Card in Light Theme */}
+              <div className="p-3 bg-blue-50/50 border border-blue-100/60 rounded-lg text-xs space-y-1 shrink-0">
+                <p className="text-slate-655">Customer: <strong className="text-slate-900">{filteredData[selectedCustIdx].customer.nama} ({filteredData[selectedCustIdx].customer.kode})</strong></p>
+                <p className="text-slate-655">Total Piutang Aktif: <strong className="text-rose-600 font-bold">{formatCurrency(filteredData[selectedCustIdx].total_piutang)}</strong></p>
+              </div>
+
               {/* Payment Mode Selector */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Mode Pembayaran</label>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">Mode Pembayaran</label>
                 <div className="flex gap-2">
                   <button
+                    ref={paymentModeFifoRef}
                     type="button"
                     onClick={() => setPaymentMode('fifo')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        paymentModeManualRef.current?.focus();
+                        setPaymentMode('manual');
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentDateRef.current?.focus();
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                       paymentMode === 'fifo'
-                        ? 'bg-primary-600/10 border-primary-500 text-primary-400'
-                        : 'bg-surface-900 border-surface-750 text-slate-400'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
                     FIFO Otomatis (Nota Terlama)
                   </button>
                   <button
+                    ref={paymentModeManualRef}
                     type="button"
                     onClick={() => setPaymentMode('manual')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        paymentModeFifoRef.current?.focus();
+                        setPaymentMode('fifo');
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentDateRef.current?.focus();
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                       paymentMode === 'manual'
-                        ? 'bg-primary-600/10 border-primary-500 text-primary-400'
-                        : 'bg-surface-900 border-surface-750 text-slate-400'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
                     Pilihan Manual Per Nota
@@ -682,13 +1034,32 @@ export const PiutangAktif: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Tanggal Setoran</label>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">Tanggal Setoran</label>
                 <input
+                  ref={paymentDateRef}
                   type="date"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (paymentMode === 'fifo') {
+                        paymentAmountRef.current?.focus();
+                      } else {
+                        const currentGroup = filteredData[selectedCustIdx];
+                        if (currentGroup && currentGroup.invoices.length > 0) {
+                          const firstInv = currentGroup.invoices[0];
+                          setTimeout(() => {
+                            const firstInput = document.getElementById(`modal-manual-input-${firstInv.id}`) as HTMLInputElement;
+                            firstInput?.focus();
+                            firstInput?.select();
+                          }, 50);
+                        }
+                      }
+                    }
+                  }}
                   required
-                  className="input-field w-full py-2 text-xs bg-surface-900 border-surface-750"
+                  className="input-field w-full py-2 text-xs bg-slate-50 border border-slate-250 text-slate-800 font-medium focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                 />
               </div>
 
@@ -696,30 +1067,36 @@ export const PiutangAktif: React.FC = () => {
               {paymentMode === 'fifo' ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1">Nominal Setoran (Rp)</label>
+                    <label className="block text-xs font-semibold text-slate-655 mb-1">Nominal Setoran (Rp)</label>
                     <input
+                      ref={paymentAmountRef}
                       type="text"
                       value={formatRupiahInput(paymentAmount)}
                       onChange={(e) => setPaymentAmount(e.target.value ? parseRupiahInput(e.target.value) : '')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          paymentMethodCashRef.current?.focus();
+                        }
+                      }}
                       required
-                      autoFocus
                       placeholder="Masukkan nominal setoran..."
-                      className="input-field w-full py-2 text-xs font-mono text-right bg-surface-900 border-surface-750 text-emerald-400 font-bold"
+                      className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                     />
                   </div>
 
                   {/* FIFO Distribution Preview */}
                   {Number(paymentAmount) > 0 && (
-                    <div className="border border-surface-700/60 rounded-lg overflow-hidden bg-surface-900/40 p-3 space-y-2">
-                      <h4 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Preview Distribusi Setoran (FIFO)</h4>
+                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50 p-3 space-y-2">
+                      <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Preview Distribusi Setoran (FIFO)</h4>
                       <div className="space-y-1.5 max-h-[150px] overflow-y-auto text-[11px]">
                         {fifoAllocations.map((alloc) => (
-                          <div key={alloc.id} className="flex justify-between items-center py-1 border-b border-surface-800 last:border-0">
-                            <span className="font-mono text-slate-300">{alloc.no_faktur || alloc.no_order}</span>
-                            <span className="text-slate-400">
+                          <div key={alloc.id} className="flex justify-between items-center py-1 border-b border-slate-100 last:border-0">
+                            <span className="font-mono text-slate-700">{alloc.no_faktur || alloc.no_order}</span>
+                            <span className="text-slate-500">
                               Tagihan: {formatCurrency(alloc.remaining)} →
-                              <strong className="text-emerald-400 ml-1">Bayar: {formatCurrency(alloc.allocated)}</strong>
-                              {alloc.remainingAfter === 0 && <span className="ml-1 text-emerald-500 font-bold">✓</span>}
+                              <strong className="text-emerald-600 ml-1">Bayar: {formatCurrency(alloc.allocated)}</strong>
+                              {alloc.remainingAfter === 0 && <span className="ml-1 text-emerald-600 font-bold">✓</span>}
                             </span>
                           </div>
                         ))}
@@ -730,23 +1107,24 @@ export const PiutangAktif: React.FC = () => {
               ) : (
                 /* Manual Mode Invoices Table Input */
                 <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Input Setoran Per Nota</label>
-                  <div className="border border-surface-700/60 rounded-lg overflow-hidden max-h-[220px] overflow-y-auto">
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">Input Setoran Per Nota</label>
+                  <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[220px] overflow-y-auto bg-white">
                     <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-surface-850 sticky top-0 border-b border-surface-700">
-                        <tr className="text-slate-400 text-[10px] font-bold uppercase">
+                      <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
+                        <tr className="text-slate-500 text-[10px] font-bold uppercase">
                           <th className="p-2">No. Faktur</th>
                           <th className="p-2 text-right">Sisa Tagihan</th>
                           <th className="p-2 text-center w-36">Nominal Bayar</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-surface-750">
-                        {filteredData[selectedCustIdx].invoices.map((inv) => (
-                          <tr key={inv.id} className="hover:bg-surface-750/10">
-                            <td className="p-2 font-mono">{inv.no_faktur || inv.no_order}</td>
-                            <td className="p-2 text-right font-mono text-rose-400">{formatCurrency(inv.remaining)}</td>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredData[selectedCustIdx].invoices.map((inv, idx, invoices) => (
+                          <tr key={inv.id} className="hover:bg-slate-50/50">
+                            <td className="p-2 font-mono text-slate-700">{inv.no_faktur || inv.no_order}</td>
+                            <td className="p-2 text-right font-mono text-rose-600">{formatCurrency(inv.remaining)}</td>
                             <td className="p-1.5 text-center">
                               <input
+                                id={`modal-manual-input-${inv.id}`}
                                 type="text"
                                 value={formatRupiahInput(manualAmounts[inv.id] || 0)}
                                 onChange={(e) => {
@@ -756,7 +1134,36 @@ export const PiutangAktif: React.FC = () => {
                                     [inv.id]: val,
                                   }));
                                 }}
-                                className="input-field py-1 px-2 text-right text-xs font-mono w-28 bg-surface-900 border-surface-750 text-emerald-400 font-semibold"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (idx < invoices.length - 1) {
+                                      const nextInv = invoices[idx + 1];
+                                      const nextInput = document.getElementById(`modal-manual-input-${nextInv.id}`) as HTMLInputElement;
+                                      nextInput?.focus();
+                                      nextInput?.select();
+                                    } else {
+                                      paymentMethodCashRef.current?.focus();
+                                    }
+                                  } else if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    if (idx < invoices.length - 1) {
+                                      const nextInv = invoices[idx + 1];
+                                      const nextInput = document.getElementById(`modal-manual-input-${nextInv.id}`) as HTMLInputElement;
+                                      nextInput?.focus();
+                                      nextInput?.select();
+                                    }
+                                  } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    if (idx > 0) {
+                                      const prevInv = invoices[idx - 1];
+                                      const prevInput = document.getElementById(`modal-manual-input-${prevInv.id}`) as HTMLInputElement;
+                                      prevInput?.focus();
+                                      prevInput?.select();
+                                    }
+                                  }
+                                }}
+                                className="input-field py-1 px-2 text-right text-xs font-mono w-28 bg-slate-50 border border-slate-250 text-emerald-600 font-semibold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                               />
                             </td>
                           </tr>
@@ -764,46 +1171,132 @@ export const PiutangAktif: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex justify-between items-center text-xs p-2 bg-surface-900 border border-surface-750 rounded-lg">
-                    <span className="text-slate-400 uppercase font-bold text-[10px]">Total Setoran Manual</span>
-                    <strong className="text-emerald-400 text-sm font-black">{formatCurrency(manualTotal)}</strong>
+                  <div className="flex justify-between items-center text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <span className="text-slate-500 uppercase font-bold text-[10px]">Total Setoran Manual</span>
+                    <strong className="text-emerald-600 text-sm font-black">{formatCurrency(manualTotal)}</strong>
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Metode Setoran</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="input-field w-full py-2 text-xs bg-surface-900 border-surface-750 text-white"
-                >
-                  <option value="cash">Tunai / Cash</option>
-                  <option value="transfer">Transfer Bank</option>
-                  <option value="cheque">Giro / Cheque</option>
-                </select>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">Metode Setoran</label>
+                <div className="flex gap-2">
+                  <button
+                    ref={paymentMethodCashRef}
+                    type="button"
+                    onClick={() => setPaymentMethod('cash')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        paymentMethodTransferRef.current?.focus();
+                        setPaymentMethod('transfer');
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentNoteRef.current?.focus();
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      paymentMethod === 'cash'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    Tunai / Cash
+                  </button>
+                  <button
+                    ref={paymentMethodTransferRef}
+                    type="button"
+                    onClick={() => setPaymentMethod('transfer')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        paymentMethodChequeRef.current?.focus();
+                        setPaymentMethod('cheque');
+                      } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        paymentMethodCashRef.current?.focus();
+                        setPaymentMethod('cash');
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentNoteRef.current?.focus();
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      paymentMethod === 'transfer'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    Transfer Bank
+                  </button>
+                  <button
+                    ref={paymentMethodChequeRef}
+                    type="button"
+                    onClick={() => setPaymentMethod('cheque')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        paymentMethodTransferRef.current?.focus();
+                        setPaymentMethod('transfer');
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentNoteRef.current?.focus();
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      paymentMethod === 'cheque'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    Giro / Cheque
+                  </button>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Catatan Setoran</label>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">Catatan Setoran</label>
                 <textarea
+                  ref={paymentNoteRef}
                   value={paymentNote}
                   onChange={(e) => setPaymentNote(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      savePayment(false); // Save without printing
+                    }
+                  }}
                   rows={2}
-                  placeholder="Keterangan transfer bank, no giro, dll..."
-                  className="input-field w-full py-1.5 text-xs resize-none bg-surface-900 border-surface-750 text-white"
+                  placeholder="Keterangan transfer bank, no giro, dll... (Opsional)"
+                  className="input-field w-full py-1.5 text-xs resize-none bg-slate-50 border border-slate-250 text-slate-800 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                 />
               </div>
             </div>
 
-            <div className="pt-3 border-t border-surface-700 flex justify-between items-center text-xs shrink-0">
-              <span className="text-slate-400">Tekan <kbd className="shortcut-badge">Esc</kbd> untuk batal</span>
-              <button 
-                type="submit" 
-                className="btn-primary py-2 px-5 text-xs bg-emerald-600 hover:bg-emerald-500 font-bold"
-              >
-                Simpan Setoran (Cetak Struk)
-              </button>
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center text-xs shrink-0">
+              <span className="text-slate-400">Gunakan tab untuk navigasi tombol</span>
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowPaymentModal(false)}
+                  className="btn-secondary py-2 px-4 text-xs font-bold rounded-lg cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-800"
+                >
+                  Batal (Esc)
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => savePayment(false)}
+                  className="btn-secondary py-2 px-4 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-850 cursor-pointer"
+                >
+                  Simpan Tanpa Cetak
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary py-2 px-5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                >
+                  Simpan Setoran (Cetak Struk)
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -1063,16 +1556,132 @@ export const PiutangAktif: React.FC = () => {
         </div>
       )}
 
+      {/* Struk Cetak Penagihan / Billing Print Modal */}
+      {showBillingPrintModal && printBillingGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+          <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0 print:hidden">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Printer size={20} className="text-primary-400" />
+                <span>Cetak Lembar Penagihan Piutang</span>
+              </h3>
+              <button 
+                onClick={() => setShowBillingPrintModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Print Area */}
+            <div className="flex-1 overflow-y-auto py-6 space-y-6 text-xs bg-white text-slate-900 p-8 rounded-lg mt-4 font-mono shadow-inner print:mt-0 print:p-0" id="print-billing-area">
+              <div className="text-center space-y-1">
+                <h2 className="text-xl font-extrabold tracking-wider uppercase text-slate-950">CV MAJU MULIA BERSAMA</h2>
+                <p className="text-xs text-slate-600">Suku Cadang & Sparepart AC Mobil Terlengkap</p>
+                <p className="text-[10px] text-slate-500 border-b border-slate-300 pb-2">Jl. Raya Timur Kudus, Indonesia | Telp: 0291-555-1234</p>
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 underline">LEMBAR PENAGIHAN PIUTANG CUSTOMER</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-xs text-slate-800">
+                <div className="space-y-1">
+                  <p><strong>Customer:</strong> {printBillingGroup.customer.nama}</p>
+                  <p><strong>Kode Cust:</strong> {printBillingGroup.customer.kode}</p>
+                  <p><strong>Alamat:</strong> {printBillingGroup.customer.alamat || '-'}</p>
+                  <p><strong>No Telp:</strong> {printBillingGroup.customer.no_telp || '-'}</p>
+                </div>
+                <div className="space-y-1 text-right">
+                  <p><strong>Tanggal Tagihan:</strong> {formatDate(new Date().toISOString())}</p>
+                  <p><strong>Limit Kredit:</strong> {formatCurrency(Number(printBillingGroup.customer.limit_kredit))}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-b border-slate-300 py-2">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-600 font-bold">
+                      <th className="py-2 w-8 text-center">No</th>
+                      <th className="py-2">No. Faktur</th>
+                      <th className="py-2">Tgl Order</th>
+                      <th className="py-2">Jatuh Tempo</th>
+                      <th className="py-2 text-right">Total Nota</th>
+                      <th className="py-2 text-right">Terbayar</th>
+                      <th className="py-2 text-right">Sisa Tagihan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                    {printBillingGroup.invoices.map((inv, idx) => {
+                      const grandTotal = Number(inv.subtotal) + Number(inv.biaya_pengiriman);
+                      return (
+                        <tr key={inv.id}>
+                          <td className="py-2 text-center text-slate-400">{idx + 1}</td>
+                          <td className="py-2 font-mono font-bold text-slate-900">{inv.no_faktur || inv.no_order}</td>
+                          <td className="py-2 text-slate-600">{formatDate(inv.order_date)}</td>
+                          <td className="py-2 text-slate-650">{formatDate(inv.due_date)}</td>
+                          <td className="py-2 text-right font-mono">{formatCurrency(grandTotal)}</td>
+                          <td className="py-2 text-right font-mono text-emerald-700">{formatCurrency(Number(inv.paid_amount))}</td>
+                          <td className="py-2 text-right font-mono text-rose-600 font-bold">{formatCurrency(Number(inv.remaining))}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-col items-end space-y-1.5 text-slate-800">
+                <div className="flex justify-between w-64 text-xs font-bold border-b border-slate-300 pb-1">
+                  <span>TOTAL PIUTANG:</span>
+                  <span className="text-rose-600 font-black">{formatCurrency(printBillingGroup.total_piutang)}</span>
+                </div>
+              </div>
+
+              {/* Signature Blocks */}
+              <div className="grid grid-cols-2 gap-8 pt-12 text-center text-xs text-slate-700">
+                <div>
+                  <p>Mengetahui (Kolektor/Admin)</p>
+                  <div className="h-16"></div>
+                  <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">( ______________________ )</p>
+                </div>
+                <div>
+                  <p>Penerima (Customer)</p>
+                  <div className="h-16"></div>
+                  <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">( {printBillingGroup.customer.nama} )</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-surface-700 flex justify-end gap-2 shrink-0 print:hidden">
+              <button 
+                onClick={() => setShowBillingPrintModal(false)}
+                className="btn-secondary text-xs px-4 bg-surface-700 hover:bg-surface-650 text-white rounded-lg cursor-pointer"
+              >
+                Tutup (Esc)
+              </button>
+              <button 
+                onClick={() => window.print()}
+                className="btn-primary flex items-center gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 px-5 font-bold rounded-lg cursor-pointer"
+              >
+                <Printer size={14} />
+                <span>Cetak Lembar Penagihan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Global CSS media print block */}
       <style>{`
         @media print {
           body * {
             visibility: hidden;
           }
-          #print-receipt-area, #print-receipt-area * {
+          #print-receipt-area, #print-receipt-area *,
+          #print-billing-area, #print-billing-area * {
             visibility: visible;
           }
-          #print-receipt-area {
+          #print-receipt-area, #print-billing-area {
             position: absolute;
             left: 0;
             top: 0;
