@@ -136,7 +136,7 @@ paymentRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: A
 });
 
 // POST /api/payments/session - Record a billing session (customer AR)
-paymentRouter.post('/session', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async (req: AuthRequest, res: Response): Promise<void> => {
+paymentRouter.post('/session', authenticate, authorize(ROLES.ADMIN, ROLES.SALES, ROLES.STAFF_KANTOR), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { customer_id, payment_date, total_amount, payment_method, mode, catatan, allocations } = req.body;
 
@@ -415,7 +415,7 @@ paymentRouter.get('/supplier/debt', authenticate, async (req: AuthRequest, res: 
 });
 
 // POST /api/payments/supplier/session - Record supplier payment session (AP)
-paymentRouter.post('/supplier/session', authenticate, authorize(ROLES.ADMIN), async (req: AuthRequest, res: Response): Promise<void> => {
+paymentRouter.post('/supplier/session', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_KANTOR), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { supplier_id, payment_date, total_amount, payment_method, mode, catatan, allocations } = req.body;
 

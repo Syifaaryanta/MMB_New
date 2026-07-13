@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatRupiahInput, parseRupiahInput } from '@/lib/utils';
-import { 
-  Search, 
-  ChevronDown, 
-  ChevronRight, 
-  DollarSign, 
-  Calendar, 
-  FileText, 
+import {
+  Search,
+  ChevronDown,
+  ChevronRight,
+  DollarSign,
+  Calendar,
+  FileText,
   CreditCard,
   AlertTriangle,
   CheckCircle,
@@ -81,7 +81,6 @@ export const PiutangAktif: React.FC = () => {
   const paymentAmountRef = useRef<HTMLInputElement>(null);
   const paymentMethodCashRef = useRef<HTMLButtonElement>(null);
   const paymentMethodTransferRef = useRef<HTMLButtonElement>(null);
-  const paymentMethodChequeRef = useRef<HTMLButtonElement>(null);
   const paymentNoteRef = useRef<HTMLTextAreaElement>(null);
 
   // Modal payment setoran (global / multi-nota)
@@ -109,6 +108,7 @@ export const PiutangAktif: React.FC = () => {
 
   // Customer search selection popup modal
   const [showSearchPopup, setShowSearchPopup] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
   const searchPopupRef = useRef<HTMLDivElement>(null);
 
@@ -126,6 +126,10 @@ export const PiutangAktif: React.FC = () => {
 
   // Fetch initial data
   useEffect(() => {
+    if (!searchQuery.trim()) {
+      setData([]);
+      return;
+    }
     fetchData();
   }, [searchQuery]);
 
@@ -358,6 +362,7 @@ export const PiutangAktif: React.FC = () => {
         setSelectedInvoiceIdx(null);
       }
       setShowSearchPopup(false);
+      setIsConfirmed(true);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setShowSearchPopup(false);
@@ -520,6 +525,135 @@ export const PiutangAktif: React.FC = () => {
   const fifoAllocations = getFifoAllocations();
   const manualTotal = Object.values(manualAmounts).reduce((sum, v) => sum + v, 0);
 
+  if (showDetailModal && detailInvoiceId) {
+    return (
+      <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 text-slate-800 p-6 rounded-2xl border border-blue-100 shadow-xl space-y-4 animate-scale-in">
+        {/* Header Board */}
+        <div className="bg-blue-600 -mx-6 -mt-6 p-4 px-6 flex justify-between items-center text-white rounded-t-2xl shrink-0">
+          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+            <FileText size={18} />
+            <span>Rincian Nota Penjualan</span>
+          </h3>
+          <button
+            onClick={() => setShowDetailModal(false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-500 rounded-lg shadow-sm cursor-pointer transition-all duration-200"
+          >
+            ← Kembali (Esc)
+          </button>
+        </div>
+
+        <div className="space-y-4 overflow-y-auto max-h-[82vh] pr-1">
+          {isLoadingDetail ? (
+            <div className="py-24 text-center text-blue-500 font-bold animate-pulse text-sm">Memuat rincian nota...</div>
+          ) : detailInvoice ? (
+            <>
+              {/* Ultra-Compact Metadata Row */}
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm text-xs shrink-0">
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">No Faktur</span>
+                  <strong className="text-slate-900 font-mono text-[11px]">{detailInvoice.no_faktur || detailInvoice.no_order}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Tanggal Order</span>
+                  <strong className="text-slate-800 text-[11px]">{formatDate(detailInvoice.order_date)}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Termin</span>
+                  <strong className="text-slate-800 text-[11px]">{detailInvoice.limit_bulan > 0 ? `Kredit (${detailInvoice.limit_bulan} Bln)` : 'Tunai'}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Pengiriman</span>
+                  <strong className="text-blue-700 text-[11px]">{detailInvoice.diantar ? ' Diantar' : ' Diambil'}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Pelanggan</span>
+                  <strong className="text-slate-900 text-[11px] block truncate" title={`${detailInvoice.customer_nama} (${detailInvoice.customer_telp || '-'})`}>
+                    {detailInvoice.customer_nama}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Catatan</span>
+                  <span className="text-slate-600 text-[11px] block truncate" title={detailInvoice.sender_note || 'Tidak ada catatan'}>
+                    {detailInvoice.sender_note || '-'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Items List Table - Low Padding */}
+              <div className="border border-blue-100 rounded-xl overflow-hidden bg-white shadow-sm shrink-0">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-blue-50 text-blue-900 font-bold uppercase text-[9px] border-b border-blue-100">
+                      <th className="py-2 px-3 w-10 text-center">No</th>
+                      <th className="py-2 px-3">Kode SKU</th>
+                      <th className="py-2 px-3">Nama Barang</th>
+                      <th className="py-2 px-3 text-right w-20">Qty</th>
+                      <th className="py-2 px-3 text-right w-28">Harga</th>
+                      <th className="py-2 px-3 text-right w-28">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-[11px]">
+                    {detailInvoice.sale_items?.map((item: any, idx: number) => (
+                      <tr key={item.id} className="text-slate-700 hover:bg-blue-50/10">
+                        <td className="py-1.5 px-3 text-center text-slate-400 font-semibold">{idx + 1}</td>
+                        <td className="py-1.5 px-3 font-mono font-bold text-slate-500">{item.product_kode}</td>
+                        <td className="py-1.5 px-3 font-extrabold text-slate-900">{item.product_nama}</td>
+                        <td className="py-1.5 px-3 text-right font-bold text-slate-800">{Number(item.qty)}</td>
+                        <td className="py-1.5 px-3 text-right font-mono text-slate-650">{formatCurrency(Number(item.unit_price))}</td>
+                        <td className="py-1.5 px-3 text-right font-mono text-blue-900 font-black">{formatCurrency(Number(item.total))}</td>
+                      </tr>
+                    ))}
+                    {Number(detailInvoice.extra_charge_amount) !== 0 && (
+                      <tr className="text-slate-600 font-semibold bg-slate-50/50">
+                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Biaya Tambahan ({detailInvoice.extra_charge_desc || 'Gojek/Grab'})</td>
+                        <td className="py-1.5 px-3 text-right font-mono text-slate-800 font-bold">{formatCurrency(Number(detailInvoice.extra_charge_amount))}</td>
+                      </tr>
+                    )}
+                    {Number(detailInvoice.biaya_pengiriman) !== 0 && (
+                      <tr className="text-slate-600 font-semibold bg-slate-50/50">
+                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Pengiriman</td>
+                        <td className="py-1.5 px-3 text-right font-mono text-slate-800 font-bold">{formatCurrency(Number(detailInvoice.biaya_pengiriman))}</td>
+                      </tr>
+                    )}
+                    <tr className="bg-blue-50/40 font-black border-t border-blue-100">
+                      <td colSpan={5} className="py-2 px-3 text-right uppercase text-[10px] text-blue-900">Grand Total</td>
+                      <td className="py-2 px-3 text-right font-mono text-blue-950 font-black text-xs">{formatCurrency(Number(detailInvoice.subtotal) + Number(detailInvoice.biaya_pengiriman))}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Payment Logs - Compact */}
+              <div className="p-3 bg-white border border-blue-100 rounded-xl shadow-sm space-y-2 shrink-0">
+                <h4 className="text-[10px] uppercase font-black text-slate-500 border-b border-slate-100 pb-1 mb-1">Riwayat Angsuran Setoran</h4>
+                {detailInvoice.sales_payments && detailInvoice.sales_payments.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {detailInvoice.sales_payments.map((pay: any) => (
+                      <div key={pay.id} className="py-1.5 px-3 bg-blue-50/20 hover:bg-blue-50/40 border border-blue-100/30 rounded-lg flex justify-between items-center transition-all text-[11px]">
+                        <div>
+                          <p className="font-extrabold text-blue-950">Setoran: {formatCurrency(Number(pay.amount))}</p>
+                          <p className="text-[10px] text-slate-500">Catatan: {pay.note || '-'}</p>
+                        </div>
+                        <div className="text-right text-[10px] text-slate-400 font-semibold flex items-center gap-2">
+                          <span>{formatDate(pay.payment_date)}</span>
+                          <span className="font-mono uppercase text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">{pay.payment_method}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">Belum ada angsuran tercatat untuk nota ini.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="py-24 text-center text-rose-500 font-bold">Gagal mengambil rincian detail.</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -530,8 +664,8 @@ export const PiutangAktif: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
-          <button 
-            onClick={openPaymentModal} 
+          <button
+            onClick={openPaymentModal}
             disabled={filteredData.length === 0}
             className="btn-primary flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
@@ -553,11 +687,14 @@ export const PiutangAktif: React.FC = () => {
               type="text"
               placeholder="Nama pelanggan..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsConfirmed(false);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  if (filteredData.length > 0) {
+                  if (searchQuery.trim()) {
                     setPopupFocusedIndex(0);
                     setShowSearchPopup(true);
                   }
@@ -590,7 +727,25 @@ export const PiutangAktif: React.FC = () => {
       </div>
 
       {/* Customer List Card Grid */}
-      {isLoading ? (
+      {!searchQuery.trim() ? (
+        <div className="card p-16 text-center text-slate-400 border border-surface-700/60 bg-surface-800/20 flex flex-col items-center justify-center gap-3 rounded-xl">
+          <div className="p-4 bg-surface-750/50 rounded-full border border-surface-700 shadow-inner">
+            <Search size={28} className="text-primary-500/80 animate-pulse" />
+          </div>
+          <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
+            Silakan ketik nama customer pada kolom pencarian untuk menampilkan data piutang.
+          </p>
+        </div>
+      ) : !isConfirmed ? (
+        <div className="card p-16 text-center text-slate-400 border border-surface-700/60 bg-surface-800/20 flex flex-col items-center justify-center gap-3 rounded-xl">
+          <div className="p-4 bg-surface-750/50 rounded-full border border-surface-700 shadow-inner">
+            <Search size={28} className="text-amber-500/80 animate-bounce" />
+          </div>
+          <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
+            Tekan <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-white font-mono text-[10px]">Enter</kbd> untuk memilih customer dan menampilkan data piutang.
+          </p>
+        </div>
+      ) : isLoading ? (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-20 skeleton rounded-xl" />
@@ -608,22 +763,20 @@ export const PiutangAktif: React.FC = () => {
             const isSelected = selectedCustIdx === cIdx && selectedInvoiceIdx === null;
 
             return (
-              <div 
-                key={cust.id} 
-                className={`card p-0 overflow-hidden border transition-all ${
-                  isSelected ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-surface-700/60'
-                }`}
+              <div
+                key={cust.id}
+                className={`card p-0 overflow-hidden border transition-all ${isSelected ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-surface-700/60'
+                  }`}
               >
                 {/* Header Row */}
-                <div 
+                <div
                   onClick={() => {
                     setSelectedCustIdx(cIdx);
                     setSelectedInvoiceIdx(null);
                     setExpandedCustIds(prev => ({ ...prev, [cust.id]: !prev[cust.id] }));
                   }}
-                  className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-surface-750/30 ${
-                    isSelected ? 'bg-surface-750/50' : 'bg-surface-800/40'
-                  }`}
+                  className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-surface-750/30 ${isSelected ? 'bg-surface-750/50' : 'bg-surface-800/40'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-slate-400">
@@ -694,7 +847,7 @@ export const PiutangAktif: React.FC = () => {
                             }
                             return base;
                           };
- 
+
                           return (
                             <tr
                               key={inv.id}
@@ -703,9 +856,8 @@ export const PiutangAktif: React.FC = () => {
                                 setSelectedCustIdx(cIdx);
                                 setSelectedInvoiceIdx(iIdx);
                               }}
-                              className={`hover:bg-surface-750/30 cursor-pointer ${
-                                isInvSelected ? 'bg-blue-100' : 'text-slate-300'
-                              }`}
+                              className={`hover:bg-surface-750/30 cursor-pointer ${isInvSelected ? 'bg-blue-100' : 'text-slate-300'
+                                }`}
                             >
                               <td className={`${getTdClass('first')} text-center ${isInvSelected ? 'text-primary-950 font-bold' : 'text-slate-500'}`}>
                                 {iIdx + 1}
@@ -716,11 +868,10 @@ export const PiutangAktif: React.FC = () => {
                               <td className={`${getTdClass('middle')} ${isInvSelected ? 'text-slate-800' : ''}`}>
                                 {formatDate(inv.order_date)}
                               </td>
-                              <td className={`${getTdClass('middle')} font-bold ${
-                                isInvSelected 
-                                  ? (inv.is_overdue ? 'text-danger-700' : 'text-slate-750') 
-                                  : (inv.is_overdue ? 'text-danger-400' : 'text-slate-400')
-                              }`}>
+                              <td className={`${getTdClass('middle')} font-bold ${isInvSelected
+                                ? (inv.is_overdue ? 'text-danger-700' : 'text-slate-750')
+                                : (inv.is_overdue ? 'text-danger-400' : 'text-slate-400')
+                                }`}>
                                 {formatDate(inv.due_date)}
                               </td>
                               <td className={`${getTdClass('middle')} text-right font-mono ${isInvSelected ? 'text-slate-800' : ''}`}>
@@ -756,20 +907,28 @@ export const PiutangAktif: React.FC = () => {
                                       if (val !== Number(inv.biaya_pengiriman)) {
                                         handleUpdateOngkir(inv.id, val);
                                       }
-                                      
+
                                       // Blur input
                                       (e.target as HTMLInputElement).blur();
 
-                                      // Move highlighting to the next row
+                                      // Move highlighting and focus to the next row
                                       const currentGroup = filteredData[selectedCustIdx];
                                       if (currentGroup && selectedInvoiceIdx !== null && selectedInvoiceIdx < currentGroup.invoices.length - 1) {
-                                        setSelectedInvoiceIdx(selectedInvoiceIdx + 1);
+                                        const nextIdx = selectedInvoiceIdx + 1;
+                                        setSelectedInvoiceIdx(nextIdx);
+                                        const nextInv = currentGroup.invoices[nextIdx];
+                                        setTimeout(() => {
+                                          const nextInput = document.getElementById(`input-pengiriman-${nextInv.id}`) as HTMLInputElement;
+                                          if (nextInput) {
+                                            nextInput.focus();
+                                            nextInput.select();
+                                          }
+                                        }, 50);
                                       }
                                     }
                                   }}
-                                  className={`input-field py-1 px-2 text-right text-xs font-mono w-28 text-white font-bold focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all ${
-                                    isInvSelected ? 'bg-primary-955/80 border-primary-600' : 'bg-surface-900 border-primary-500/40'
-                                  }`}
+                                  className={`input-field py-1 px-2 text-right text-xs font-mono w-28 text-white font-bold focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all ${isInvSelected ? 'bg-primary-955/80 border-primary-600' : 'bg-surface-900 border-primary-500/40'
+                                    }`}
                                 />
                               </td>
                               <td className={`${getTdClass('middle')} text-right font-mono font-bold ${isInvSelected ? 'text-primary-950' : 'text-white'}`}>
@@ -797,6 +956,10 @@ export const PiutangAktif: React.FC = () => {
                         })}
                       </tbody>
                     </table>
+                    <div className="pt-2 p-3 text-[10px] text-slate-400 flex justify-between bg-surface-900/50">
+                      <span>Tekan <kbd className="shortcut-badge">F4</kbd> lihat rincian nota | <kbd className="shortcut-badge">F10</kbd> catat setoran</span>
+                      <span>Gunakan panah <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk navigasi</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -808,7 +971,7 @@ export const PiutangAktif: React.FC = () => {
       {/* Customer Selection Search Popup Modal */}
       {showSearchPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div 
+          <div
             ref={searchPopupRef}
             tabIndex={0}
             onKeyDown={handleSearchPopupKeyDown}
@@ -819,11 +982,11 @@ export const PiutangAktif: React.FC = () => {
                 <Search size={18} />
                 <span>Pilih Pelanggan (Customer)</span>
               </h3>
-              <button 
+              <button
                 onClick={() => {
                   setShowSearchPopup(false);
                   searchInputRef.current?.focus();
-                }} 
+                }}
                 className="text-slate-400 hover:text-white cursor-pointer"
               >
                 <X size={18} />
@@ -831,37 +994,47 @@ export const PiutangAktif: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
-              {filteredData.map((group, idx) => (
-                <button
-                  type="button"
-                  key={group.customer.id}
-                  onClick={() => {
-                    setSelectedCustIdx(idx);
-                    setExpandedCustIds((prev) => ({ ...prev, [group.customer.id]: true }));
-                    if (group.invoices.length > 0) {
-                      setSelectedInvoiceIdx(0);
-                    } else {
-                      setSelectedInvoiceIdx(null);
-                    }
-                    setShowSearchPopup(false);
-                  }}
-                  onMouseEnter={() => setPopupFocusedIndex(idx)}
-                  className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${
-                    idx === popupFocusedIndex
+              {isLoading ? (
+                <div className="py-8 text-center text-slate-500 italic text-xs">
+                  Memuat data pelanggan...
+                </div>
+              ) : filteredData.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 italic text-xs">
+                  Tidak ada pelanggan yang cocok dengan pencarian "{searchQuery}".
+                </div>
+              ) : (
+                filteredData.map((group, idx) => (
+                  <button
+                    type="button"
+                    key={group.customer.id}
+                    onClick={() => {
+                      setSelectedCustIdx(idx);
+                      setExpandedCustIds((prev) => ({ ...prev, [group.customer.id]: true }));
+                      if (group.invoices.length > 0) {
+                        setSelectedInvoiceIdx(0);
+                      } else {
+                        setSelectedInvoiceIdx(null);
+                      }
+                      setShowSearchPopup(false);
+                      setIsConfirmed(true);
+                    }}
+                    onMouseEnter={() => setPopupFocusedIndex(idx)}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${idx === popupFocusedIndex
                       ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
                       : 'border-surface-700 hover:bg-surface-750 text-slate-350 bg-surface-900'
-                  }`}
-                >
-                  <div>
-                    <p className="font-semibold text-white">{group.customer.nama}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Alamat: {group.customer.alamat || '-'}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Kode: {group.customer.kode}</span>
-                    <span className="text-[11px] font-bold text-rose-400 block mt-0.5">Piutang: {formatCurrency(group.total_piutang)}</span>
-                  </div>
-                </button>
-              ))}
+                      }`}
+                  >
+                    <div>
+                      <p className="font-semibold text-white">{group.customer.nama}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Alamat: {group.customer.alamat || '-'}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 block uppercase font-mono">Kode: {group.customer.kode}</span>
+                      <span className="text-[11px] font-bold text-rose-400 block mt-0.5">Piutang: {formatCurrency(group.total_piutang)}</span>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
 
             <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[10px] text-slate-500 shrink-0">
@@ -875,7 +1048,7 @@ export const PiutangAktif: React.FC = () => {
       {/* Filter Status Modal (F3) */}
       {showFilterModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div 
+          <div
             ref={filterModalRef}
             tabIndex={0}
             className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in space-y-4 outline-none"
@@ -901,8 +1074,8 @@ export const PiutangAktif: React.FC = () => {
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <span>Filter Status Piutang (F3)</span>
               </h3>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowFilterModal(false)}
                 className="text-slate-400 hover:text-white"
               >
@@ -927,11 +1100,10 @@ export const PiutangAktif: React.FC = () => {
                       setShowFilterModal(false);
                     }}
                     onMouseEnter={() => setSelectedFilterOptionIdx(idx)}
-                    className={`w-full text-left p-3 rounded-lg border text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      isSelected
-                        ? 'bg-primary-600/10 border-primary-500 text-primary-400 font-semibold'
-                        : 'bg-surface-900 border-surface-750 text-slate-400 hover:bg-surface-850 hover:text-slate-200'
-                    }`}
+                    className={`w-full text-left p-3 rounded-lg border text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isSelected
+                      ? 'bg-primary-600/10 border-primary-500 text-primary-400 font-semibold'
+                      : 'bg-surface-900 border-surface-750 text-slate-400 hover:bg-surface-850 hover:text-slate-200'
+                      }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <span className={`w-2.5 h-2.5 rounded-full ${opt.color}`} />
@@ -956,7 +1128,7 @@ export const PiutangAktif: React.FC = () => {
       {/* Setoran Payment Modal (F10) */}
       {showPaymentModal && filteredData[selectedCustIdx] && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <form 
+          <form
             onSubmit={submitPayment}
             className="bg-white border border-slate-200 rounded-xl max-w-lg w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden"
           >
@@ -966,8 +1138,8 @@ export const PiutangAktif: React.FC = () => {
                 <DollarSign size={18} />
                 <span>Pencatatan Setoran Pembayaran Multi-Nota</span>
               </h3>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPaymentModal(false)}
                 className="text-blue-100 hover:text-white transition-colors cursor-pointer"
               >
@@ -1000,11 +1172,10 @@ export const PiutangAktif: React.FC = () => {
                         paymentDateRef.current?.focus();
                       }
                     }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                      paymentMode === 'fifo'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
-                    }`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMode === 'fifo'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                      }`}
                   >
                     FIFO Otomatis (Nota Terlama)
                   </button>
@@ -1022,11 +1193,10 @@ export const PiutangAktif: React.FC = () => {
                         paymentDateRef.current?.focus();
                       }
                     }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                      paymentMode === 'manual'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
-                    }`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMode === 'manual'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                      }`}
                   >
                     Pilihan Manual Per Nota
                   </button>
@@ -1195,11 +1365,10 @@ export const PiutangAktif: React.FC = () => {
                         paymentNoteRef.current?.focus();
                       }
                     }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                      paymentMethod === 'cash'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
-                    }`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMethod === 'cash'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                      }`}
                   >
                     Tunai / Cash
                   </button>
@@ -1208,11 +1377,7 @@ export const PiutangAktif: React.FC = () => {
                     type="button"
                     onClick={() => setPaymentMethod('transfer')}
                     onKeyDown={(e) => {
-                      if (e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        paymentMethodChequeRef.current?.focus();
-                        setPaymentMethod('cheque');
-                      } else if (e.key === 'ArrowLeft') {
+                      if (e.key === 'ArrowLeft') {
                         e.preventDefault();
                         paymentMethodCashRef.current?.focus();
                         setPaymentMethod('cash');
@@ -1221,35 +1386,12 @@ export const PiutangAktif: React.FC = () => {
                         paymentNoteRef.current?.focus();
                       }
                     }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                      paymentMethod === 'transfer'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
-                    }`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMethod === 'transfer'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                      }`}
                   >
                     Transfer Bank
-                  </button>
-                  <button
-                    ref={paymentMethodChequeRef}
-                    type="button"
-                    onClick={() => setPaymentMethod('cheque')}
-                    onKeyDown={(e) => {
-                      if (e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        paymentMethodTransferRef.current?.focus();
-                        setPaymentMethod('transfer');
-                      } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        paymentNoteRef.current?.focus();
-                      }
-                    }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                      paymentMethod === 'cheque'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
-                    }`}
-                  >
-                    Giro / Cheque
                   </button>
                 </div>
               </div>
@@ -1273,28 +1415,27 @@ export const PiutangAktif: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center text-xs shrink-0">
-              <span className="text-slate-400">Gunakan tab untuk navigasi tombol</span>
+            <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end items-center text-xs shrink-0">
               <div className="flex gap-2">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="btn-secondary py-2 px-4 text-xs font-bold rounded-lg cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-800"
+                  className="btn-secondary py-1.5 px-3 text-xs font-bold rounded-lg cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-800 whitespace-nowrap"
                 >
                   Batal (Esc)
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => savePayment(false)}
-                  className="btn-secondary py-2 px-4 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-850 cursor-pointer"
+                  className="btn-secondary py-1.5 px-3 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-850 cursor-pointer whitespace-nowrap"
                 >
-                  Simpan Tanpa Cetak
+                  Simpan
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn-primary py-2 px-5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                <button
+                  type="submit"
+                  className="btn-primary py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
                 >
-                  Simpan Setoran (Cetak Struk)
+                  Cetak
                 </button>
               </div>
             </div>
@@ -1302,146 +1443,7 @@ export const PiutangAktif: React.FC = () => {
         </div>
       )}
 
-      {/* Invoice Detail Modal (F4) */}
-      {showDetailModal && detailInvoiceId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[85vh]">
-            <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <FileText size={20} className="text-primary-400" />
-                <span>Rincian Nota Penjualan</span>
-              </h3>
-              <button 
-                onClick={() => setShowDetailModal(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto py-4 space-y-4 text-xs">
-              {isLoadingDetail ? (
-                <div className="py-12 text-center text-slate-500">Memuat rincian...</div>
-              ) : detailInvoice ? (
-                <>
-                  {/* Meta Board */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-900 border border-surface-750 rounded-xl">
-                    <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">No Faktur</span>
-                      <strong className="text-slate-200 font-mono text-sm">{detailInvoice.no_faktur || detailInvoice.no_order}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">Tanggal Order</span>
-                      <strong className="text-slate-200">{formatDate(detailInvoice.order_date)}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">Termin J.Tempo</span>
-                      <strong className="text-slate-200">{detailInvoice.limit_bulan > 0 ? `Kredit (${detailInvoice.limit_bulan} Bulan)` : 'Tunai'}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block uppercase">Kirim</span>
-                      <strong className="text-slate-200">{detailInvoice.diantar ? '🚚 Diantar' : '🚶 Diambil'}</strong>
-                    </div>
-                  </div>
-
-                  {/* Customer Panel */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-[10px] uppercase font-bold text-slate-400 border-b border-surface-750 pb-1 mb-1">Pelanggan</h4>
-                      <p className="font-bold text-white">{detailInvoice.customer_nama}</p>
-                      <p className="text-slate-400">{detailInvoice.customer_alamat}</p>
-                      <p className="text-slate-400">Telp: {detailInvoice.customer_telp || '-'}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-[10px] uppercase font-bold text-slate-400 border-b border-surface-750 pb-1 mb-1">Catatan Pengiriman</h4>
-                      <p className="italic text-slate-400">"{detailInvoice.sender_note || 'Tidak ada catatan khusus'}"</p>
-                    </div>
-                  </div>
-
-                  {/* Items List Table */}
-                  <div className="border border-surface-700/60 rounded-lg overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-surface-850 text-slate-400 font-semibold uppercase text-[9px] border-b border-surface-700">
-                          <th className="p-2 w-8 text-center">No</th>
-                          <th className="p-2">Kode SKU</th>
-                          <th className="p-2">Nama Barang</th>
-                          <th className="p-2 text-right w-16">Qty</th>
-                          <th className="p-2 text-right w-24">Harga</th>
-                          <th className="p-2 text-right w-24">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-surface-750">
-                        {detailInvoice.sale_items?.map((item: any, idx: number) => (
-                          <tr key={item.id} className="text-slate-350">
-                            <td className="p-2 text-center text-slate-500">{idx + 1}</td>
-                            <td className="p-2 font-mono">{item.product_kode}</td>
-                            <td className="p-2 font-bold text-slate-200">{item.product_nama}</td>
-                            <td className="p-2 text-right font-semibold">{Number(item.qty)}</td>
-                            <td className="p-2 text-right font-mono">{formatCurrency(Number(item.unit_price))}</td>
-                            <td className="p-2 text-right font-mono text-white font-bold">{formatCurrency(Number(item.total))}</td>
-                          </tr>
-                        ))}
-                        {Number(detailInvoice.extra_charge_amount) !== 0 && (
-                          <tr className="text-slate-400 font-semibold border-t border-surface-750/30">
-                            <td colSpan={5} className="p-2 text-right uppercase">Ongkir Ojol ({detailInvoice.extra_charge_desc || 'Gojek/Grab'})</td>
-                            <td className="p-2 text-right font-mono">{formatCurrency(Number(detailInvoice.extra_charge_amount))}</td>
-                          </tr>
-                        )}
-                        {Number(detailInvoice.biaya_pengiriman) !== 0 && (
-                          <tr className="text-slate-400 font-semibold border-t border-surface-750/30">
-                            <td colSpan={5} className="p-2 text-right uppercase">Ongkir Travel/Bus</td>
-                            <td className="p-2 text-right font-mono">{formatCurrency(Number(detailInvoice.biaya_pengiriman))}</td>
-                          </tr>
-                        )}
-                        <tr className="bg-surface-850 font-bold border-t border-surface-700">
-                          <td colSpan={5} className="p-2 text-right uppercase text-[9px]">Grand Total</td>
-                          <td className="p-2 text-right font-mono text-emerald-400 font-black text-sm">{formatCurrency(Number(detailInvoice.subtotal) + Number(detailInvoice.biaya_pengiriman))}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Payment Logs */}
-                  <div>
-                    <h4 className="text-[10px] uppercase font-bold text-slate-400 border-b border-surface-750 pb-1 mb-1.5">Riwayat Angsuran Setoran</h4>
-                    {detailInvoice.sales_payments && detailInvoice.sales_payments.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {detailInvoice.sales_payments.map((pay: any) => (
-                          <div key={pay.id} className="p-2.5 bg-surface-900 border border-surface-750/50 rounded-lg flex justify-between items-center">
-                            <div>
-                              <p className="font-bold text-slate-300">Setoran: {formatCurrency(Number(pay.amount))}</p>
-                              <p className="text-[10px] text-slate-400">Catatan: {pay.note || '-'}</p>
-                            </div>
-                            <div className="text-right text-[10px] text-slate-400">
-                              <p>{formatDate(pay.payment_date)}</p>
-                              <p className="font-mono uppercase text-[9px]">{pay.payment_method}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-500 italic">Belum ada angsuran tercatat untuk nota ini.</p>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="py-12 text-center text-danger-400">Gagal mengambil rincian detail.</div>
-              )}
-            </div>
-
-            <div className="pt-3 border-t border-surface-700 flex justify-end shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setShowDetailModal(false)}
-                className="btn-primary py-2 px-6 text-xs bg-surface-700 hover:bg-surface-650"
-              >
-                Tutup (Esc)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Detail Modal is rendered inline in full-page style above */}
 
       {/* Struk Cetak Pembayaran / Receipt Modal */}
       {showReceiptModal && receiptSession && (
@@ -1452,7 +1454,7 @@ export const PiutangAktif: React.FC = () => {
                 <Printer size={20} className="text-primary-400" />
                 <span>Bukti Setoran Pembayaran Piutang</span>
               </h3>
-              <button 
+              <button
                 onClick={() => setShowReceiptModal(false)}
                 className="text-slate-400 hover:text-white"
               >
@@ -1538,13 +1540,13 @@ export const PiutangAktif: React.FC = () => {
             </div>
 
             <div className="pt-3 border-t border-surface-700 flex justify-end gap-2 shrink-0 print:hidden">
-              <button 
+              <button
                 onClick={() => setShowReceiptModal(false)}
                 className="btn-secondary text-xs px-4"
               >
                 Tutup (Esc)
               </button>
-              <button 
+              <button
                 onClick={printReceipt}
                 className="btn-primary flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 px-5 font-bold"
               >
@@ -1565,7 +1567,7 @@ export const PiutangAktif: React.FC = () => {
                 <Printer size={20} className="text-primary-400" />
                 <span>Cetak Lembar Penagihan Piutang</span>
               </h3>
-              <button 
+              <button
                 onClick={() => setShowBillingPrintModal(false)}
                 className="text-slate-400 hover:text-white"
               >
@@ -1653,13 +1655,13 @@ export const PiutangAktif: React.FC = () => {
             </div>
 
             <div className="pt-3 border-t border-surface-700 flex justify-end gap-2 shrink-0 print:hidden">
-              <button 
+              <button
                 onClick={() => setShowBillingPrintModal(false)}
                 className="btn-secondary text-xs px-4 bg-surface-700 hover:bg-surface-650 text-white rounded-lg cursor-pointer"
               >
                 Tutup (Esc)
               </button>
-              <button 
+              <button
                 onClick={() => window.print()}
                 className="btn-primary flex items-center gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 px-5 font-bold rounded-lg cursor-pointer"
               >
