@@ -131,6 +131,36 @@ paymentRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: A
     });
 
     await prisma.salesPayment.delete({ where: { id: req.params.id as string } });
+
+    // Recalculate remaining balance and update physical invoice checklist status
+    const sale = await prisma.sale.findUnique({
+      where: { id: payment.sale_id },
+      include: { sales_payments: true }
+    });
+    if (sale) {
+      const totalPaid = sale.sales_payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const grandTotal = Number(sale.subtotal) + Number(sale.biaya_pengiriman || 0);
+      const sisaTagihan = grandTotal - totalPaid;
+
+      if (sisaTagihan <= 0) {
+        await prisma.sale.update({
+          where: { id: sale.id },
+          data: {
+            nota_merah: true,
+            nota_putih: false,
+          }
+        });
+      } else {
+        await prisma.sale.update({
+          where: { id: sale.id },
+          data: {
+            nota_merah: false,
+            nota_putih: true,
+          }
+        });
+      }
+    }
+
     res.json({ message: 'Pembayaran berhasil di-rollback' });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
@@ -138,7 +168,7 @@ paymentRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: A
 // POST /api/payments/session - Record a billing session (customer AR)
 paymentRouter.post('/session', authenticate, authorize(ROLES.ADMIN, ROLES.SALES, ROLES.STAFF_KANTOR), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { customer_id, payment_date, total_amount, payment_method, mode, catatan, allocations } = req.body;
+    const { customer_id, payment_date, total_amount, payment_method, mode, catatan, allocations, sync_nota_otomatis } = req.body;
 
     const customer = await prisma.customer.findUnique({ where: { id: customer_id } });
     if (!customer) { res.status(404).json({ error: 'Customer tidak ditemukan' }); return; }
@@ -241,6 +271,27 @@ paymentRouter.post('/session', authenticate, authorize(ROLES.ADMIN, ROLES.SALES,
           created_by: req.user!.id,
         }
       });
+
+      // Automatically sync physical invoice checklist status if enabled
+      if (sync_nota_otomatis) {
+        if (alloc.remaining_after <= 0) {
+          await prisma.sale.update({
+            where: { id: alloc.sale_id },
+            data: {
+              nota_merah: true,
+              nota_putih: false,
+            }
+          });
+        } else {
+          await prisma.sale.update({
+            where: { id: alloc.sale_id },
+            data: {
+              nota_merah: false,
+              nota_putih: true,
+            }
+          });
+        }
+      }
     }
 
     // Update customer total piutang
@@ -338,6 +389,35 @@ paymentRouter.delete('/sessions/:id', authenticate, authorize(ROLES.ADMIN), asyn
           });
           for (const sp of sps) {
             await prisma.salesPayment.delete({ where: { id: sp.id } });
+          }
+
+          // Recalculate remaining balance and update the physical invoice checklist status
+          const sale = await prisma.sale.findUnique({
+            where: { id: alloc.sale_id },
+            include: { sales_payments: true }
+          });
+          if (sale) {
+            const totalPaid = sale.sales_payments.reduce((sum, p) => sum + Number(p.amount), 0);
+            const grandTotal = Number(sale.subtotal) + Number(sale.biaya_pengiriman || 0);
+            const sisaTagihan = grandTotal - totalPaid;
+
+            if (sisaTagihan <= 0) {
+              await prisma.sale.update({
+                where: { id: sale.id },
+                data: {
+                  nota_merah: true,
+                  nota_putih: false,
+                }
+              });
+            } else {
+              await prisma.sale.update({
+                where: { id: sale.id },
+                data: {
+                  nota_merah: false,
+                  nota_putih: true,
+                }
+              });
+            }
           }
         }
       }

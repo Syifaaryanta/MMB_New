@@ -105,6 +105,14 @@ export const PelunasanSupplier: React.FC = () => {
   const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
   const searchPopupRef = useRef<HTMLDivElement>(null);
 
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  };
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -336,8 +344,13 @@ export const PelunasanSupplier: React.FC = () => {
     const suppId = filteredData[selectedSuppIdx].supplier.id;
     setExpandedSupplierIds((prev) => ({
       ...prev,
-      [suppId]: !prev[suppId],
+      [suppId]: true,
     }));
+
+    const supplierGroup = filteredData[selectedSuppIdx];
+    if (supplierGroup && supplierGroup.purchases.length > 0) {
+      setSelectedPurchaseIdx(0);
+    }
   }, { enableOnFormTags: false }, [showFilterModal, selectedFilterOptionIdx, showSearchPopup, showPaymentModal, showDetailModal, selectedPurchaseIdx, selectedSuppIdx, filteredData, expandedSupplierIds]);
 
   // Escape: Reset search / return
@@ -352,12 +365,17 @@ export const PelunasanSupplier: React.FC = () => {
       setShowPaymentModal(false);
     } else if (showDetailModal) {
       setShowDetailModal(false);
+    } else if (filteredData.length > 0 && expandedSupplierIds[filteredData[selectedSuppIdx].supplier.id]) {
+      const suppId = filteredData[selectedSuppIdx].supplier.id;
+      setExpandedSupplierIds(prev => ({ ...prev, [suppId]: false }));
+      setSelectedPurchaseIdx(null);
     } else if (searchQuery) {
       setSearchQuery('');
+      setIsConfirmed(false);
     } else {
       navigate('/penagihan');
     }
-  }, { enableOnFormTags: true }, [showSearchPopup, showFilterModal, showPaymentModal, showDetailModal, searchQuery]);
+  }, { enableOnFormTags: true }, [showSearchPopup, showFilterModal, showPaymentModal, showDetailModal, searchQuery, filteredData, selectedSuppIdx, expandedSupplierIds]);
 
   const handleSearchPopupKeyDown = (e: React.KeyboardEvent) => {
     if (filteredData.length === 0) return;
@@ -370,19 +388,14 @@ export const PelunasanSupplier: React.FC = () => {
       setPopupFocusedIndex((prev) => (prev - 1 + filteredData.length) % filteredData.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const targetGroup = filteredData[popupFocusedIndex];
       setSelectedSuppIdx(popupFocusedIndex);
-      setExpandedSupplierIds((prev) => ({
-        ...prev,
-        [targetGroup.supplier.id]: true,
-      }));
-      if (targetGroup.purchases.length > 0) {
-        setSelectedPurchaseIdx(0);
-      } else {
-        setSelectedPurchaseIdx(null);
-      }
+      setSelectedPurchaseIdx(null);
+      setExpandedSupplierIds({});
       setShowSearchPopup(false);
       setIsConfirmed(true);
+      setTimeout(() => {
+        document.body.focus();
+      }, 50);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setShowSearchPopup(false);
@@ -405,7 +418,7 @@ export const PelunasanSupplier: React.FC = () => {
       setDetailPurchase(res.data);
     } catch (err) {
       console.error(err);
-      alert('Gagal mengambil detail PO');
+      showToast('Gagal mengambil detail PO', 'error');
       setShowDetailModal(false);
     } finally {
       setIsLoadingDetail(false);
@@ -440,7 +453,7 @@ export const PelunasanSupplier: React.FC = () => {
       fetchData(); // reload values
     } catch (err) {
       console.error(err);
-      alert('Gagal mengupdate biaya pengiriman');
+      showToast('Gagal mengupdate biaya pengiriman', 'error');
     }
   };
 
@@ -458,7 +471,7 @@ export const PelunasanSupplier: React.FC = () => {
 
     if (paymentMode === 'fifo') {
       if (!paymentAmount || Number(paymentAmount) <= 0) {
-        alert('Silakan masukkan nominal pelunasan yang valid.');
+        showToast('Silakan masukkan nominal pelunasan yang valid.', 'error');
         return;
       }
       payload.total_amount = Number(paymentAmount);
@@ -468,7 +481,7 @@ export const PelunasanSupplier: React.FC = () => {
         .map(([purchase_id, amount]) => ({ purchase_id, amount }));
 
       if (activeAllocations.length === 0) {
-        alert('Silakan isi nominal pembayaran minimal untuk satu PO.');
+        showToast('Silakan isi nominal pembayaran minimal untuk satu PO.', 'error');
         return;
       }
       payload.allocations = activeAllocations;
@@ -479,9 +492,9 @@ export const PelunasanSupplier: React.FC = () => {
       await api.post('/payments/supplier/session', payload);
       setShowPaymentModal(false);
       fetchData(); // reload list
-      alert('Pelunasan berhasil disimpan.');
+      showToast('Pelunasan berhasil disimpan.', 'success');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Gagal menyimpan pelunasan hutang');
+      showToast(err.response?.data?.error || 'Gagal menyimpan pelunasan hutang', 'error');
     }
   };
 
@@ -732,7 +745,7 @@ export const PelunasanSupplier: React.FC = () => {
             <Search size={28} className="text-amber-500/80 animate-bounce" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
-            Tekan <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-white font-mono text-[10px]">Enter</kbd> untuk memilih supplier dan menampilkan data hutang.
+            Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih supplier dan menampilkan data hutang.
           </p>
         </div>
       ) : isLoading ? (
@@ -755,7 +768,7 @@ export const PelunasanSupplier: React.FC = () => {
             return (
               <div
                 key={supp.id}
-                className={`card p-0 overflow-hidden border transition-all ${isSelected ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-surface-700/60'
+                className={`card p-0 overflow-hidden border transition-all ${isSelected ? 'card-hovered border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
                   }`}
               >
                 {/* Header Row */}
@@ -765,8 +778,7 @@ export const PelunasanSupplier: React.FC = () => {
                     setSelectedPurchaseIdx(null);
                     setExpandedSupplierIds(prev => ({ ...prev, [supp.id]: !prev[supp.id] }));
                   }}
-                  className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-surface-750/30 ${isSelected ? 'bg-surface-750/50' : 'bg-surface-800/40'
-                    }`}
+                  className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-blue-50/20 bg-transparent`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-slate-400">
@@ -856,9 +868,14 @@ export const PelunasanSupplier: React.FC = () => {
                                 <td className={`${getTdClass('middle')} text-center`} onClick={(e) => e.stopPropagation()}>
                                   <input
                                     id={`input-pengiriman-${pur.id}`}
+                                    key={`${pur.id}-${pur.biaya_pengiriman}`}
                                     type="text"
                                     defaultValue={formatRupiahInput(Number(pur.biaya_pengiriman))}
                                     onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                      const val = parseRupiahInput(e.target.value);
+                                      e.target.value = formatRupiahInput(val);
+                                    }}
                                     onBlur={(e) => {
                                       const val = parseRupiahInput(e.target.value);
                                       if (val !== Number(pur.biaya_pengiriman)) {
@@ -866,6 +883,12 @@ export const PelunasanSupplier: React.FC = () => {
                                       }
                                     }}
                                     onKeyDown={(e) => {
+                                      if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        (e.target as HTMLInputElement).blur();
+                                        document.body.focus();
+                                        return;
+                                      }
                                       if (e.key === 'Enter') {
                                         e.preventDefault();
                                         const val = parseRupiahInput((e.target as HTMLInputElement).value);
@@ -873,7 +896,6 @@ export const PelunasanSupplier: React.FC = () => {
                                           handleUpdateOngkir(pur.id, val);
                                         }
                                         (e.target as HTMLInputElement).blur();
-
                                         // Move highlighting and focus to the next row
                                         const currentGroup = filteredData[selectedSuppIdx];
                                         if (currentGroup && selectedPurchaseIdx !== null && selectedPurchaseIdx < currentGroup.purchases.length - 1) {
@@ -1031,14 +1053,13 @@ export const PelunasanSupplier: React.FC = () => {
                     key={group.supplier.id}
                     onClick={() => {
                       setSelectedSuppIdx(idx);
-                      setExpandedSupplierIds((prev) => ({ ...prev, [group.supplier.id]: true }));
-                      if (group.purchases.length > 0) {
-                        setSelectedPurchaseIdx(0);
-                      } else {
-                        setSelectedPurchaseIdx(null);
-                      }
+                      setSelectedPurchaseIdx(null);
+                      setExpandedSupplierIds({});
                       setShowSearchPopup(false);
                       setIsConfirmed(true);
+                      setTimeout(() => {
+                        document.body.focus();
+                      }, 50);
                     }}
                     onMouseEnter={() => setPopupFocusedIndex(idx)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${idx === popupFocusedIndex
@@ -1072,10 +1093,10 @@ export const PelunasanSupplier: React.FC = () => {
 
       {/* Global Supplier Payment Modal (F10) */}
       {showPaymentModal && filteredData[selectedSuppIdx] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <div className="fixed inset-0 z-50 flex flex-col md:flex-row items-center justify-center gap-4 p-4 modal-overlay overflow-y-auto">
           <form
             onSubmit={(e) => { e.preventDefault(); savePayment(); }}
-            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden"
+            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden"
           >
             {/* Header */}
             <div className="bg-blue-600 px-6 py-4 flex justify-between items-center text-white shrink-0">
@@ -1159,104 +1180,20 @@ export const PelunasanSupplier: React.FC = () => {
                   className="input-field w-full py-2 text-xs bg-slate-50 border border-slate-250 text-slate-800 font-medium focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                 />
               </div>
-
-              {/* FIFO mode */}
-              {paymentMode === 'fifo' ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-655 mb-1">Nominal Pelunasan (Rp)</label>
-                    <input
-                      ref={paymentAmountRef}
-                      type="text"
-                      value={formatRupiahInput(paymentAmount)}
-                      onChange={(e) => setPaymentAmount(e.target.value ? parseRupiahInput(e.target.value) : '')}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); paymentMethodCashRef.current?.focus(); } }}
-                      required
-                      placeholder="Masukkan nominal pelunasan..."
-                      className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
-                    />
-                  </div>
-                  {Number(paymentAmount) > 0 && (
-                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50 p-3 space-y-2">
-                      <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Preview Distribusi Pelunasan (FIFO)</h4>
-                      <div className="space-y-1.5 max-h-[150px] overflow-y-auto text-[11px]">
-                        {fifoAllocations.map((alloc) => (
-                          <div key={alloc.id} className="flex justify-between items-center py-1 border-b border-slate-100 last:border-0">
-                            <span className="font-mono text-slate-700">{alloc.no_faktur || alloc.no_order}</span>
-                            <span className="text-slate-500">
-                              Hutang: {formatCurrency(alloc.remaining)} →
-                              <strong className="text-emerald-600 ml-1">Bayar: {formatCurrency(alloc.allocated)}</strong>
-                              {alloc.remainingAfter === 0 && <span className="ml-1 text-emerald-600 font-bold">✓</span>}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Manual Mode */
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-slate-655 mb-1">Input Pelunasan Per PO</label>
-                  <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[220px] overflow-y-auto bg-white">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
-                        <tr className="text-slate-500 text-[10px] font-bold uppercase">
-                          <th className="p-2">No. PO</th>
-                          <th className="p-2 text-right">Sisa Hutang</th>
-                          <th className="p-2 text-center w-36">Nominal Bayar</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredData[selectedSuppIdx].purchases.map((pur, idx, purchases) => (
-                          <tr key={pur.id} className="hover:bg-slate-50/50">
-                            <td className="p-2 font-mono text-slate-700">{pur.no_order}</td>
-                            <td className="p-2 text-right font-mono text-rose-600">{formatCurrency(pur.remaining)}</td>
-                            <td className="p-1.5 text-center">
-                              <input
-                                id={`modal-manual-input-${pur.id}`}
-                                type="text"
-                                value={formatRupiahInput(manualAmounts[pur.id] || 0)}
-                                onChange={(e) => {
-                                  const val = parseRupiahInput(e.target.value);
-                                  setManualAmounts(prev => ({ ...prev, [pur.id]: val }));
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (idx < purchases.length - 1) {
-                                      const nextPur = purchases[idx + 1];
-                                      const nextInput = document.getElementById(`modal-manual-input-${nextPur.id}`) as HTMLInputElement;
-                                      nextInput?.focus(); nextInput?.select();
-                                    } else { paymentMethodCashRef.current?.focus(); }
-                                  } else if (e.key === 'ArrowDown') {
-                                    e.preventDefault();
-                                    if (idx < purchases.length - 1) {
-                                      const nextPur = purchases[idx + 1];
-                                      const nextInput = document.getElementById(`modal-manual-input-${nextPur.id}`) as HTMLInputElement;
-                                      nextInput?.focus(); nextInput?.select();
-                                    }
-                                  } else if (e.key === 'ArrowUp') {
-                                    e.preventDefault();
-                                    if (idx > 0) {
-                                      const prevPur = purchases[idx - 1];
-                                      const prevInput = document.getElementById(`modal-manual-input-${prevPur.id}`) as HTMLInputElement;
-                                      prevInput?.focus(); prevInput?.select();
-                                    }
-                                  }
-                                }}
-                                className="input-field py-1 px-2 text-right text-xs font-mono w-28 bg-slate-50 border border-slate-250 text-emerald-600 font-semibold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="flex justify-between items-center text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                    <span className="text-slate-500 uppercase font-bold text-[10px]">Total Pelunasan Manual</span>
-                    <strong className="text-emerald-600 text-sm font-black">{formatCurrency(manualTotal)}</strong>
-                  </div>
+                    {/* FIFO Mode Amount Input */}
+              {paymentMode === 'fifo' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">Nominal Pelunasan (Rp)</label>
+                  <input
+                    ref={paymentAmountRef}
+                    type="text"
+                    value={formatRupiahInput(paymentAmount)}
+                    onChange={(e) => setPaymentAmount(e.target.value ? parseRupiahInput(e.target.value) : '')}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); paymentMethodCashRef.current?.focus(); } }}
+                    required
+                    placeholder="Masukkan nominal pelunasan..."
+                    className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
+                  />
                 </div>
               )}
 
@@ -1325,6 +1262,123 @@ export const PelunasanSupplier: React.FC = () => {
               </div>
             </div>
           </form>
+
+          {/* FIFO Distribution Preview Side-Panel */}
+          {paymentMode === 'fifo' && Number(paymentAmount) > 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl w-full md:w-80 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
+              <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
+                <FileText size={18} />
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Preview Distribusi (FIFO)</h4>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-2 text-xs flex-1 bg-slate-50/30">
+                <div className="space-y-2 text-[11px]">
+                  {fifoAllocations.map((alloc) => (
+                    <div key={alloc.id} className="flex flex-col p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                      <div className="flex justify-between font-mono font-bold text-slate-800">
+                        <span>{alloc.no_faktur || alloc.no_order}</span>
+                        {alloc.remainingAfter === 0 ? (
+                          <span className="text-emerald-600 font-bold flex items-center gap-0.5">Lunas ✓</span>
+                        ) : (
+                          <span className="text-amber-600 font-semibold flex items-center gap-0.5">Sebagian</span>
+                        )}
+                      </div>
+                      <div className="flex justify-between text-slate-500">
+                        <span>Hutang Awal:</span>
+                        <span>{formatCurrency(alloc.remaining)}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-dashed border-slate-200 pt-1 font-semibold text-emerald-600">
+                        <span>Bayar:</span>
+                        <span>{formatCurrency(alloc.allocated)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Manual Mode Purchases Table Side-Panel */}
+          {paymentMode === 'manual' && (
+            <div className="bg-white border border-slate-200 rounded-xl w-full md:w-96 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
+              <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
+                <FileText size={18} />
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Input Pelunasan Per PO</h4>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-3 flex-1 bg-slate-50/30">
+                <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto bg-white shadow-sm">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
+                      <tr className="text-slate-500 text-[10px] font-bold uppercase">
+                        <th className="p-2">No. PO</th>
+                        <th className="p-2 text-right">Sisa Hutang</th>
+                        <th className="p-2 text-center w-36">Nominal Bayar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredData[selectedSuppIdx].purchases.map((pur, idx, purchases) => (
+                        <tr key={pur.id} className="hover:bg-slate-50/50">
+                          <td className="p-2 font-mono text-slate-700">{pur.no_order}</td>
+                          <td className="p-2 text-right font-mono text-rose-600">{formatCurrency(pur.remaining)}</td>
+                          <td className="p-1.5 text-center">
+                            <input
+                              id={`modal-manual-input-${pur.id}`}
+                              type="text"
+                              value={formatRupiahInput(manualAmounts[pur.id] || 0)}
+                              onFocus={(e) => {
+                                e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                              }}
+                              onChange={(e) => {
+                                const val = parseRupiahInput(e.target.value);
+                                setManualAmounts(prev => ({ ...prev, [pur.id]: val }));
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (idx < purchases.length - 1) {
+                                    const nextPur = purchases[idx + 1];
+                                    const nextInput = document.getElementById(`modal-manual-input-${nextPur.id}`) as HTMLInputElement;
+                                    nextInput?.focus(); nextInput?.select();
+                                  } else { paymentMethodCashRef.current?.focus(); }
+                                } else if (e.key === 'ArrowDown') {
+                                  e.preventDefault();
+                                  if (idx < purchases.length - 1) {
+                                    const nextPur = purchases[idx + 1];
+                                    const nextInput = document.getElementById(`modal-manual-input-${nextPur.id}`) as HTMLInputElement;
+                                    nextInput?.focus(); nextInput?.select();
+                                  }
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  if (idx > 0) {
+                                    const prevPur = purchases[idx - 1];
+                                    const prevInput = document.getElementById(`modal-manual-input-${prevPur.id}`) as HTMLInputElement;
+                                    prevInput?.focus(); prevInput?.select();
+                                  }
+                                }
+                              }}
+                              className="input-field py-1 px-2 text-right text-xs font-mono w-28 bg-slate-50 border border-slate-250 text-emerald-600 font-semibold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex justify-between items-center text-xs p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm">
+                  <span className="text-slate-500 uppercase font-bold text-[10px]">Total Pelunasan Manual</span>
+                  <strong className="text-emerald-600 text-sm font-black">{formatCurrency(manualTotal)}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[9999] px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in bg-white border ${
+          toast.type === 'success' ? 'border-blue-600 text-blue-600' : 'border-red-650 text-red-650'
+        }`}>
+          {toast.type === 'success' ? <CheckCircle size={16} className="text-blue-600" /> : <AlertTriangle size={16} className="text-red-650" />}
+          <span className="text-xs font-bold">{toast.message}</span>
         </div>
       )}
 

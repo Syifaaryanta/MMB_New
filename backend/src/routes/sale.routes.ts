@@ -169,6 +169,7 @@ saleRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async (r
         sender_note,
         subtotal,
         status: 'draft',
+        nota_putih: (limit_bulan || 0) > 0 ? true : false,
         created_by: req.user!.id,
         sale_items: {
           create: (items || []).map((item: any) => ({
@@ -254,6 +255,7 @@ saleRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async 
         customer_telp,
         diantar,
         limit_bulan,
+        nota_putih: (limit_bulan || 0) > 0 ? true : false,
         extra_charge_desc,
         extra_charge_amount,
         sender_note,
@@ -315,7 +317,10 @@ saleRouter.patch('/:id/print', authenticate, async (req: AuthRequest, res: Respo
     const no_faktur = await generateFakturNumber();
     await prisma.sale.update({
       where: { id: req.params.id as string },
-      data: { no_faktur },
+      data: {
+        no_faktur,
+        print_count: { increment: 1 }
+      },
     });
 
     const updatedSale = await prisma.sale.findUnique({

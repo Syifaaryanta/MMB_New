@@ -16,6 +16,7 @@ interface Sale {
   diantar: boolean;
   limit_bulan: number;
   due_date: string | null;
+  print_count?: number;
 }
 
 export const DaftarPenjualan: React.FC = () => {
@@ -637,6 +638,13 @@ export const DaftarPenjualan: React.FC = () => {
                         <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Jatuh Tempo:</span>
                         <span className="text-xs font-bold text-slate-800 mt-0.5 block">
                           {activeSo.limit_bulan !== undefined ? `${activeSo.limit_bulan + 1} Bulan` : '-'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Status Cetak:</span>
+                        <span className={`text-xs font-bold mt-0.5 block ${activeSo.print_count && activeSo.print_count > 0 ? 'text-green-650 font-semibold' : 'text-amber-650 font-semibold'}`}>
+                          {activeSo.print_count && activeSo.print_count > 0 ? `Sudah Dicetak (${activeSo.print_count}x)` : 'Belum Dicetak'}
                         </span>
                       </div>
                     </div>

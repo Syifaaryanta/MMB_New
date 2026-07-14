@@ -191,6 +191,7 @@ model Sale {
   nota_merah          Boolean    @default(false)
   nota_putih          Boolean    @default(false)
   nota_kuning         Boolean    @default(true)
+  print_count         Int        @default(0)
   created_by          String?
   created_at          DateTime   @default(now())
   updated_at          DateTime   @updatedAt

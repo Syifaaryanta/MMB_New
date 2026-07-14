@@ -82,6 +82,8 @@ export const PiutangAktif: React.FC = () => {
   const paymentMethodCashRef = useRef<HTMLButtonElement>(null);
   const paymentMethodTransferRef = useRef<HTMLButtonElement>(null);
   const paymentNoteRef = useRef<HTMLTextAreaElement>(null);
+  const syncNotaYaRef = useRef<HTMLButtonElement>(null);
+  const syncNotaTidakRef = useRef<HTMLButtonElement>(null);
 
   // Modal payment setoran (global / multi-nota)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -91,6 +93,7 @@ export const PiutangAktif: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentNote, setPaymentNote] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [syncNotaOtomatis, setSyncNotaOtomatis] = useState(true);
 
   // Modal invoice detail (F4)
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -111,6 +114,14 @@ export const PiutangAktif: React.FC = () => {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
   const searchPopupRef = useRef<HTMLDivElement>(null);
+
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -252,7 +263,7 @@ export const PiutangAktif: React.FC = () => {
         setSelectedInvoiceIdx(null);
       }
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [showFilterModal, filteredData, selectedInvoiceIdx, selectedCustIdx, expandedCustIds]);
 
   useHotkeys('down', (e) => {
     e.preventDefault();
@@ -271,7 +282,7 @@ export const PiutangAktif: React.FC = () => {
       setSelectedCustIdx(selectedCustIdx + 1);
       setSelectedInvoiceIdx(null);
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [showFilterModal, filteredData, selectedCustIdx, expandedCustIds, selectedInvoiceIdx]);
 
   // Enter: Expand/Collapse or Confirm Filter selection or Focus input field
   useHotkeys('enter', (e) => {
@@ -304,9 +315,14 @@ export const PiutangAktif: React.FC = () => {
     const custId = filteredData[selectedCustIdx].customer.id;
     setExpandedCustIds((prev) => ({
       ...prev,
-      [custId]: !prev[custId],
+      [custId]: true,
     }));
-  }, { enableOnFormTags: false });
+
+    const customerGroup = filteredData[selectedCustIdx];
+    if (customerGroup && customerGroup.invoices.length > 0) {
+      setSelectedInvoiceIdx(0);
+    }
+  }, { enableOnFormTags: false }, [showFilterModal, selectedFilterOptionIdx, showSearchPopup, showPaymentModal, showDetailModal, showReceiptModal, showBillingPrintModal, selectedInvoiceIdx, selectedCustIdx, filteredData, expandedCustIds]);
 
   // Escape: Reset search / return
   useHotkeys('esc', (e) => {
@@ -324,12 +340,17 @@ export const PiutangAktif: React.FC = () => {
       setShowDetailModal(false);
     } else if (showReceiptModal) {
       setShowReceiptModal(false);
+    } else if (filteredData.length > 0 && expandedCustIds[filteredData[selectedCustIdx].customer.id]) {
+      const custId = filteredData[selectedCustIdx].customer.id;
+      setExpandedCustIds(prev => ({ ...prev, [custId]: false }));
+      setSelectedInvoiceIdx(null);
     } else if (searchQuery) {
       setSearchQuery('');
+      setIsConfirmed(false);
     } else {
       navigate('/penagihan');
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [showSearchPopup, showFilterModal, showBillingPrintModal, showPaymentModal, showDetailModal, showReceiptModal, searchQuery, filteredData, selectedCustIdx, expandedCustIds]);
 
   // P key: Print receipt when receipt modal is active
   useHotkeys('p', (e) => {
@@ -350,19 +371,14 @@ export const PiutangAktif: React.FC = () => {
       setPopupFocusedIndex((prev) => (prev - 1 + filteredData.length) % filteredData.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const targetGroup = filteredData[popupFocusedIndex];
       setSelectedCustIdx(popupFocusedIndex);
-      setExpandedCustIds((prev) => ({
-        ...prev,
-        [targetGroup.customer.id]: true,
-      }));
-      if (targetGroup.invoices.length > 0) {
-        setSelectedInvoiceIdx(0);
-      } else {
-        setSelectedInvoiceIdx(null);
-      }
+      setSelectedInvoiceIdx(null);
+      setExpandedCustIds({});
       setShowSearchPopup(false);
       setIsConfirmed(true);
+      setTimeout(() => {
+        document.body.focus();
+      }, 50);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setShowSearchPopup(false);
@@ -386,7 +402,7 @@ export const PiutangAktif: React.FC = () => {
       setDetailInvoice(res.data);
     } catch (err) {
       console.error(err);
-      alert('Gagal mengambil detail invoice');
+      showToast('Gagal mengambil detail invoice', 'error');
       setShowDetailModal(false);
     } finally {
       setIsLoadingDetail(false);
@@ -404,6 +420,7 @@ export const PiutangAktif: React.FC = () => {
     setPaymentMethod('cash');
     setPaymentNote('');
     setPaymentDate(new Date().toISOString().slice(0, 10));
+    setSyncNotaOtomatis(true);
 
     const initialManual: Record<string, number> = {};
     customerGroup.invoices.forEach(inv => {
@@ -421,7 +438,7 @@ export const PiutangAktif: React.FC = () => {
       fetchData(); // reload values
     } catch (err) {
       console.error(err);
-      alert('Gagal mengupdate ongkir');
+      showToast('Gagal mengupdate ongkir', 'error');
     }
   };
 
@@ -435,11 +452,12 @@ export const PiutangAktif: React.FC = () => {
       payment_method: paymentMethod,
       mode: paymentMode,
       catatan: paymentNote,
+      sync_nota_otomatis: syncNotaOtomatis,
     };
 
     if (paymentMode === 'fifo') {
       if (!paymentAmount || Number(paymentAmount) <= 0) {
-        alert('Silakan masukkan nominal setoran yang valid.');
+        showToast('Silakan masukkan nominal setoran yang valid.', 'error');
         return;
       }
       payload.total_amount = Number(paymentAmount);
@@ -449,7 +467,7 @@ export const PiutangAktif: React.FC = () => {
         .map(([sale_id, amount]) => ({ sale_id, amount }));
 
       if (activeAllocations.length === 0) {
-        alert('Silakan isi nominal pembayaran minimal untuk satu nota.');
+        showToast('Silakan isi nominal pembayaran minimal untuk satu nota.', 'error');
         return;
       }
       payload.allocations = activeAllocations;
@@ -467,10 +485,10 @@ export const PiutangAktif: React.FC = () => {
         setReceiptSession(sessionDetail.data);
         setShowReceiptModal(true);
       } else {
-        alert('Setoran berhasil disimpan.');
+        showToast('Setoran berhasil disimpan.', 'success');
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Gagal menyimpan setoran penagihan');
+      showToast(err.response?.data?.error || 'Gagal menyimpan setoran penagihan', 'error');
     }
   };
 
@@ -742,7 +760,7 @@ export const PiutangAktif: React.FC = () => {
             <Search size={28} className="text-amber-500/80 animate-bounce" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
-            Tekan <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-white font-mono text-[10px]">Enter</kbd> untuk memilih customer dan menampilkan data piutang.
+            Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih customer dan menampilkan data piutang.
           </p>
         </div>
       ) : isLoading ? (
@@ -765,7 +783,7 @@ export const PiutangAktif: React.FC = () => {
             return (
               <div
                 key={cust.id}
-                className={`card p-0 overflow-hidden border transition-all ${isSelected ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-surface-700/60'
+                className={`card p-0 overflow-hidden border transition-all ${isSelected ? 'card-hovered border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
                   }`}
               >
                 {/* Header Row */}
@@ -775,8 +793,7 @@ export const PiutangAktif: React.FC = () => {
                     setSelectedInvoiceIdx(null);
                     setExpandedCustIds(prev => ({ ...prev, [cust.id]: !prev[cust.id] }));
                   }}
-                  className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-surface-750/30 ${isSelected ? 'bg-surface-750/50' : 'bg-surface-800/40'
-                    }`}
+                  className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-blue-50/20 bg-transparent`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-slate-400">
@@ -894,6 +911,10 @@ export const PiutangAktif: React.FC = () => {
                                   type="text"
                                   defaultValue={formatRupiahInput(Number(inv.biaya_pengiriman))}
                                   onFocus={(e) => e.target.select()}
+                                  onChange={(e) => {
+                                    const val = parseRupiahInput(e.target.value);
+                                    e.target.value = formatRupiahInput(val);
+                                  }}
                                   onBlur={(e) => {
                                     const val = parseRupiahInput(e.target.value);
                                     if (val !== Number(inv.biaya_pengiriman)) {
@@ -901,6 +922,12 @@ export const PiutangAktif: React.FC = () => {
                                     }
                                   }}
                                   onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                      e.preventDefault();
+                                      (e.target as HTMLInputElement).blur();
+                                      document.body.focus();
+                                      return;
+                                    }
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
                                       const val = parseRupiahInput((e.target as HTMLInputElement).value);
@@ -1009,14 +1036,13 @@ export const PiutangAktif: React.FC = () => {
                     key={group.customer.id}
                     onClick={() => {
                       setSelectedCustIdx(idx);
-                      setExpandedCustIds((prev) => ({ ...prev, [group.customer.id]: true }));
-                      if (group.invoices.length > 0) {
-                        setSelectedInvoiceIdx(0);
-                      } else {
-                        setSelectedInvoiceIdx(null);
-                      }
+                      setSelectedInvoiceIdx(null);
+                      setExpandedCustIds({});
                       setShowSearchPopup(false);
                       setIsConfirmed(true);
+                      setTimeout(() => {
+                        document.body.focus();
+                      }, 50);
                     }}
                     onMouseEnter={() => setPopupFocusedIndex(idx)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${idx === popupFocusedIndex
@@ -1127,10 +1153,10 @@ export const PiutangAktif: React.FC = () => {
 
       {/* Setoran Payment Modal (F10) */}
       {showPaymentModal && filteredData[selectedCustIdx] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <div className="fixed inset-0 z-50 flex flex-col md:flex-row items-center justify-center gap-4 p-4 modal-overlay overflow-y-auto">
           <form
             onSubmit={submitPayment}
-            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full mx-4 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden"
+            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden"
           >
             {/* Header with Blue Color */}
             <div className="bg-blue-600 px-6 py-4 flex justify-between items-center text-white shrink-0">
@@ -1233,118 +1259,25 @@ export const PiutangAktif: React.FC = () => {
                 />
               </div>
 
-              {/* FIFO Mode Amount Input & Live Preview */}
-              {paymentMode === 'fifo' ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-655 mb-1">Nominal Setoran (Rp)</label>
-                    <input
-                      ref={paymentAmountRef}
-                      type="text"
-                      value={formatRupiahInput(paymentAmount)}
-                      onChange={(e) => setPaymentAmount(e.target.value ? parseRupiahInput(e.target.value) : '')}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          paymentMethodCashRef.current?.focus();
-                        }
-                      }}
-                      required
-                      placeholder="Masukkan nominal setoran..."
-                      className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
-                    />
-                  </div>
-
-                  {/* FIFO Distribution Preview */}
-                  {Number(paymentAmount) > 0 && (
-                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50 p-3 space-y-2">
-                      <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Preview Distribusi Setoran (FIFO)</h4>
-                      <div className="space-y-1.5 max-h-[150px] overflow-y-auto text-[11px]">
-                        {fifoAllocations.map((alloc) => (
-                          <div key={alloc.id} className="flex justify-between items-center py-1 border-b border-slate-100 last:border-0">
-                            <span className="font-mono text-slate-700">{alloc.no_faktur || alloc.no_order}</span>
-                            <span className="text-slate-500">
-                              Tagihan: {formatCurrency(alloc.remaining)} →
-                              <strong className="text-emerald-600 ml-1">Bayar: {formatCurrency(alloc.allocated)}</strong>
-                              {alloc.remainingAfter === 0 && <span className="ml-1 text-emerald-600 font-bold">✓</span>}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Manual Mode Invoices Table Input */
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-slate-655 mb-1">Input Setoran Per Nota</label>
-                  <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[220px] overflow-y-auto bg-white">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
-                        <tr className="text-slate-500 text-[10px] font-bold uppercase">
-                          <th className="p-2">No. Faktur</th>
-                          <th className="p-2 text-right">Sisa Tagihan</th>
-                          <th className="p-2 text-center w-36">Nominal Bayar</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredData[selectedCustIdx].invoices.map((inv, idx, invoices) => (
-                          <tr key={inv.id} className="hover:bg-slate-50/50">
-                            <td className="p-2 font-mono text-slate-700">{inv.no_faktur || inv.no_order}</td>
-                            <td className="p-2 text-right font-mono text-rose-600">{formatCurrency(inv.remaining)}</td>
-                            <td className="p-1.5 text-center">
-                              <input
-                                id={`modal-manual-input-${inv.id}`}
-                                type="text"
-                                value={formatRupiahInput(manualAmounts[inv.id] || 0)}
-                                onChange={(e) => {
-                                  const val = parseRupiahInput(e.target.value);
-                                  setManualAmounts(prev => ({
-                                    ...prev,
-                                    [inv.id]: val,
-                                  }));
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (idx < invoices.length - 1) {
-                                      const nextInv = invoices[idx + 1];
-                                      const nextInput = document.getElementById(`modal-manual-input-${nextInv.id}`) as HTMLInputElement;
-                                      nextInput?.focus();
-                                      nextInput?.select();
-                                    } else {
-                                      paymentMethodCashRef.current?.focus();
-                                    }
-                                  } else if (e.key === 'ArrowDown') {
-                                    e.preventDefault();
-                                    if (idx < invoices.length - 1) {
-                                      const nextInv = invoices[idx + 1];
-                                      const nextInput = document.getElementById(`modal-manual-input-${nextInv.id}`) as HTMLInputElement;
-                                      nextInput?.focus();
-                                      nextInput?.select();
-                                    }
-                                  } else if (e.key === 'ArrowUp') {
-                                    e.preventDefault();
-                                    if (idx > 0) {
-                                      const prevInv = invoices[idx - 1];
-                                      const prevInput = document.getElementById(`modal-manual-input-${prevInv.id}`) as HTMLInputElement;
-                                      prevInput?.focus();
-                                      prevInput?.select();
-                                    }
-                                  }
-                                }}
-                                className="input-field py-1 px-2 text-right text-xs font-mono w-28 bg-slate-50 border border-slate-250 text-emerald-600 font-semibold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="flex justify-between items-center text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                    <span className="text-slate-500 uppercase font-bold text-[10px]">Total Setoran Manual</span>
-                    <strong className="text-emerald-600 text-sm font-black">{formatCurrency(manualTotal)}</strong>
-                  </div>
+              {/* FIFO Mode Amount Input */}
+              {paymentMode === 'fifo' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">Nominal Setoran (Rp)</label>
+                  <input
+                    ref={paymentAmountRef}
+                    type="text"
+                    value={formatRupiahInput(paymentAmount)}
+                    onChange={(e) => setPaymentAmount(e.target.value ? parseRupiahInput(e.target.value) : '')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentMethodCashRef.current?.focus();
+                      }
+                    }}
+                    required
+                    placeholder="Masukkan nominal setoran..."
+                    className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
+                  />
                 </div>
               )}
 
@@ -1362,7 +1295,7 @@ export const PiutangAktif: React.FC = () => {
                         setPaymentMethod('transfer');
                       } else if (e.key === 'Enter') {
                         e.preventDefault();
-                        paymentNoteRef.current?.focus();
+                        (syncNotaOtomatis ? syncNotaYaRef : syncNotaTidakRef).current?.focus();
                       }
                     }}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMethod === 'cash'
@@ -1383,7 +1316,7 @@ export const PiutangAktif: React.FC = () => {
                         setPaymentMethod('cash');
                       } else if (e.key === 'Enter') {
                         e.preventDefault();
-                        paymentNoteRef.current?.focus();
+                        (syncNotaOtomatis ? syncNotaYaRef : syncNotaTidakRef).current?.focus();
                       }
                     }}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMethod === 'transfer'
@@ -1394,6 +1327,61 @@ export const PiutangAktif: React.FC = () => {
                     Transfer Bank
                   </button>
                 </div>
+              </div>
+
+              {/* Automatic Nota Synchronization Button Toggle */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-655 mb-1">
+                  Otomatisasi Manajemen Nota (Merah/Putih)
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    ref={syncNotaYaRef}
+                    type="button"
+                    onClick={() => setSyncNotaOtomatis(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        syncNotaTidakRef.current?.focus();
+                        setSyncNotaOtomatis(false);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentNoteRef.current?.focus();
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${syncNotaOtomatis
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                      }`}
+                  >
+                    Ya
+                  </button>
+                  <button
+                    ref={syncNotaTidakRef}
+                    type="button"
+                    onClick={() => setSyncNotaOtomatis(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        syncNotaYaRef.current?.focus();
+                        setSyncNotaOtomatis(true);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        paymentNoteRef.current?.focus();
+                      }
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${!syncNotaOtomatis
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                      }`}
+                  >
+                    Tidak
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Jika aktif: Nota Merah akan diceklis & Putih di-unceklis jika lunas. 
+                  Jika belum lunas, Nota Putih akan diceklis & Merah di-unceklis.
+                </p>
               </div>
 
               <div>
@@ -1440,6 +1428,122 @@ export const PiutangAktif: React.FC = () => {
               </div>
             </div>
           </form>
+
+          {/* FIFO Distribution Preview Side-Panel */}
+          {paymentMode === 'fifo' && Number(paymentAmount) > 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl w-full md:w-80 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
+              <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
+                <FileText size={18} />
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Preview Distribusi (FIFO)</h4>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-2 text-xs flex-1 bg-slate-50/30">
+                <div className="space-y-2 text-[11px]">
+                  {fifoAllocations.map((alloc) => (
+                    <div key={alloc.id} className="flex flex-col p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                      <div className="flex justify-between font-mono font-bold text-slate-800">
+                        <span>{alloc.no_faktur || alloc.no_order}</span>
+                        {alloc.remainingAfter === 0 ? (
+                          <span className="text-emerald-600 font-bold flex items-center gap-0.5">Lunas ✓</span>
+                        ) : (
+                          <span className="text-amber-600 font-semibold flex items-center gap-0.5">Sebagian</span>
+                        )}
+                      </div>
+                      <div className="flex justify-between text-slate-500">
+                        <span>Tagihan Awal:</span>
+                        <span>{formatCurrency(alloc.remaining)}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-dashed border-slate-200 pt-1 font-semibold text-emerald-600">
+                        <span>Bayar:</span>
+                        <span>{formatCurrency(alloc.allocated)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Manual Mode Invoices Table Side-Panel */}
+          {paymentMode === 'manual' && (
+            <div className="bg-white border border-slate-200 rounded-xl w-full md:w-96 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
+              <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
+                <FileText size={18} />
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Input Setoran Per Nota</h4>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-3 flex-1 bg-slate-50/30">
+                <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto bg-white shadow-sm">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
+                      <tr className="text-slate-500 text-[10px] font-bold uppercase">
+                        <th className="p-2">No. Faktur</th>
+                        <th className="p-2 text-right">Sisa Tagihan</th>
+                        <th className="p-2 text-center w-36">Nominal Bayar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredData[selectedCustIdx].invoices.map((inv, idx, invoices) => (
+                        <tr key={inv.id} className="hover:bg-slate-50/50">
+                          <td className="p-2 font-mono text-slate-700">{inv.no_faktur || inv.no_order}</td>
+                          <td className="p-2 text-right font-mono text-rose-600">{formatCurrency(inv.remaining)}</td>
+                          <td className="p-1.5 text-center">
+                            <input
+                              id={`modal-manual-input-${inv.id}`}
+                               type="text"
+                               value={formatRupiahInput(manualAmounts[inv.id] || 0)}
+                               onFocus={(e) => {
+                                 e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                               }}
+                               onChange={(e) => {
+                                const val = parseRupiahInput(e.target.value);
+                                setManualAmounts(prev => ({
+                                  ...prev,
+                                  [inv.id]: val,
+                                }));
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (idx < invoices.length - 1) {
+                                    const nextInv = invoices[idx + 1];
+                                    const nextInput = document.getElementById(`modal-manual-input-${nextInv.id}`) as HTMLInputElement;
+                                    nextInput?.focus();
+                                    nextInput?.select();
+                                  } else {
+                                    paymentMethodCashRef.current?.focus();
+                                  }
+                                } else if (e.key === 'ArrowDown') {
+                                  e.preventDefault();
+                                  if (idx < invoices.length - 1) {
+                                    const nextInv = invoices[idx + 1];
+                                    const nextInput = document.getElementById(`modal-manual-input-${nextInv.id}`) as HTMLInputElement;
+                                    nextInput?.focus();
+                                    nextInput?.select();
+                                  }
+                                } else if (e.key === 'ArrowUp') {
+                                  e.preventDefault();
+                                  if (idx > 0) {
+                                    const prevInv = invoices[idx - 1];
+                                    const prevInput = document.getElementById(`modal-manual-input-${prevInv.id}`) as HTMLInputElement;
+                                    prevInput?.focus();
+                                    prevInput?.select();
+                                  }
+                                }
+                              }}
+                              className="input-field py-1 px-2 text-right text-xs font-mono w-28 bg-slate-50 border border-slate-250 text-emerald-600 font-semibold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex justify-between items-center text-xs p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm">
+                  <span className="text-slate-500 uppercase font-bold text-[10px]">Total Setoran Manual</span>
+                  <strong className="text-emerald-600 text-sm font-black">{formatCurrency(manualTotal)}</strong>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1670,6 +1774,15 @@ export const PiutangAktif: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[9999] px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in bg-white border ${
+          toast.type === 'success' ? 'border-blue-600 text-blue-600' : 'border-red-650 text-red-650'
+        }`}>
+          {toast.type === 'success' ? <CheckCircle size={16} className="text-blue-600" /> : <AlertTriangle size={16} className="text-red-650" />}
+          <span className="text-xs font-bold">{toast.message}</span>
         </div>
       )}
 
