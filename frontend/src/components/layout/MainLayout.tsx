@@ -320,9 +320,11 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         </header>
 
         {/* Content Page wrapper */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 animate-fade-in print:p-0 print:overflow-visible print:bg-white print:text-black">
-          {children}
-        </main>
+        <div id="main-portal-target" className="relative flex-1 overflow-hidden print:overflow-visible">
+          <main className="h-full overflow-y-auto p-6 md:p-8 animate-fade-in print:p-0 print:overflow-visible print:bg-white print:text-black">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

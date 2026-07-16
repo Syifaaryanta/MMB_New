@@ -18,6 +18,7 @@ import {
   Save,
   Truck
 } from 'lucide-react';
+import { ModalPortal } from '@/components/ui/ModalPortal';
 
 interface Supplier {
   id: string;
@@ -54,6 +55,15 @@ interface PurchaseDetail {
   sender_note?: string | null;
 }
 
+const getStoredState = <T,>(key: string, defaultValue: T): T => {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
+
 export const PelunasanSupplier: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<SupplierGroup[]>([]);
@@ -61,8 +71,8 @@ export const PelunasanSupplier: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Filters state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'overdue' | 'lancar'>('all');
+  const [searchQuery, setSearchQuery] = useState(() => getStoredState('pelunasan_supp_searchQuery', ''));
+  const [statusFilter, setStatusFilter] = useState<'all' | 'overdue' | 'lancar'>(() => getStoredState('pelunasan_supp_statusFilter', 'all'));
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedFilterOptionIdx, setSelectedFilterOptionIdx] = useState(0);
   const filterModalRef = useRef<HTMLDivElement>(null);
@@ -71,8 +81,8 @@ export const PelunasanSupplier: React.FC = () => {
   const [expandedSupplierIds, setExpandedSupplierIds] = useState<Record<string, boolean>>({});
 
   // Keyboard navigation indexes
-  const [selectedSuppIdx, setSelectedSuppIdx] = useState<number>(0);
-  const [selectedPurchaseIdx, setSelectedPurchaseIdx] = useState<number | null>(null);
+  const [selectedSuppIdx, setSelectedSuppIdx] = useState<number>(() => getStoredState('pelunasan_supp_selectedSuppIdx', 0));
+  const [selectedPurchaseIdx, setSelectedPurchaseIdx] = useState<number | null>(() => getStoredState('pelunasan_supp_selectedPurchaseIdx', null));
 
   // Refs for focusing
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -85,25 +95,35 @@ export const PelunasanSupplier: React.FC = () => {
   const paymentNoteRef = useRef<HTMLTextAreaElement>(null);
 
   // Modal payment (global / multi-purchase)
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMode, setPaymentMode] = useState<'fifo' | 'manual'>('fifo');
-  const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
-  const [manualAmounts, setManualAmounts] = useState<Record<string, number>>({});
-  const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [paymentNote, setPaymentNote] = useState('');
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [showPaymentModal, setShowPaymentModal] = useState(() => getStoredState('pelunasan_supp_showPaymentModal', false));
+  const [paymentMode, setPaymentMode] = useState<'fifo' | 'manual'>(() => getStoredState('pelunasan_supp_paymentMode', 'fifo'));
+  const [paymentAmount, setPaymentAmount] = useState<number | ''>(() => getStoredState('pelunasan_supp_paymentAmount', ''));
+  const [manualAmounts, setManualAmounts] = useState<Record<string, number>>(() => getStoredState('pelunasan_supp_manualAmounts', {}));
+  const [paymentMethod, setPaymentMethod] = useState(() => getStoredState('pelunasan_supp_paymentMethod', 'cash'));
+  const [paymentNote, setPaymentNote] = useState(() => getStoredState('pelunasan_supp_paymentNote', ''));
+  const [paymentDate, setPaymentDate] = useState(() => getStoredState('pelunasan_supp_paymentDate', new Date().toISOString().slice(0, 10)));
 
   // Modal PO detail (F4)
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailPurchaseId, setDetailPurchaseId] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(() => getStoredState('pelunasan_supp_showDetailModal', false));
+  const [detailPurchaseId, setDetailPurchaseId] = useState<string | null>(() => getStoredState('pelunasan_supp_detailPurchaseId', null));
   const [detailPurchase, setDetailPurchase] = useState<any | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   // Supplier search selection popup modal
   const [showSearchPopup, setShowSearchPopup] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(() => getStoredState('pelunasan_supp_isConfirmed', false));
   const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
   const searchPopupRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (showSearchPopup) {
+      const target = itemRefs.current[popupFocusedIndex];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [popupFocusedIndex, showSearchPopup]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -112,6 +132,37 @@ export const PelunasanSupplier: React.FC = () => {
       setToast(null);
     }, 3000);
   };
+
+  const cleanPaymentNote = (note: string | null | undefined): string => {
+    if (!note) return '-';
+    let cleaned = note.replace(/\[Session ID:\s*[^\]]+\]/gi, '');
+    cleaned = cleaned.replace(/Sesi Penagihan:\s*/gi, '');
+    cleaned = cleaned.replace(/Sesi Pembayaran AP:\s*/gi, '');
+    cleaned = cleaned.trim();
+    if (!cleaned || cleaned === '-') return '-';
+    return cleaned;
+  };
+
+  useEffect(() => {
+    localStorage.setItem('pelunasan_supp_searchQuery', JSON.stringify(searchQuery));
+    localStorage.setItem('pelunasan_supp_statusFilter', JSON.stringify(statusFilter));
+    localStorage.setItem('pelunasan_supp_selectedSuppIdx', JSON.stringify(selectedSuppIdx));
+    localStorage.setItem('pelunasan_supp_selectedPurchaseIdx', JSON.stringify(selectedPurchaseIdx));
+    localStorage.setItem('pelunasan_supp_showPaymentModal', JSON.stringify(showPaymentModal));
+    localStorage.setItem('pelunasan_supp_paymentMode', JSON.stringify(paymentMode));
+    localStorage.setItem('pelunasan_supp_paymentAmount', JSON.stringify(paymentAmount));
+    localStorage.setItem('pelunasan_supp_manualAmounts', JSON.stringify(manualAmounts));
+    localStorage.setItem('pelunasan_supp_paymentMethod', JSON.stringify(paymentMethod));
+    localStorage.setItem('pelunasan_supp_paymentNote', JSON.stringify(paymentNote));
+    localStorage.setItem('pelunasan_supp_paymentDate', JSON.stringify(paymentDate));
+    localStorage.setItem('pelunasan_supp_showDetailModal', JSON.stringify(showDetailModal));
+    localStorage.setItem('pelunasan_supp_detailPurchaseId', JSON.stringify(detailPurchaseId));
+    localStorage.setItem('pelunasan_supp_isConfirmed', JSON.stringify(isConfirmed));
+  }, [
+    searchQuery, statusFilter, selectedSuppIdx, selectedPurchaseIdx,
+    showPaymentModal, paymentMode, paymentAmount, manualAmounts, paymentMethod,
+    paymentNote, paymentDate, showDetailModal, detailPurchaseId, isConfirmed
+  ]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -474,6 +525,11 @@ export const PelunasanSupplier: React.FC = () => {
         showToast('Silakan masukkan nominal pelunasan yang valid.', 'error');
         return;
       }
+      const limit = supplierGroup.total_hutang || 0;
+      if (Number(paymentAmount) > Number(limit)) {
+        showToast('Nominal pelunasan melebihi total hutang aktif!', 'error');
+        return;
+      }
       payload.total_amount = Number(paymentAmount);
     } else {
       const activeAllocations = Object.entries(manualAmounts)
@@ -635,7 +691,7 @@ export const PelunasanSupplier: React.FC = () => {
                       <div key={pay.id} className="py-1.5 px-3 bg-blue-50/20 hover:bg-blue-50/40 border border-blue-100/30 rounded-lg flex justify-between items-center transition-all text-[11px]">
                         <div>
                           <p className="font-extrabold text-blue-950">Bayar: {formatCurrency(Number(pay.amount))}</p>
-                          <p className="text-[10px] text-slate-500">Catatan: {pay.note || '-'}</p>
+                          <p className="text-[10px] text-slate-500">Catatan: {cleanPaymentNote(pay.note)}</p>
                         </div>
                         <div className="text-right text-[10px] text-slate-400 font-semibold flex items-center gap-2">
                           <span>{formatDate(pay.payment_date)}</span>
@@ -943,7 +999,8 @@ export const PelunasanSupplier: React.FC = () => {
 
       {/* Filter Status Modal (F3) */}
       {showFilterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in modal-overlay">
           <div
             ref={filterModalRef}
             tabIndex={0}
@@ -1010,11 +1067,13 @@ export const PelunasanSupplier: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Customer Selection Search Popup Modal */}
       {showSearchPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in modal-overlay">
           <div
             ref={searchPopupRef}
             tabIndex={0}
@@ -1051,6 +1110,9 @@ export const PelunasanSupplier: React.FC = () => {
                   <button
                     type="button"
                     key={group.supplier.id}
+                    ref={(el) => {
+                      itemRefs.current[idx] = el;
+                    }}
                     onClick={() => {
                       setSelectedSuppIdx(idx);
                       setSelectedPurchaseIdx(null);
@@ -1068,7 +1130,7 @@ export const PelunasanSupplier: React.FC = () => {
                       }`}
                   >
                     <div>
-                      <p className="font-semibold text-white">{group.supplier.nama}</p>
+                      <p className="font-semibold text-slate-850">{group.supplier.nama}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">Alamat: {group.supplier.alamat || '-'}</p>
                     </div>
                     <div className="text-right">
@@ -1086,6 +1148,7 @@ export const PelunasanSupplier: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Detail Modal is rendered inline in full-page style above */}
@@ -1093,7 +1156,8 @@ export const PelunasanSupplier: React.FC = () => {
 
       {/* Global Supplier Payment Modal (F10) */}
       {showPaymentModal && filteredData[selectedSuppIdx] && (
-        <div className="fixed inset-0 z-50 flex flex-col md:flex-row items-center justify-center gap-4 p-4 modal-overlay overflow-y-auto">
+        <ModalPortal>
+          <div className="absolute inset-0 z-[9999] flex flex-col md:flex-row items-center justify-center gap-4 p-4 bg-black/60 backdrop-blur-sm overflow-y-auto animate-fade-in modal-overlay">
           <form
             onSubmit={(e) => { e.preventDefault(); savePayment(); }}
             className="bg-white border border-slate-200 rounded-xl max-w-lg w-full shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden"
@@ -1189,7 +1253,17 @@ export const PelunasanSupplier: React.FC = () => {
                     type="text"
                     value={formatRupiahInput(paymentAmount)}
                     onChange={(e) => setPaymentAmount(e.target.value ? parseRupiahInput(e.target.value) : '')}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); paymentMethodCashRef.current?.focus(); } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const limit = filteredData[selectedSuppIdx]?.total_hutang || 0;
+                        if (Number(paymentAmount) > Number(limit)) {
+                          showToast('Nominal pelunasan melebihi total hutang aktif!', 'error');
+                          return;
+                        }
+                        paymentMethodCashRef.current?.focus();
+                      }
+                    }}
                     required
                     placeholder="Masukkan nominal pelunasan..."
                     className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
@@ -1371,15 +1445,20 @@ export const PelunasanSupplier: React.FC = () => {
             </div>
           )}
         </div>
+        </ModalPortal>
       )}
 
       {toast && (
-        <div className={`fixed bottom-4 right-4 z-[9999] px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in bg-white border ${
-          toast.type === 'success' ? 'border-blue-600 text-blue-600' : 'border-red-650 text-red-650'
-        }`}>
-          {toast.type === 'success' ? <CheckCircle size={16} className="text-blue-600" /> : <AlertTriangle size={16} className="text-red-650" />}
-          <span className="text-xs font-bold">{toast.message}</span>
-        </div>
+        <ModalPortal>
+          <div className={`fixed bottom-4 right-4 z-[100000] px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in bg-white border ${
+            toast.type === 'success' ? 'border-blue-600 text-blue-600' : 'border-danger-600 text-danger-600'
+          }`}>
+            {toast.type === 'success' ? <CheckCircle size={16} className="text-blue-600" /> : <AlertTriangle size={16} className="text-danger-600" />}
+            <span className={`text-xs font-bold ${toast.type === 'success' ? 'text-blue-600' : 'text-danger-600'}`}>
+              {toast.message}
+            </span>
+          </div>
+        </ModalPortal>
       )}
 
       {/* Global CSS style overrides for table borders */}

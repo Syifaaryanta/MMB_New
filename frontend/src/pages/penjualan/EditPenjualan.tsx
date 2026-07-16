@@ -124,6 +124,26 @@ export const EditPenjualan: React.FC = () => {
 
   const customerPopupRef = useRef<HTMLDivElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
+  const customerItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const productItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (showCustomerPopup) {
+      const target = customerItemRefs.current[focusedCustIdx];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedCustIdx, showCustomerPopup]);
+
+  useEffect(() => {
+    if (showProductPopup) {
+      const target = productItemRefs.current[focusedProdIdx];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedProdIdx, showProductPopup]);
 
   const btnAsliRef = useRef<HTMLButtonElement>(null);
   const btnAbjadRef = useRef<HTMLButtonElement>(null);
@@ -1659,6 +1679,9 @@ export const EditPenjualan: React.FC = () => {
                 customers.map((cust, idx) => (
                   <button
                     key={cust.id}
+                    ref={(el) => {
+                      customerItemRefs.current[idx] = el;
+                    }}
                     onClick={() => selectCustomer(cust)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedCustIdx
                         ? 'border-emerald-500 bg-emerald-50/80 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
@@ -1713,6 +1736,9 @@ export const EditPenjualan: React.FC = () => {
                 products.map((p, idx) => (
                   <button
                     key={p.id}
+                    ref={(el) => {
+                      productItemRefs.current[idx] = el;
+                    }}
                     onClick={() => selectProduct(p)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedProdIdx
                         ? 'border-emerald-500 bg-emerald-50/80 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'

@@ -44,12 +44,12 @@ import { EditPenjualan } from '@/pages/penjualan/EditPenjualan';
 import { DaftarPenjualan } from '@/pages/penjualan/DaftarPenjualan';
 import { DraftSO } from '@/pages/penjualan/DraftSO';
 
-// Real Penagihan Pages
 import { PenagihanMenu } from '@/pages/penagihan/PenagihanMenu';
 import { PiutangAktif } from '@/pages/penagihan/PiutangAktif';
 import { ManajemenNota } from '@/pages/penagihan/ManajemenNota';
+import { PelangganLunas } from '@/pages/penagihan/PelangganLunas';
 import { HistoryPembayaran } from '@/pages/penagihan/HistoryPembayaran';
-import { RiwayatPenagihan } from '@/pages/penagihan/RiwayatPenagihan';
+import { HistoryPelunasan } from '@/pages/penagihan/HistoryPelunasan';
 import { PelunasanSupplier } from '@/pages/penagihan/PelunasanSupplier';
 
 // Real Laporan Pages
@@ -217,8 +217,9 @@ function App() {
                     <Route path="penagihan/piutang" element={<PiutangAktif />} />
                     <Route path="penagihan/supplier" element={<PelunasanSupplier />} />
                     <Route path="penagihan/nota" element={<ManajemenNota />} />
-                    <Route path="penagihan/tunai" element={<HistoryPembayaran />} />
-                    <Route path="penagihan/riwayat" element={<RiwayatPenagihan />} />
+                    <Route path="penagihan/lunas" element={<PelangganLunas />} />
+                    <Route path="penagihan/history-pembayaran" element={<HistoryPembayaran />} />
+                    <Route path="penagihan/history-pelunasan" element={<HistoryPelunasan />} />
                   </Route>
 
                   {/* History */}

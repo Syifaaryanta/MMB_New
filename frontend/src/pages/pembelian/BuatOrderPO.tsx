@@ -52,6 +52,16 @@ export const BuatOrderPO: React.FC = () => {
   const supplierInputRef = useRef<HTMLInputElement>(null);
   const termsSelectRef = useRef<HTMLDivElement>(null);
   const supplierPopupRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (showSupplierPopup) {
+      const target = itemRefs.current[focusedIndex];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedIndex, showSupplierPopup]);
 
   // Focus modal popups when shown
   useEffect(() => {
@@ -491,6 +501,9 @@ export const BuatOrderPO: React.FC = () => {
                 suppliers.map((supp, idx) => (
                   <button
                     key={supp.id}
+                    ref={(el) => {
+                      itemRefs.current[idx] = el;
+                    }}
                     onClick={() => selectSupplier(supp)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${
                       idx === focusedIndex

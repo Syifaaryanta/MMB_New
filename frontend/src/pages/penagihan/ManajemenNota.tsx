@@ -2,9 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { 
-  Search, 
-  RefreshCw, 
+import {
+  Search,
+  RefreshCw,
   ChevronDown,
   ChevronRight,
   X
@@ -29,6 +29,15 @@ interface CustomerGroup {
   invoices: InvoiceNota[];
 }
 
+const getStoredState = <T,>(key: string, defaultValue: T): T => {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
+
 export const ManajemenNota: React.FC = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<InvoiceNota[]>([]);
@@ -37,16 +46,16 @@ export const ManajemenNota: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Search filter
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(() => getStoredState('nota_searchQuery', ''));
+  const [isConfirmed, setIsConfirmed] = useState(() => getStoredState('nota_isConfirmed', false));
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
 
   // Keyboard navigation & editing state
-  const [selectedCustIdx, setSelectedCustIdx] = useState<number>(0);
-  const [selectedInvoiceIdx, setSelectedInvoiceIdx] = useState<number | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [activeCol, setActiveCol] = useState<'merah' | 'putih' | 'kuning'>('merah');
+  const [selectedCustIdx, setSelectedCustIdx] = useState<number>(() => getStoredState('nota_selectedCustIdx', 0));
+  const [selectedInvoiceIdx, setSelectedInvoiceIdx] = useState<number | null>(() => getStoredState('nota_selectedInvoiceIdx', null));
+  const [isEditMode, setIsEditMode] = useState(() => getStoredState('nota_isEditMode', false));
+  const [activeCol, setActiveCol] = useState<'merah' | 'putih' | 'kuning'>(() => getStoredState('nota_activeCol', 'merah'));
   const [expandedCustNames, setExpandedCustNames] = useState<Record<string, boolean>>({});
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +76,15 @@ export const ManajemenNota: React.FC = () => {
   useEffect(() => {
     fetchInvoices();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('nota_searchQuery', JSON.stringify(searchQuery));
+    localStorage.setItem('nota_isConfirmed', JSON.stringify(isConfirmed));
+    localStorage.setItem('nota_selectedCustIdx', JSON.stringify(selectedCustIdx));
+    localStorage.setItem('nota_selectedInvoiceIdx', JSON.stringify(selectedInvoiceIdx));
+    localStorage.setItem('nota_isEditMode', JSON.stringify(isEditMode));
+    localStorage.setItem('nota_activeCol', JSON.stringify(activeCol));
+  }, [searchQuery, isConfirmed, selectedCustIdx, selectedInvoiceIdx, isEditMode, activeCol]);
 
   // Focus search input on mount
   useEffect(() => {
@@ -172,7 +190,7 @@ export const ManajemenNota: React.FC = () => {
           invoices.map(async (inv) => {
             const totalPaid = inv.sales_payments.reduce((sum, p) => sum + Number(p.amount), 0);
             const remaining = Number(inv.subtotal) - totalPaid;
-            
+
             // If fully paid: Red is checked (returns to office), White is unchecked (handed to customer)
             if (remaining <= 0) {
               const updated = {
@@ -247,7 +265,7 @@ export const ManajemenNota: React.FC = () => {
       if (selectedCustIdx > 0) {
         const prevCustIdx = selectedCustIdx - 1;
         setSelectedCustIdx(prevCustIdx);
-        
+
         const prevGroup = groupedInvoices[prevCustIdx];
         const prevName = prevGroup.customer_nama;
         if (expandedCustNames[prevName] && prevGroup.invoices.length > 0) {
@@ -491,9 +509,8 @@ export const ManajemenNota: React.FC = () => {
             return (
               <div
                 key={group.customer_nama}
-                className={`card p-0 overflow-hidden border transition-all ${
-                  isCustSelected ? 'card-hovered border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
-                }`}
+                className={`card p-0 overflow-hidden border transition-all ${isCustSelected ? 'card-hovered border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
+                  }`}
               >
                 {/* Customer Card Header */}
                 <div
@@ -530,16 +547,16 @@ export const ManajemenNota: React.FC = () => {
                           <th className="p-4">Tgl Transaksi</th>
                           <th className="p-4">Jatuh Tempo</th>
                           <th className="p-4 text-right">Nilai Belanja</th>
-                          
+
                           {/* Colored Nota Columns */}
-                          <th className="p-4 text-center w-28 bg-rose-50/20 border-l border-slate-200">
-                            Merah (Finance)
+                          <th className="p-4 text-center w-28 bg-rose-100/50 text-rose-700 border-l border-slate-200 font-bold uppercase text-[10px] tracking-wider">
+                            Merah
                           </th>
-                          <th className="p-4 text-center w-28 bg-blue-50/20 border-l border-slate-200">
-                            Putih (Customer)
+                          <th className="p-4 text-center w-28 bg-slate-100 text-slate-700 border-l border-slate-200 font-bold uppercase text-[10px] tracking-wider">
+                            Putih
                           </th>
-                          <th className="p-4 text-center w-28 bg-amber-50/20 border-l border-slate-200">
-                            Kuning (Gudang)
+                          <th className="p-4 text-center w-28 bg-amber-100/50 text-amber-700 border-l border-slate-200 font-bold uppercase text-[10px] tracking-wider">
+                            Kuning
                           </th>
                         </tr>
                       </thead>
@@ -549,15 +566,15 @@ export const ManajemenNota: React.FC = () => {
                           const isMerahActive = isInvSelected && isEditMode && activeCol === 'merah';
                           const isPutihActive = isInvSelected && isEditMode && activeCol === 'putih';
                           const isKuningActive = isInvSelected && isEditMode && activeCol === 'kuning';
-                          const rowBgClass = isInvSelected ? 'bg-blue-50/40' : 'hover:bg-slate-50/50';
+                          const rowBgClass = isInvSelected ? 'bg-blue-100' : 'hover:bg-slate-50/50';
 
-                          const getTdClass = (pos: 'first' | 'middle' | 'last', customBg?: string) => {
-                            let base = "p-4 transition-all duration-150 border-b border-slate-200 ";
+                          const getTdClass = (pos: 'first' | 'middle' | 'last', customBg?: string, selectedBg?: string) => {
+                            let base = "p-4 transition-all duration-150 border-b ";
                             if (isInvSelected) {
-                              base += "bg-blue-50/50 text-slate-900 font-bold ";
-                              if (pos === 'first') base += "border-l-4 border-blue-600 ";
+                              base += (selectedBg || "bg-blue-100") + " text-primary-950 font-bold border-blue-300 ";
+                              if (pos === 'first') base += "border-l-4 border-primary-600 ";
                             } else {
-                              base += (customBg || "text-slate-800") + " ";
+                              base += (customBg || "text-slate-800") + " border-slate-200 ";
                               if (pos === 'first') base += "border-l-4 border-transparent ";
                             }
                             return base;
@@ -572,22 +589,21 @@ export const ManajemenNota: React.FC = () => {
                               }}
                               className={`cursor-pointer transition-all ${rowBgClass}`}
                             >
-                              <td className={getTdClass('first') + " text-center text-slate-500"}>{iIdx + 1}</td>
-                              <td className={getTdClass('middle') + " font-mono font-bold text-slate-855"}>
+                              <td className={getTdClass('first') + " text-center " + (isInvSelected ? "" : "text-slate-500")}>{iIdx + 1}</td>
+                              <td className={getTdClass('middle') + " font-mono font-bold " + (isInvSelected ? "" : "text-slate-855")}>
                                 {inv.no_faktur || inv.no_order}
                               </td>
-                              <td className={getTdClass('middle') + " text-slate-650"}>{formatDate(inv.order_date)}</td>
-                              <td className={getTdClass('middle') + " text-slate-650"}>
+                              <td className={getTdClass('middle') + " " + (isInvSelected ? "" : "text-slate-650")}>{formatDate(inv.order_date)}</td>
+                              <td className={getTdClass('middle') + " " + (isInvSelected ? "" : "text-slate-650")}>
                                 {inv.due_date ? formatDate(inv.due_date) : '-'}
                               </td>
-                              <td className={getTdClass('middle') + " text-right font-mono text-slate-800"}>
+                              <td className={getTdClass('middle') + " text-right font-mono " + (isInvSelected ? "" : "text-slate-800")}>
                                 {formatCurrency(Number(inv.subtotal))}
                               </td>
-                              
+
                               {/* Nota Merah Checkbox */}
-                              <td className={getTdClass('middle', 'bg-rose-50/30') + ` text-center border-l border-slate-200 transition-all ${
-                                isMerahActive ? 'ring-2 ring-rose-500 ring-inset bg-rose-100/50' : ''
-                              }`}>
+                              <td className={getTdClass('middle', 'bg-rose-50/30 text-rose-950', 'bg-rose-100/30') + ` text-center border-l border-slate-200 transition-all ${isMerahActive ? 'ring-2 ring-rose-500 ring-inset bg-rose-200/50' : ''
+                                }`}>
                                 <input
                                   type="checkbox"
                                   checked={inv.nota_merah}
@@ -602,9 +618,8 @@ export const ManajemenNota: React.FC = () => {
                               </td>
 
                               {/* Nota Putih Checkbox */}
-                              <td className={getTdClass('middle', 'bg-blue-50/10') + ` text-center border-l border-slate-200 transition-all ${
-                                isPutihActive ? 'ring-2 ring-blue-500 ring-inset bg-blue-100/50' : ''
-                              }`}>
+                              <td className={getTdClass('middle', 'bg-slate-50/40 text-slate-950', 'bg-slate-100/40') + ` text-center border-l border-slate-200 transition-all ${isPutihActive ? 'ring-2 ring-slate-400 ring-inset bg-slate-200/50' : ''
+                                }`}>
                                 <input
                                   type="checkbox"
                                   checked={inv.nota_putih}
@@ -614,14 +629,13 @@ export const ManajemenNota: React.FC = () => {
                                     saveNotaStatus({ ...inv, nota_putih: e.target.checked });
                                   }}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="rounded border-slate-355 bg-white text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                                  className="rounded border-slate-350 bg-white text-slate-600 focus:ring-slate-500 w-4 h-4 cursor-pointer"
                                 />
                               </td>
 
                               {/* Nota Kuning Checkbox */}
-                              <td className={getTdClass('last', 'bg-amber-50/30') + ` text-center border-l border-slate-200 transition-all ${
-                                isKuningActive ? 'ring-2 ring-amber-500 ring-inset bg-amber-100/50' : ''
-                              }`}>
+                              <td className={getTdClass('last', 'bg-amber-50/30 text-amber-950', 'bg-amber-100/30') + ` text-center border-l border-slate-200 transition-all ${isKuningActive ? 'ring-2 ring-amber-500 ring-inset bg-amber-200/50' : ''
+                                }`}>
                                 <input
                                   type="checkbox"
                                   checked={inv.nota_kuning}
@@ -697,11 +711,10 @@ export const ManajemenNota: React.FC = () => {
                       }, 50);
                     }}
                     onMouseEnter={() => setPopupFocusedIndex(idx)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${
-                      idx === popupFocusedIndex
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${idx === popupFocusedIndex
                         ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
                         : 'border-surface-700 hover:bg-surface-750 text-slate-355 bg-surface-900'
-                    }`}
+                      }`}
                   >
                     <div>
                       <p className="font-semibold text-white">{group.customer_nama}</p>

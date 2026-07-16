@@ -87,6 +87,16 @@ export const InputItemPO: React.FC = () => {
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const priceInputRef = useRef<HTMLInputElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (showProductPopup) {
+      const target = itemRefs.current[focusedProdIdx];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedProdIdx, showProductPopup]);
 
   useEffect(() => {
     const raw = sessionStorage.getItem('po_step1');
@@ -782,6 +792,9 @@ export const InputItemPO: React.FC = () => {
                 products.map((p, idx) => (
                   <button
                     key={p.id}
+                    ref={(el) => {
+                      itemRefs.current[idx] = el;
+                    }}
                     onClick={() => selectProduct(p)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${
                       idx === focusedProdIdx

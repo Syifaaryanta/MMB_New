@@ -193,7 +193,7 @@ saleRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async (r
 saleRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { customer_id, customer_nama, customer_alamat, customer_telp, diantar, limit_bulan, extra_charge_desc, extra_charge_amount, sender_note, items } = req.body;
-    
+
     // Get existing sale with items
     const existingSale = await prisma.sale.findUnique({
       where: { id: req.params.id as string },

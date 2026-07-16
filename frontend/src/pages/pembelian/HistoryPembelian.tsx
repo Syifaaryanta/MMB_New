@@ -56,6 +56,14 @@ export const HistoryPembelian: React.FC = () => {
   const toDateRef = useRef<HTMLInputElement>(null);
   const noOrderFilterRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
+
+  useEffect(() => {
+    const target = rowRefs.current[selectedIdx];
+    if (target) {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIdx]);
 
   // Update Real-time Time Clock (every second)
   useEffect(() => {
@@ -374,6 +382,9 @@ export const HistoryPembelian: React.FC = () => {
                       return (
                         <tr
                           key={p.id}
+                          ref={(el) => {
+                            rowRefs.current[idx] = el;
+                          }}
                           onClick={() => {
                             setSelectedIdx(idx);
                             setIsTableFocused(true);

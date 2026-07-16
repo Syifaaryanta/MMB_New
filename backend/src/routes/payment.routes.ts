@@ -81,6 +81,59 @@ paymentRouter.get('/piutang', authenticate, async (req: AuthRequest, res: Respon
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/payments/lunas - customer sales that are fully paid
+paymentRouter.get('/lunas', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { q } = req.query;
+    const where: any = {
+      status: 'completed',
+      customer: { aktif: true },
+    };
+    if (q) {
+      where.customer = { ...where.customer, nama: { contains: q as string } };
+    }
+
+    const sales = await prisma.sale.findMany({
+      where,
+      include: {
+        customer: true,
+        sales_payments: { orderBy: { payment_date: 'desc' } },
+        sale_items: true,
+      },
+      orderBy: { order_date: 'desc' },
+    });
+
+    const grouped: Record<string, any> = {};
+    for (const sale of sales) {
+      const paidAmount = sale.sales_payments.reduce((s: number, p: any) => s + Number(p.amount), 0);
+      const grandTotal = Number(sale.subtotal) + Number(sale.biaya_pengiriman || 0);
+      const remaining = grandTotal - paidAmount;
+
+      const isLunas = sale.limit_bulan === 0 || remaining <= 0;
+      if (!isLunas) continue;
+
+      const customerId = sale.customer_id;
+      if (!grouped[customerId]) {
+        grouped[customerId] = {
+          customer: sale.customer,
+          invoices: [],
+        };
+      }
+      grouped[customerId].invoices.push({
+        ...sale,
+        paid_amount: sale.limit_bulan === 0 ? grandTotal : paidAmount,
+        remaining: 0,
+        is_cash: sale.limit_bulan === 0,
+      });
+    }
+
+    res.json(Object.values(grouped));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/payments - Record a simple payment (keeps backward compatibility)
 paymentRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -308,6 +361,45 @@ paymentRouter.post('/session', authenticate, authorize(ROLES.ADMIN, ROLES.SALES,
   }
 });
 
+// GET /api/payments/oldest-unpaid - get oldest unpaid invoice date
+paymentRouter.get('/oldest-unpaid', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const sales = await prisma.sale.findMany({
+      where: { status: 'completed' },
+      include: { sales_payments: { select: { amount: true } } },
+      orderBy: { order_date: 'asc' }
+    });
+
+    const purchases = await prisma.purchase.findMany({
+      where: { status: { in: ['completed', 'received'] }, terms: { not: 'tunai' } },
+      include: { supplier_payments: { select: { amount: true } } },
+      orderBy: { order_date: 'asc' }
+    });
+
+    const oldestUnpaidSale = sales.find(s => {
+      const totalPaid = s.sales_payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const grandTotal = Number(s.subtotal) + Number(s.biaya_pengiriman || 0);
+      return (grandTotal - totalPaid) > 0.01;
+    });
+
+    const oldestUnpaidPurchase = purchases.find(p => {
+      const totalPaid = p.supplier_payments.reduce((sum, pay) => sum + Number(pay.amount), 0);
+      const grandTotal = Number(p.subtotal) + Number(p.biaya_pengiriman || 0);
+      return (grandTotal - totalPaid) > 0.01;
+    });
+
+    const dates = [oldestUnpaidSale?.order_date, oldestUnpaidPurchase?.order_date]
+      .filter(Boolean)
+      .map(d => d!.toISOString().slice(0, 10))
+      .sort();
+
+    res.json({ date: dates[0] || null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/payments/sessions - list billing sessions (logs)
 paymentRouter.get('/sessions', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -333,7 +425,31 @@ paymentRouter.get('/sessions', authenticate, async (req: AuthRequest, res: Respo
       },
       orderBy: { session_date: 'desc' }
     });
-    res.json(sessions);
+
+    const customerIds = sessions.filter(s => s.tipe === 'customer').map(s => s.target_id);
+    const supplierIds = sessions.filter(s => s.tipe === 'supplier').map(s => s.target_id);
+
+    const [customers, suppliers] = await Promise.all([
+      prisma.customer.findMany({
+        where: { id: { in: customerIds } },
+        select: { id: true, alamat: true }
+      }),
+      prisma.supplier.findMany({
+        where: { id: { in: supplierIds } },
+        select: { id: true, alamat: true }
+      })
+    ]);
+
+    const addressMap: Record<string, string | null> = {};
+    customers.forEach(c => { addressMap[c.id] = c.alamat; });
+    suppliers.forEach(s => { addressMap[s.id] = s.alamat; });
+
+    const sessionsWithAddress = sessions.map(s => ({
+      ...s,
+      target_alamat: addressMap[s.target_id] || null
+    }));
+
+    res.json(sessionsWithAddress);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

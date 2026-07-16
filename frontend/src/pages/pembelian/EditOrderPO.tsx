@@ -115,6 +115,26 @@ export const EditOrderPO: React.FC = () => {
 
   const productPopupRef = useRef<HTMLDivElement>(null);
   const supplierPopupRef = useRef<HTMLDivElement>(null);
+  const supplierItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const productItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (showSupplierPopup) {
+      const target = supplierItemRefs.current[focusedSuppIdx];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedSuppIdx, showSupplierPopup]);
+
+  useEffect(() => {
+    if (showProductPopup) {
+      const target = productItemRefs.current[focusedProdIdx];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedProdIdx, showProductPopup]);
 
   // Focus po search input or load param on mount
   useEffect(() => {
@@ -1039,6 +1059,9 @@ export const EditOrderPO: React.FC = () => {
                 suppliers.map((s, idx) => (
                   <button
                     key={s.id}
+                    ref={(el) => {
+                      supplierItemRefs.current[idx] = el;
+                    }}
                     onClick={() => selectSupplier(s)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedSuppIdx
                         ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
@@ -1088,6 +1111,9 @@ export const EditOrderPO: React.FC = () => {
                 products.map((p, idx) => (
                   <button
                     key={p.id}
+                    ref={(el) => {
+                      productItemRefs.current[idx] = el;
+                    }}
                     onClick={() => selectProduct(p)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedProdIdx
                         ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'

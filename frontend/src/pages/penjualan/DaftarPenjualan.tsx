@@ -75,6 +75,14 @@ export const DaftarPenjualan: React.FC = () => {
   const toDateRef = useRef<HTMLInputElement>(null);
   const noOrderFilterRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
+
+  useEffect(() => {
+    const target = rowRefs.current[selectedIdx];
+    if (target) {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIdx]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -536,6 +544,9 @@ export const DaftarPenjualan: React.FC = () => {
                       return (
                         <tr
                           key={s.id}
+                          ref={(el) => {
+                            rowRefs.current[idx] = el;
+                          }}
                           onClick={() => {
                             setSelectedIdx(idx);
                             setIsTableFocused(true);

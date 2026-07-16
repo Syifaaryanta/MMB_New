@@ -10,6 +10,7 @@ import {
   ChevronRight,
   History,
   Undo2,
+  DollarSign,
 } from 'lucide-react';
 
 export const HistoryMenu: React.FC = () => {
@@ -42,12 +43,20 @@ export const HistoryMenu: React.FC = () => {
       iconBg: 'bg-amber-50',
     },
     {
-      title: 'Histori Penagihan',
-      desc: 'Riwayat pembayaran piutang and pelunasan nota dari pelanggan.',
-      path: '/penagihan/riwayat?from=history',
+      title: 'Histori Pembayaran Pelanggan',
+      desc: 'Riwayat penerimaan kas dan cicilan pembayaran nota dari pelanggan.',
+      path: '/penagihan/history-pembayaran?from=history',
       icon: CreditCard,
       iconColor: 'text-purple-600',
       iconBg: 'bg-purple-50',
+    },
+    {
+      title: 'Histori Pelunasan Supplier',
+      desc: 'Riwayat pengeluaran kas untuk pelunasan nota/hutang belanja kepada supplier.',
+      path: '/penagihan/history-pelunasan?from=history',
+      icon: DollarSign,
+      iconColor: 'text-emerald-600',
+      iconBg: 'bg-emerald-50',
     },
     {
       title: 'Histori Return / Retur',

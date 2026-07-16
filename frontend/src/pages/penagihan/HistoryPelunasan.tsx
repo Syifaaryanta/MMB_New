@@ -7,14 +7,13 @@ import {
   Search,
   Calendar,
   User,
-  Printer,
   Trash2,
   AlertOctagon,
   FileText,
   X,
   Check,
   ChevronDown,
-  CreditCard
+  ShoppingBag
 } from 'lucide-react';
 import { ModalPortal } from '@/components/ui/ModalPortal';
 
@@ -22,10 +21,9 @@ interface Creator {
   nama: string;
 }
 
-interface SaleInfo {
-  no_faktur: string | null;
+interface PurchaseInfo {
   no_order: string;
-  customer?: {
+  supplier?: {
     nama: string;
     kode: string;
     alamat?: string | null;
@@ -37,13 +35,13 @@ interface BillingAllocation {
   allocated_amount: number;
   is_full_payment: boolean;
   remaining_after: number;
-  sale: SaleInfo | null;
+  purchase: PurchaseInfo | null;
 }
 
 interface BillingSession {
   id: string;
   session_date: string;
-  tipe: 'customer';
+  tipe: 'supplier';
   target_id: string;
   target_nama: string;
   target_alamat: string | null;
@@ -65,14 +63,14 @@ const getStoredState = <T,>(key: string, defaultValue: T): T => {
   }
 };
 
-export const HistoryPembayaran: React.FC = () => {
+export const HistoryPelunasan: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromHistory = searchParams.get('from') === 'history';
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
 
-  const activeTab = 'customer';
+  const activeTab = 'supplier';
 
   // Logs data state
   const [sessions, setSessions] = useState<BillingSession[]>([]);
@@ -80,28 +78,24 @@ export const HistoryPembayaran: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters state
-  const [fromDate, setFromDate] = useState(() => getStoredState('hist_pemb_fromDate', ''));
-  const [toDate, setToDate] = useState(() => getStoredState('hist_pemb_toDate', new Date().toISOString().slice(0, 10)));
-  const [searchQuery, setSearchQuery] = useState(() => getStoredState('hist_pemb_searchQuery', ''));
-  const [tempSearchQuery, setTempSearchQuery] = useState(() => getStoredState('hist_pemb_tempSearchQuery', ''));
+  const [fromDate, setFromDate] = useState(() => getStoredState('hist_pel_fromDate', ''));
+  const [toDate, setToDate] = useState(() => getStoredState('hist_pel_toDate', new Date().toISOString().slice(0, 10)));
+  const [searchQuery, setSearchQuery] = useState(() => getStoredState('hist_pel_searchQuery', ''));
+  const [tempSearchQuery, setTempSearchQuery] = useState(() => getStoredState('hist_pel_tempSearchQuery', ''));
   const [showPopup, setShowPopup] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'partial' | 'unpaid'>(() => getStoredState('hist_pemb_statusFilter', 'all'));
+  const [statusFilter, setStatusFilter] = useState<'all' | 'partial' | 'unpaid'>(() => getStoredState('hist_pel_statusFilter', 'all'));
   const [isFilterFocused, setIsFilterFocused] = useState(false);
   const [focusedFilterIdx, setFocusedFilterIdx] = useState(0);
 
   // Selection & Detail state
-  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(() => getStoredState('hist_pemb_expandedSessionId', null));
-  const [selectedRowIdx, setSelectedRowIdx] = useState<number>(() => getStoredState('hist_pemb_selectedRowIdx', 0));
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(() => getStoredState('hist_pel_expandedSessionId', null));
+  const [selectedRowIdx, setSelectedRowIdx] = useState<number>(() => getStoredState('hist_pel_selectedRowIdx', 0));
   const [isTableFocused, setIsTableFocused] = useState(false);
 
   // Rollback Modal State
-  const [showRollbackModal, setShowRollbackModal] = useState(() => getStoredState('hist_pemb_showRollbackModal', false));
-  const [rollbackTarget, setRollbackTarget] = useState<BillingSession | null>(() => getStoredState('hist_pemb_rollbackTarget', null));
+  const [showRollbackModal, setShowRollbackModal] = useState(() => getStoredState('hist_pel_showRollbackModal', false));
+  const [rollbackTarget, setRollbackTarget] = useState<BillingSession | null>(() => getStoredState('hist_pel_rollbackTarget', null));
   const [isRollingBack, setIsRollingBack] = useState(false);
-
-  // Print Receipt Modal State
-  const [showReceiptModal, setShowReceiptModal] = useState(() => getStoredState('hist_pemb_showReceiptModal', false));
-  const [receiptTarget, setReceiptTarget] = useState<BillingSession | null>(() => getStoredState('hist_pemb_receiptTarget', null));
 
   // Refs for navigation
   const fromDatePopupRef = useRef<HTMLInputElement>(null);
@@ -124,28 +118,25 @@ export const HistoryPembayaran: React.FC = () => {
   }, [selectedRowIdx]);
 
   useEffect(() => {
-    localStorage.setItem('hist_pemb_fromDate', JSON.stringify(fromDate));
-    localStorage.setItem('hist_pemb_toDate', JSON.stringify(toDate));
-    localStorage.setItem('hist_pemb_searchQuery', JSON.stringify(searchQuery));
-    localStorage.setItem('hist_pemb_tempSearchQuery', JSON.stringify(tempSearchQuery));
-    localStorage.setItem('hist_pemb_showPopup', JSON.stringify(showPopup));
-    localStorage.setItem('hist_pemb_statusFilter', JSON.stringify(statusFilter));
-    localStorage.setItem('hist_pemb_expandedSessionId', JSON.stringify(expandedSessionId));
-    localStorage.setItem('hist_pemb_selectedRowIdx', JSON.stringify(selectedRowIdx));
-    localStorage.setItem('hist_pemb_showRollbackModal', JSON.stringify(showRollbackModal));
-    localStorage.setItem('hist_pemb_rollbackTarget', JSON.stringify(rollbackTarget));
-    localStorage.setItem('hist_pemb_showReceiptModal', JSON.stringify(showReceiptModal));
-    localStorage.setItem('hist_pemb_receiptTarget', JSON.stringify(receiptTarget));
+    localStorage.setItem('hist_pel_fromDate', JSON.stringify(fromDate));
+    localStorage.setItem('hist_pel_toDate', JSON.stringify(toDate));
+    localStorage.setItem('hist_pel_searchQuery', JSON.stringify(searchQuery));
+    localStorage.setItem('hist_pel_tempSearchQuery', JSON.stringify(tempSearchQuery));
+    localStorage.setItem('hist_pel_showPopup', JSON.stringify(showPopup));
+    localStorage.setItem('hist_pel_statusFilter', JSON.stringify(statusFilter));
+    localStorage.setItem('hist_pel_expandedSessionId', JSON.stringify(expandedSessionId));
+    localStorage.setItem('hist_pel_selectedRowIdx', JSON.stringify(selectedRowIdx));
+    localStorage.setItem('hist_pel_showRollbackModal', JSON.stringify(showRollbackModal));
+    localStorage.setItem('hist_pel_rollbackTarget', JSON.stringify(rollbackTarget));
   }, [
     fromDate, toDate, searchQuery, tempSearchQuery, showPopup, statusFilter,
-    expandedSessionId, selectedRowIdx, showRollbackModal, rollbackTarget,
-    showReceiptModal, receiptTarget
+    expandedSessionId, selectedRowIdx, showRollbackModal, rollbackTarget
   ]);
 
   // Fetch oldest unpaid date on mount
   useEffect(() => {
     const fetchOldestUnpaid = async () => {
-      const storedFromDate = localStorage.getItem('hist_pemb_fromDate');
+      const storedFromDate = localStorage.getItem('hist_pel_fromDate');
       if (storedFromDate && storedFromDate !== '""') return;
 
       try {
@@ -212,7 +203,7 @@ export const HistoryPembayaran: React.FC = () => {
       const sessionId = s.id.toLowerCase();
       const method = s.payment_method.toLowerCase();
       const invoiceMatch = s.allocations.some((alloc) => {
-        const noOrder = alloc.sale?.no_order || '';
+        const noOrder = alloc.purchase?.no_order || '';
         return noOrder.toLowerCase().includes(q);
       });
 
@@ -344,9 +335,7 @@ export const HistoryPembayaran: React.FC = () => {
   // Escape key handler
   useHotkeys('esc', (e) => {
     e.preventDefault();
-    if (showReceiptModal) {
-      setShowReceiptModal(false);
-    } else if (showRollbackModal) {
+    if (showRollbackModal) {
       setShowRollbackModal(false);
     } else if (expandedSessionId) {
       setExpandedSessionId(null);
@@ -362,19 +351,8 @@ export const HistoryPembayaran: React.FC = () => {
     } else {
       navigate(fromHistory ? '/history' : '/penagihan');
     }
-  }, { enableOnFormTags: true }, [showReceiptModal, showRollbackModal, expandedSessionId, isFilterFocused, isTableFocused, searchQuery, fromHistory]);
+  }, { enableOnFormTags: true }, [showRollbackModal, expandedSessionId, isFilterFocused, isTableFocused, searchQuery, fromHistory]);
 
-  // P or p: Print Receipt
-  useHotkeys('p', (e) => {
-    if (!showPopup && isTableFocused && filteredSessions.length > 0) {
-      e.preventDefault();
-      const target = filteredSessions[selectedRowIdx];
-      if (target) {
-        setReceiptTarget(target);
-        setShowReceiptModal(true);
-      }
-    }
-  }, { enableOnFormTags: false }, [showPopup, isTableFocused, filteredSessions, selectedRowIdx]);
   // Delete or del: Rollback Transaction
   useHotkeys('delete', (e) => {
     if (!showPopup && isTableFocused && isAdmin && filteredSessions.length > 0) {
@@ -427,18 +405,14 @@ export const HistoryPembayaran: React.FC = () => {
     });
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   if (showPopup) {
     return (
       <div className="space-y-6 animate-fade-in text-slate-800">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">History Pembayaran Customer</h1>
-            <p className="text-slate-500 text-sm">Buku log histori pencatatan setoran cicilan piutang customer (AR).</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">History Pelunasan Supplier</h1>
+            <p className="text-slate-500 text-sm">Buku log histori pencatatan pembayaran PO supplier (AP).</p>
           </div>
         </div>
 
@@ -494,7 +468,7 @@ export const HistoryPembayaran: React.FC = () => {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">
-                  Nama Customer (Opsional)
+                  Nama Supplier (Opsional)
                 </label>
                 <input
                   ref={nameFilterPopupRef}
@@ -516,7 +490,7 @@ export const HistoryPembayaran: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/penagihan')}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs hover:bg-slate-50 transition-all cursor-pointer font-bold"
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs hover:bg-slate-55 transition-all cursor-pointer font-bold"
                 >
                   Kembali
                 </button>
@@ -540,8 +514,8 @@ export const HistoryPembayaran: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">History Pembayaran Customer (AR)</h1>
-          <p className="text-slate-500 text-sm">Buku log histori pencatatan setoran cicilan piutang customer (AR).</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">History Pelunasan Supplier (AP)</h1>
+          <p className="text-slate-500 text-sm">Buku log histori pencatatan pembayaran PO supplier (AP).</p>
         </div>
       </div>
 
@@ -556,7 +530,7 @@ export const HistoryPembayaran: React.FC = () => {
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Cari nama customer, no order, catatan, atau metode... (F1)"
+                placeholder="Cari nama supplier, no PO, catatan, atau metode... (F1)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -634,7 +608,7 @@ export const HistoryPembayaran: React.FC = () => {
         <div className="card p-12 text-center text-slate-500 bg-white border border-slate-200">
           <FileText className="mx-auto mb-4 text-slate-400" size={48} />
           <p className="text-lg font-bold">Tidak ada log transaksi</p>
-          <p className="text-sm">Tidak ditemukan riwayat pembayaran pada rentang tanggal atau pencarian terpilih.</p>
+          <p className="text-sm">Tidak ditemukan riwayat pelunasan pada rentang tanggal atau pencarian terpilih.</p>
         </div>
       ) : (
         <div className="card bg-white border border-slate-200 overflow-hidden shadow-sm">
@@ -643,7 +617,7 @@ export const HistoryPembayaran: React.FC = () => {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
                   <th className="p-4 pl-6">Tanggal</th>
-                  <th className="p-4">Pelanggan</th>
+                  <th className="p-4">Supplier</th>
                   <th className="p-4 text-center">Metode</th>
                   <th className="p-4">Total Bayar</th>
                   <th className="p-4">Sisa Tagihan</th>
@@ -722,19 +696,8 @@ export const HistoryPembayaran: React.FC = () => {
                           <td colSpan={6} className="p-0 bg-slate-50/50 border-t border-b border-slate-200">
                             <div className="p-5 pl-10 space-y-3 bg-slate-50/30">
                               <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Rincian Alokasi Nota Penagihan ({session.allocations.length})</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Rincian Alokasi PO ({session.allocations.length})</h4>
                                 <div className="flex gap-2">
-                                  <button
-                                    onClick={() => {
-                                      setReceiptTarget(session);
-                                      setShowReceiptModal(true);
-                                    }}
-                                    className="btn py-1 px-3 text-xs flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-600 font-semibold cursor-pointer rounded-lg shadow-sm"
-                                    title="Cetak Kuitansi (Shortcut: P)"
-                                  >
-                                    <Printer size={12} />
-                                    <span>Cetak Kuitansi (P)</span>
-                                  </button>
                                   {isAdmin && (
                                     <button
                                       onClick={() => {
@@ -754,7 +717,7 @@ export const HistoryPembayaran: React.FC = () => {
                                   {session.allocations
                                     .filter(alloc => statusFilter === 'all' || !alloc.is_full_payment)
                                     .map((alloc) => {
-                                      const docNo = alloc.sale?.no_order || '-';
+                                      const docNo = alloc.purchase?.no_order || '-';
                                       return (
                                       <div
                                         key={alloc.id}
@@ -762,7 +725,7 @@ export const HistoryPembayaran: React.FC = () => {
                                       >
                                         <div className="flex items-center justify-between">
                                           <div className="font-mono text-sm font-bold text-blue-600">
-                                            Order: {docNo}
+                                            PO: {docNo}
                                           </div>
                                           {alloc.is_full_payment ? (
                                             <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
@@ -831,7 +794,7 @@ export const HistoryPembayaran: React.FC = () => {
                     setRollbackTarget(null);
                   }}
                   disabled={isRollingBack}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-605 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer focus:ring-2 focus:ring-slate-500/20"
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer focus:ring-2 focus:ring-slate-500/20"
                 >
                   Batal (Esc)
                 </button>
@@ -849,150 +812,6 @@ export const HistoryPembayaran: React.FC = () => {
         </div>
         </ModalPortal>
       )}
-
-      {/* Receipt Modal (Printable) */}
-      {showReceiptModal && receiptTarget && (
-        <ModalPortal>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in">
-          <div className="card max-w-2xl w-full p-6 space-y-6 relative bg-white border border-slate-200 shadow-xl rounded-xl">
-            <button
-              onClick={() => {
-                setShowReceiptModal(false);
-                setReceiptTarget(null);
-              }}
-              className="absolute right-4 top-4 p-1 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              <X size={20} />
-            </button>
-
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">
-              <Printer size={20} className="text-primary-600" />
-              <span>Bukti Tanda Terima Pembayaran</span>
-            </h3>
-
-            {/* Receipt Printable Area */}
-            <div id="receipt-print-area" className="p-6 bg-white text-black rounded-lg space-y-6 font-sans">
-              <div className="flex justify-between items-start border-b-2 border-black pb-4">
-                <div>
-                  <h1 className="text-2xl font-black tracking-tight text-black">CV. MAKMUR MANDIRI BERSAMA</h1>
-                  <p className="text-xs text-gray-655 mt-1">Sistem Keuangan Modul Penagihan Piutang</p>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-lg font-bold text-gray-800">KUITANSI</h2>
-                  <p className="text-xs text-gray-500 font-mono">No: {receiptTarget.id.slice(0, 8).toUpperCase()}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-800">
-                <div>
-                  <div className="text-xs text-gray-500">Telah Terima Dari:</div>
-                  <div className="font-bold text-base text-black">{receiptTarget.target_nama}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Tanggal Transaksi:</div>
-                  <div className="font-bold text-black">{formatDate(receiptTarget.session_date)}</div>
-                </div>
-              </div>
-
-              <div className="border border-gray-300 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-gray-100 border-b border-gray-300 text-gray-700 font-bold uppercase">
-                      <th className="p-3 pl-4">No. Order</th>
-                      <th className="p-3 text-right">Alokasi Bayar</th>
-                      <th className="p-3 text-right">Sisa Tagihan</th>
-                      <th className="p-3 pr-4 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {receiptTarget.allocations.map((alloc) => (
-                      <tr key={alloc.id} className="border-b border-gray-200 text-gray-900 font-medium">
-                        <td className="p-3 pl-4 font-mono">
-                          {alloc.sale?.no_order || '-'}
-                        </td>
-                        <td className="p-3 text-right font-mono font-bold">
-                          {formatCurrency(alloc.allocated_amount)}
-                        </td>
-                        <td className="p-3 text-right font-mono text-gray-600">
-                          {formatCurrency(alloc.remaining_after)}
-                        </td>
-                        <td className="p-3 pr-4 text-center">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${alloc.is_full_payment
-                            ? 'bg-green-100 text-green-800 border border-green-300'
-                            : 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                            }`}>
-                            {alloc.is_full_payment ? 'Lunas' : 'Dicicil'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-between items-end pt-4">
-                <div className="bg-gray-100 border-2 border-dashed border-gray-300 p-4 rounded-lg">
-                  <div className="text-xs text-gray-500 font-semibold uppercase">Total Pembayaran</div>
-                  <div className="text-xl font-black text-black font-mono">{formatCurrency(receiptTarget.total_amount)}</div>
-                </div>
-                <div className="text-center w-48 text-sm">
-                  <div className="text-xs text-gray-500 mb-12">Kasir Keuangan</div>
-                  <div className="border-b border-black pb-1 font-bold text-black">{receiptTarget.creator?.nama || 'Admin Keuangan'}</div>
-                  <div className="text-[10px] text-gray-500 mt-1">CV. Makmur Mandiri Bersama</div>
-                </div>
-              </div>
-
-              <div className="text-[9px] text-gray-400 border-t border-gray-200 pt-3 text-center font-mono">
-                Dicetak secara otomatis melalui MMB ERP System pada {new Date().toLocaleString('id-ID')}
-              </div>
-            </div>
-
-            {/* Print Modal Actions */}
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => {
-                  setShowReceiptModal(false);
-                  setReceiptTarget(null);
-                }}
-                className="btn btn-secondary"
-              >
-                Tutup
-              </button>
-              <button
-                onClick={handlePrint}
-                className="btn btn-primary flex items-center gap-2"
-              >
-                <Printer size={18} />
-                <span>Cetak Kuitansi</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
-      )}
-
-      {/* CSS untuk Kebutuhan Print */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #receipt-print-area, #receipt-print-area * {
-            visibility: visible;
-          }
-          #receipt-print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            border: none;
-            padding: 0;
-            margin: 0;
-            background: white !important;
-            color: black !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };

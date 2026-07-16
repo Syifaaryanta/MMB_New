@@ -58,22 +58,31 @@ export const PenagihanMenu: React.FC = () => {
       keyChar: '3',
     },
     {
-      title: 'History Pembayaran',
-      desc: 'Lacak bukti pembayaran tunai/piutang yang telah lunas dan fitur rollback pembatalan.',
-      path: '/penagihan/tunai',
-      icon: History,
+      title: 'Pelanggan Lunas & Rincian Nota',
+      desc: 'Lihat rincian riwayat nota penjualan pelanggan yang telah diselesaikan (lunas) secara lengkap.',
+      path: '/penagihan/lunas',
+      icon: FileCheck,
       iconColor: 'text-emerald-500',
       iconBg: 'bg-emerald-50',
       keyChar: '4',
     },
     {
-      title: 'Riwayat Penagihan (Log)',
-      desc: 'Lihat seluruh log setoran cicilan piutang pelanggan secara kronologis.',
-      path: '/penagihan/riwayat',
-      icon: FileSpreadsheet,
+      title: 'History Pembayaran Customer (AR)',
+      desc: 'Audit log setoran cicilan piutang customer (AR) lengkap dengan cetak kuitansi.',
+      path: '/penagihan/history-pembayaran',
+      icon: History,
       iconColor: 'text-indigo-500',
       iconBg: 'bg-indigo-50',
       keyChar: '5',
+    },
+    {
+      title: 'History Pelunasan Supplier (AP)',
+      desc: 'Audit log pencatatan pembayaran PO supplier (AP) secara terperinci.',
+      path: '/penagihan/history-pelunasan',
+      icon: History,
+      iconColor: 'text-violet-500',
+      iconBg: 'bg-violet-50',
+      keyChar: '6',
     },
   ];
 
@@ -86,8 +95,9 @@ export const PenagihanMenu: React.FC = () => {
   useHotkeys('1', () => navigate('/penagihan/piutang'));
   useHotkeys('2', () => navigate('/penagihan/supplier'));
   useHotkeys('3', () => navigate('/penagihan/nota'));
-  useHotkeys('4', () => navigate('/penagihan/tunai'));
-  useHotkeys('5', () => navigate('/penagihan/riwayat'));
+  useHotkeys('4', () => navigate('/penagihan/lunas'));
+  useHotkeys('5', () => navigate('/penagihan/history-pembayaran'));
+  useHotkeys('6', () => navigate('/penagihan/history-pelunasan'));
 
   // Keyboard Grid Navigation
   useHotkeys('right', (e) => {
@@ -102,18 +112,18 @@ export const PenagihanMenu: React.FC = () => {
 
   useHotkeys('down', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev + 2 < subMenus.length ? prev + 2 : prev % 2));
-  }, { enableOnFormTags: false });
+    setFocusedIdx((prev) => (prev + 2) % subMenus.length);
+  }, { enableOnFormTags: false }, [subMenus.length]);
 
   useHotkeys('up', (e) => {
     e.preventDefault();
-    setFocusedIdx((prev) => (prev >= 2 ? prev - 2 : prev + 4 < subMenus.length ? prev + 4 : prev));
-  }, { enableOnFormTags: false });
+    setFocusedIdx((prev) => (prev - 2 + subMenus.length) % subMenus.length);
+  }, { enableOnFormTags: false }, [subMenus.length]);
 
   useHotkeys('enter', (e) => {
     e.preventDefault();
     navigate(subMenus[focusedIdx].path);
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [focusedIdx]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', {

@@ -72,6 +72,16 @@ export const BuatOrderSO: React.FC = () => {
   const termsSelectRef = useRef<HTMLDivElement>(null);
   const addCustNameRef = useRef<HTMLInputElement>(null);
   const customerPopupRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (showCustomerPopup) {
+      const target = itemRefs.current[focusedCustIdx];
+      if (target) {
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedCustIdx, showCustomerPopup]);
 
   // Focus modal popups when shown
   useEffect(() => {
@@ -784,6 +794,9 @@ export const BuatOrderSO: React.FC = () => {
                 customers.map((cust, idx) => (
                   <button
                     key={cust.id}
+                    ref={(el) => {
+                      itemRefs.current[idx] = el;
+                    }}
                     onClick={() => selectCustomer(cust)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedCustIdx
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
