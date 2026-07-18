@@ -40,9 +40,21 @@ interface Supplier {
   aktif: boolean;
 }
 
-export const MasterData: React.FC = () => {
+interface MasterDataProps {
+  type?: 'customer' | 'supplier';
+}
+
+export const MasterData: React.FC<MasterDataProps> = ({ type }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'customer' | 'supplier'>('customer');
+  const [activeTab, setActiveTab] = useState<'customer' | 'supplier'>(type || 'customer');
+
+  useEffect(() => {
+    if (type) {
+      setActiveTab(type);
+      setSearchQuery('');
+      setPage(1);
+    }
+  }, [type]);
 
   // Data lists
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -215,16 +227,18 @@ export const MasterData: React.FC = () => {
 
   // ArrowLeft / ArrowRight to slide tabs
   useHotkeys('left', (e) => {
+    if (type) return;
     if (showAddEditModal || deleteCheckState.status !== 'idle') return;
     e.preventDefault();
     if (activeTab === 'supplier') handleTabChange('customer');
-  }, { enableOnFormTags: false }, [showAddEditModal, deleteCheckState, activeTab]);
+  }, { enableOnFormTags: false }, [showAddEditModal, deleteCheckState, activeTab, type]);
 
   useHotkeys('right', (e) => {
+    if (type) return;
     if (showAddEditModal || deleteCheckState.status !== 'idle') return;
     e.preventDefault();
     if (activeTab === 'customer') handleTabChange('supplier');
-  }, { enableOnFormTags: false }, [showAddEditModal, deleteCheckState, activeTab]);
+  }, { enableOnFormTags: false }, [showAddEditModal, deleteCheckState, activeTab, type]);
 
   // ArrowUp / ArrowDown: Navigate items list
   useHotkeys('up', (e) => {
@@ -268,7 +282,7 @@ export const MasterData: React.FC = () => {
     } else if (searchQuery) {
       setSearchQuery('');
     } else {
-      navigate('/dashboard');
+      navigate('/master-data');
     }
   }, { enableOnFormTags: true }, [showAddEditModal, deleteCheckState, isTableFocused, searchQuery]);
 
@@ -368,15 +382,31 @@ export const MasterData: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-950">Kelola Master Data</h1>
-          <p className="text-slate-555 text-sm mt-1">Manajemen profil data master Pelanggan (Customer) dan Pemasok (Supplier).</p>
+        <div className="flex items-center gap-3">
+          {type && (
+            <button
+              onClick={() => navigate('/master-data')}
+              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all focus:outline-none"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          )}
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-950">
+              {activeTab === 'customer' ? 'Master Pelanggan (Customer)' : 'Master Supplier'}
+            </h1>
+            <p className="text-slate-555 text-xs mt-0.5">
+              {activeTab === 'customer'
+                ? 'Manajemen profil data master pelanggan, kontak, limit kredit, dan termin jatuh tempo.'
+                : 'Manajemen profil data master pemasok barang, kontak, alamat, dan termin pembayaran.'}
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-2 text-xs">
           <button
             onClick={openAddModal}
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/10 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/10 flex items-center gap-1.5 focus:outline-none"
           >
             <Plus size={14} />
             <span>Tambah Data (F2)</span>
@@ -384,7 +414,7 @@ export const MasterData: React.FC = () => {
           <button
             onClick={triggerEdit}
             disabled={activeList.length === 0}
-            className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5 focus:outline-none"
           >
             <Edit3 size={14} />
             <span>Edit Data (F3)</span>
@@ -392,7 +422,7 @@ export const MasterData: React.FC = () => {
           <button
             onClick={triggerDelete}
             disabled={activeList.length === 0}
-            className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-red-655 hover:text-red-700 hover:bg-red-50 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-red-655 hover:text-red-700 hover:bg-red-50 font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5 focus:outline-none"
           >
             <Trash2 size={14} />
             <span>Hapus / Deaktif (Del)</span>
@@ -401,28 +431,32 @@ export const MasterData: React.FC = () => {
       </div>
 
       {/* Tabs Control Board */}
-      <div className="flex gap-3 border-b border-slate-200 pb-px">
-        <button
-          onClick={() => handleTabChange('customer')}
-          className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${activeTab === 'customer'
-            ? 'border-blue-600 text-blue-600'
-            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+      {!type && (
+        <div className="flex gap-3 border-b border-slate-200 pb-px">
+          <button
+            onClick={() => handleTabChange('customer')}
+            className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${
+              activeTab === 'customer'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
-        >
-          <Users size={16} />
-          <span>Master Pelanggan (Customer)</span>
-        </button>
-        <button
-          onClick={() => handleTabChange('supplier')}
-          className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${activeTab === 'supplier'
-            ? 'border-blue-600 text-blue-600'
-            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          >
+            <Users size={16} />
+            <span>Master Pelanggan (Customer)</span>
+          </button>
+          <button
+            onClick={() => handleTabChange('supplier')}
+            className={`flex items-center gap-2 px-5 py-3 font-extrabold text-sm border-b-2 transition-all ${
+              activeTab === 'supplier'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
-        >
-          <Truck size={16} />
-          <span>Master Supplier (Pemasok)</span>
-        </button>
-      </div>
+          >
+            <Truck size={16} />
+            <span>Master Supplier (Pemasok)</span>
+          </button>
+        </div>
+      )}
 
       {/* Control Board */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 text-slate-800">

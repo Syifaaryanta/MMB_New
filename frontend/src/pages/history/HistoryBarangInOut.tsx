@@ -41,9 +41,6 @@ export const HistoryBarangInOut: React.FC = () => {
   const [deleteAdjTarget, setDeleteAdjTarget] = useState<StockMovement | null>(null);
   const [showBlockedDeleteModal, setShowBlockedDeleteModal] = useState<boolean>(false);
 
-  // Real-time Clock State
-  const [realtimeTime, setRealtimeTime] = useState('');
-
   // Filters State
   const now = new Date();
   const year = now.getFullYear();
@@ -70,28 +67,7 @@ export const HistoryBarangInOut: React.FC = () => {
   const toDateRef = useRef<HTMLInputElement>(null);
   const popupBarangRef = useRef<HTMLInputElement>(null);
 
-  // Update Real-time Time Clock (every second)
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const format = now.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }) + ' - ' + now.toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      });
-      setRealtimeTime(format);
-    };
 
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Scroll selected row into view
   useEffect(() => {
@@ -300,9 +276,6 @@ export const HistoryBarangInOut: React.FC = () => {
             </div>
             <p className="text-slate-400">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
           </div>
-          <div className="bg-surface-800 border border-surface-700 px-4 py-2.5 rounded-lg text-slate-350 font-mono text-xs flex items-center justify-center shadow-sm min-w-[200px] self-start sm:self-auto">
-            {realtimeTime}
-          </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -381,11 +354,6 @@ export const HistoryBarangInOut: React.FC = () => {
             <h1 className="text-2xl font-extrabold text-white">Histori Pergerakan Barang</h1>
           </div>
           <p className="text-slate-400">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
-          <div className="bg-surface-800 border border-surface-700 px-4 py-2.5 rounded-lg text-slate-350 font-mono text-xs flex items-center justify-center shadow-sm min-w-[200px]">
-            {realtimeTime}
-          </div>
         </div>
       </div>
 

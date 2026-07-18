@@ -340,9 +340,21 @@ saleRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: Auth
   try {
     const sale = (await prisma.sale.findUnique({
       where: { id: req.params.id as string },
-      include: { sale_items: true },
+      include: {
+        sale_items: true,
+        sales_payments: true,
+        billing_allocations: true,
+        sale_returns: true,
+      },
     })) as any;
     if (!sale) { res.status(404).json({ error: 'SO tidak ditemukan' }); return; }
+
+    const hasPayments = sale.sales_payments.length > 0 || sale.billing_allocations.length > 0;
+    const hasReturns = sale.sale_returns.length > 0;
+    if (hasPayments || hasReturns) {
+      res.status(400).json({ error: 'Transaksi tidak dapat dihapus karena sudah memiliki pembayaran atau retur' });
+      return;
+    }
 
     // Always restore stock (since stock is decremented at draft stage)
     for (const item of sale.sale_items) {

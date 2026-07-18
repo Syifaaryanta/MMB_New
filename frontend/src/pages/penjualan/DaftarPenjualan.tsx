@@ -4,7 +4,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Search, Calendar, User, FileText, X, Eye, Trash2, Printer, AlertTriangle } from 'lucide-react';
+import { Search, Calendar, User, FileText, X, Eye, Trash2, Printer, AlertTriangle, Info } from 'lucide-react';
 
 interface Sale {
   id: string;
@@ -54,6 +54,11 @@ export const DaftarPenjualan: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [deleteCheckState, setDeleteCheckState] = useState<{
+    status: 'idle' | 'checking' | 'cannot_delete' | 'can_delete';
+    amountPaid: number;
+    targetItem: Sale | null;
+  }>({ status: 'idle', amountPaid: 0, targetItem: null });
 
   const [showConfirmReissue, setShowConfirmReissue] = useState(false);
   const [showPrintConfirm, setShowPrintConfirm] = useState(false);
@@ -138,9 +143,11 @@ export const DaftarPenjualan: React.FC = () => {
   );
 
   const confirmDeleteSale = async () => {
-    if (!saleToDelete) return;
+    const target = deleteCheckState.targetItem;
+    if (!target) return;
     try {
-      await api.delete(`/sales/${saleToDelete.id}`);
+      setIsLoading(true);
+      await api.delete(`/sales/${target.id}`);
       showToast('Transaksi berhasil dibatalkan dan stok dikembalikan', 'success');
       let url = `/sales?status=completed&limit=1000`;
       if (fromDate) url += `&from=${fromDate}`;
@@ -148,12 +155,47 @@ export const DaftarPenjualan: React.FC = () => {
       const res = await api.get(url);
       setSales(res.data.data || []);
       setSelectedIdx(0);
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Gagal membatalkan transaksi', 'error');
+    } finally {
+      setIsLoading(false);
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+    }
+  };
+
+  const triggerDelete = async () => {
+    const target = filteredSales[selectedIdx];
+    if (!target) return;
+
+    setDeleteCheckState({ status: 'checking', amountPaid: 0, targetItem: target });
+    try {
+      const res = await api.get(`/sales/${target.id}`);
+      const saleDetail = res.data;
+      const payments = saleDetail.sales_payments || [];
+      const allocations = saleDetail.billing_allocations || [];
+      const returns = saleDetail.sale_returns || [];
+
+      const totalPaid = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0) +
+                        allocations.reduce((sum: number, a: any) => sum + Number(a.allocated_amount), 0);
+      const totalReturned = returns.reduce((sum: number, r: any) => sum + Number(r.total), 0);
+
+      if (totalPaid > 0 || totalReturned > 0) {
+        setDeleteCheckState({
+          status: 'cannot_delete',
+          amountPaid: totalPaid,
+          targetItem: target
+        });
+      } else {
+        setDeleteCheckState({
+          status: 'can_delete',
+          amountPaid: 0,
+          targetItem: target
+        });
+      }
     } catch (err) {
       console.error(err);
-      showToast('Gagal membatalkan transaksi', 'error');
-    } finally {
-      setShowDeleteConfirm(false);
-      setSaleToDelete(null);
+      setDeleteCheckState({ status: 'cannot_delete', amountPaid: 0, targetItem: target });
     }
   };
 
@@ -236,20 +278,32 @@ export const DaftarPenjualan: React.FC = () => {
   // Keyboard Shortcuts
   // Enter: View SO detail
   useHotkeys('enter', (e) => {
-    if (isTableFocused && !activeSo && !showDeleteConfirm && filteredSales[selectedIdx]) {
+    if (deleteCheckState.status === 'can_delete') {
+      e.preventDefault();
+      confirmDeleteSale();
+    } else if (deleteCheckState.status === 'cannot_delete') {
+      e.preventDefault();
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+    } else if (showConfirmReissue) {
+      e.preventDefault();
+      setShowConfirmReissue(false);
+      setShowPrintConfirm(true);
+    } else if (showPrintConfirm) {
+      e.preventDefault();
+      setShowPrintConfirm(false);
+    } else if (isTableFocused && !activeSo && deleteCheckState.status === 'idle' && filteredSales[selectedIdx]) {
       e.preventDefault();
       handleOpenDetail(filteredSales[selectedIdx]);
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: true }, [deleteCheckState, showConfirmReissue, showPrintConfirm, isTableFocused, activeSo, filteredSales, selectedIdx]);
 
   // Delete key: Trigger delete modal
-  useHotkeys('del', (e) => {
-    if (isTableFocused && !activeSo && !showDeleteConfirm && filteredSales[selectedIdx]) {
+  useHotkeys('del, delete', (e) => {
+    if (isTableFocused && !activeSo && deleteCheckState.status === 'idle' && filteredSales[selectedIdx]) {
       e.preventDefault();
-      setSaleToDelete(filteredSales[selectedIdx]);
-      setShowDeleteConfirm(true);
+      triggerDelete();
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [isTableFocused, activeSo, deleteCheckState, filteredSales, selectedIdx]);
 
   // F1: Focus search input or toggle detail info visibility
   useHotkeys('f1', (e) => {
@@ -267,22 +321,22 @@ export const DaftarPenjualan: React.FC = () => {
   useHotkeys('f2', (e) => {
     e.preventDefault();
     if (!activeSo) setShowFilterPage(true);
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [activeSo]);
 
   // Arrow up/down navigation
   useHotkeys('up', (e) => {
-    if (isTableFocused && !activeSo && !showDeleteConfirm) {
+    if (isTableFocused && !activeSo && deleteCheckState.status === 'idle') {
       e.preventDefault();
       setSelectedIdx((p) => Math.max(0, p - 1));
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [isTableFocused, activeSo, deleteCheckState]);
 
   useHotkeys('down', (e) => {
-    if (isTableFocused && !activeSo && !showDeleteConfirm) {
+    if (isTableFocused && !activeSo && deleteCheckState.status === 'idle') {
       e.preventDefault();
       setSelectedIdx((p) => Math.min(filteredSales.length - 1, p + 1));
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [isTableFocused, activeSo, deleteCheckState, filteredSales]);
 
   // Escape to close detail or go back
   useHotkeys('esc', (e) => {
@@ -291,12 +345,11 @@ export const DaftarPenjualan: React.FC = () => {
       setShowPrintConfirm(false);
     } else if (showConfirmReissue) {
       setShowConfirmReissue(false);
+    } else if (deleteCheckState.status !== 'idle') {
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
     } else if (activeSo) {
       setActiveSo(null);
       setIsInfoHidden(false);
-    } else if (showDeleteConfirm) {
-      setShowDeleteConfirm(false);
-      setSaleToDelete(null);
     } else if (showFilterPage) {
       navigate(fromHistory ? '/history' : '/penjualan');
     } else if (isTableFocused) {
@@ -306,22 +359,7 @@ export const DaftarPenjualan: React.FC = () => {
     } else {
       setShowFilterPage(true);
     }
-  }, { enableOnFormTags: true });
-
-  // Enter inside Delete or Print Confirmation popup
-  useHotkeys('enter', (e) => {
-    if (showDeleteConfirm) {
-      e.preventDefault();
-      confirmDeleteSale();
-    } else if (showConfirmReissue) {
-      e.preventDefault();
-      setShowConfirmReissue(false);
-      setShowPrintConfirm(true);
-    } else if (showPrintConfirm) {
-      e.preventDefault();
-      setShowPrintConfirm(false);
-    }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [showPrintConfirm, showConfirmReissue, deleteCheckState, activeSo, showFilterPage, isTableFocused, fromHistory]);
 
   // Y key to confirm reissue
   useHotkeys('y', (e) => {
@@ -1071,40 +1109,103 @@ export const DaftarPenjualan: React.FC = () => {
         </div>
       )}
 
-      {showDeleteConfirm && saleToDelete && (
+      {deleteCheckState.status === 'checking' && (
         <ModalPortal>
-          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
-              <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Konfirmasi Batal Transaksi</h3>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-white border border-slate-200 rounded-xl p-6 max-w-xs w-full shadow-2xl animate-scale-in text-center space-y-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+              <p className="text-xs font-bold text-slate-700">Memeriksa status pembayaran transaksi...</p>
             </div>
-            <div className="p-6 text-center">
-              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Apakah Anda yakin ingin membatalkan transaksi order <strong>{saleToDelete.no_order}</strong>? (Stok produk akan dikembalikan ke gudang)
-              </p>
-              <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
+          </div>
+        </ModalPortal>
+      )}
+
+      {deleteCheckState.status === 'cannot_delete' && deleteCheckState.targetItem && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              {/* Danger/Blocked Header */}
+              <div className="flex flex-col items-center justify-center gap-2 bg-red-500/10 border-b border-red-500/20 px-5 py-4 text-white text-center w-full">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <X size={18} className="text-red-400" />
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <h2 className="font-bold text-sm text-black">Transaksi Tidak Dapat Dihapus</h2>
+                  <p className="text-xs text-red-405 mt-0.5 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-5 bg-white text-xs">
+                <p className="text-slate-700 font-semibold leading-relaxed">
+                  Data transaksi penjualan <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> tidak dapat dihapus karena sudah memiliki pelunasan/pembayaran sebagian sebesar <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> atau sudah memiliki dokumen retur.
+                </p>
+                <p className="text-slate-500 mt-2">
+                  Harap batalkan/hapus pembayaran terkait di menu penagihan/pelunasan terlebih dahulu sebelum menghapus transaksi ini.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
                 <button
-                  type="button"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setSaleToDelete(null);
-                  }}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
+                  onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
+                >
+                  Tutup (Enter / Esc)
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {deleteCheckState.status === 'can_delete' && deleteCheckState.targetItem && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              {/* Amber Header */}
+              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500/10 border-b border-amber-500/20 px-5 py-4 text-white text-center w-full">
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <AlertTriangle size={18} className="text-amber-400" />
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <h2 className="font-bold text-sm text-white">Konfirmasi Batal Transaksi</h2>
+                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">Tindakan ini akan mengembalikan stok barang ke gudang</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-5 bg-white text-xs">
+                <p className="text-slate-700 font-semibold leading-relaxed">
+                  Apakah Anda yakin ingin membatalkan dan menghapus transaksi order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>?
+                </p>
+                <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-650">
+                  <div><span className="font-bold">Tanggal SO:</span> {formatDate(deleteCheckState.targetItem.order_date)}</div>
+                  <div><span className="font-bold">Customer:</span> {deleteCheckState.targetItem.customer_nama}</div>
+                  <div><span className="font-bold">Total Nilai SO:</span> {formatCurrency(deleteCheckState.targetItem.subtotal)}</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2.5 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
+                <button
+                  onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-250 text-slate-600 hover:bg-slate-100 transition-all bg-white"
                 >
                   Batal (Esc)
                 </button>
                 <button
-                  type="button"
                   onClick={confirmDeleteSale}
-                  className="px-4 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-700 transition-all shadow-md"
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
                   Ya, Batalkan (Enter)
                 </button>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 

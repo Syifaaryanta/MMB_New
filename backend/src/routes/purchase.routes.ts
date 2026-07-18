@@ -241,14 +241,41 @@ purchaseRouter.patch('/:id/ongkir', authenticate, async (req: AuthRequest, res: 
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// DELETE /api/purchases/:id - Delete draft PO only
+// DELETE /api/purchases/:id - Delete PO
 purchaseRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const purchase = await prisma.purchase.findUnique({ where: { id: req.params.id as string } });
+    const purchase = await prisma.purchase.findUnique({
+      where: { id: req.params.id as string },
+      include: {
+        purchase_items: true,
+        supplier_payments: true,
+        billing_allocations: true,
+        purchase_returns: true,
+      }
+    });
     if (!purchase) { res.status(404).json({ error: 'PO tidak ditemukan' }); return; }
-    if (purchase.status !== 'draft') { res.status(400).json({ error: 'Hanya draft PO yang dapat dihapus' }); return; }
+
+    const hasPayments = purchase.supplier_payments.length > 0 || purchase.billing_allocations.length > 0;
+    const hasReturns = purchase.purchase_returns.length > 0;
+    if (hasPayments || hasReturns) {
+      res.status(400).json({ error: 'Transaksi tidak dapat dihapus karena sudah memiliki pembayaran atau retur' });
+      return;
+    }
+
+    if (purchase.status === 'received') {
+      for (const item of purchase.purchase_items) {
+        await prisma.product.update({
+          where: { id: item.product_id },
+          data: { stok: { decrement: item.qty } }
+        });
+      }
+    }
+
     await prisma.purchase.delete({ where: { id: req.params.id as string } });
-    res.json({ message: 'Draft PO dihapus' });
-  } catch { res.status(500).json({ error: 'Server error' }); }
+    res.json({ message: 'PO berhasil dihapus dan stok dikembalikan' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 

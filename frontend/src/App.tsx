@@ -65,6 +65,7 @@ import { LaporanAudit } from '@/pages/laporan/LaporanAudit';
 
 // Real Master Data Page
 import { MasterData } from '@/pages/master-data/MasterData';
+import { MasterDataMenu } from '@/pages/master-data/MasterDataMenu';
 
 function RouteStateCleaner() {
   const location = useLocation();
@@ -245,7 +246,9 @@ function App() {
                   </Route>
 
                   {/* Master Data */}
-                  <Route path="master-data" element={<MasterData />} />
+                  <Route path="master-data" element={<MasterDataMenu />} />
+                  <Route path="master-data/customer" element={<MasterData type="customer" />} />
+                  <Route path="master-data/supplier" element={<MasterData type="supplier" />} />
 
                   {/* Catch-all to Dashboard */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />

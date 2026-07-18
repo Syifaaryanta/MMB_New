@@ -1,9 +1,10 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Search, Calendar, FileText, X } from 'lucide-react';
+import { Search, Calendar, FileText, X, AlertTriangle, Info } from 'lucide-react';
 
 interface Purchase {
   id: string;
@@ -51,6 +52,17 @@ export const HistoryPembelian: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isTableFocused, setIsTableFocused] = useState(false);
+  const [deleteCheckState, setDeleteCheckState] = useState<{
+    status: 'idle' | 'checking' | 'cannot_delete' | 'can_delete';
+    amountPaid: number;
+    targetItem: Purchase | null;
+  }>({ status: 'idle', amountPaid: 0, targetItem: null });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const fromDateRef = useRef<HTMLInputElement>(null);
   const toDateRef = useRef<HTMLInputElement>(null);
@@ -156,14 +168,87 @@ export const HistoryPembelian: React.FC = () => {
     }
   };
 
+  const confirmDeletePurchase = async () => {
+    const target = deleteCheckState.targetItem;
+    if (!target) return;
+    try {
+      setIsLoading(true);
+      await api.delete(`/purchases/${target.id}`);
+      showToast('Transaksi PO berhasil dihapus dan stok dikembalikan', 'success');
+      
+      // Refresh list
+      let url = `/purchases?status=received&limit=1000`;
+      if (fromDate) url += `&from=${fromDate}`;
+      if (toDate) url += `&to=${toDate}`;
+      const res = await api.get(url);
+      setPurchases(res.data.data || []);
+      setSelectedIdx(0);
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Gagal menghapus transaksi PO', 'error');
+    } finally {
+      setIsLoading(false);
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+    }
+  };
+
+  const triggerDelete = async () => {
+    const target = filteredPurchases[selectedIdx];
+    if (!target) return;
+
+    setDeleteCheckState({ status: 'checking', amountPaid: 0, targetItem: target });
+    try {
+      const res = await api.get(`/purchases/${target.id}`);
+      const poDetail = res.data;
+      const payments = poDetail.supplier_payments || [];
+      const allocations = poDetail.billing_allocations || [];
+      const returns = poDetail.purchase_returns || [];
+
+      const totalPaid = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0) +
+                        allocations.reduce((sum: number, a: any) => sum + Number(a.allocated_amount), 0);
+      const totalReturned = returns.reduce((sum: number, r: any) => sum + Number(r.total), 0);
+
+      if (totalPaid > 0 || totalReturned > 0) {
+        setDeleteCheckState({
+          status: 'cannot_delete',
+          amountPaid: totalPaid,
+          targetItem: target
+        });
+      } else {
+        setDeleteCheckState({
+          status: 'can_delete',
+          amountPaid: 0,
+          targetItem: target
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setDeleteCheckState({ status: 'cannot_delete', amountPaid: 0, targetItem: target });
+    }
+  };
+
   // Keyboard Shortcuts
-  // Enter: View PO detail
+  // Enter: View PO detail or confirm delete
   useHotkeys('enter', (e) => {
-    if (isTableFocused && !activePo && filteredPurchases[selectedIdx]) {
+    if (deleteCheckState.status === 'can_delete') {
+      e.preventDefault();
+      confirmDeletePurchase();
+    } else if (deleteCheckState.status === 'cannot_delete') {
+      e.preventDefault();
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+    } else if (isTableFocused && !activePo && deleteCheckState.status === 'idle' && filteredPurchases[selectedIdx]) {
       e.preventDefault();
       handleOpenDetail(filteredPurchases[selectedIdx]);
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: true }, [deleteCheckState, isTableFocused, activePo, filteredPurchases, selectedIdx]);
+
+  // Delete key: Trigger delete modal
+  useHotkeys('del, delete', (e) => {
+    if (isTableFocused && !activePo && deleteCheckState.status === 'idle' && filteredPurchases[selectedIdx]) {
+      e.preventDefault();
+      triggerDelete();
+    }
+  }, { enableOnFormTags: false }, [isTableFocused, activePo, deleteCheckState, filteredPurchases, selectedIdx]);
 
   // F1: Focus search input or toggle detail info visibility
   useHotkeys('f1', (e) => {
@@ -181,27 +266,29 @@ export const HistoryPembelian: React.FC = () => {
   useHotkeys('f2', (e) => {
     e.preventDefault();
     if (!activePo) setShowFilterPage(true);
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [activePo]);
 
   // Arrow up/down navigation
   useHotkeys('up', (e) => {
-    if (isTableFocused && !activePo) {
+    if (isTableFocused && !activePo && deleteCheckState.status === 'idle') {
       e.preventDefault();
       setSelectedIdx((p) => Math.max(0, p - 1));
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [isTableFocused, activePo, deleteCheckState]);
 
   useHotkeys('down', (e) => {
-    if (isTableFocused && !activePo) {
+    if (isTableFocused && !activePo && deleteCheckState.status === 'idle') {
       e.preventDefault();
       setSelectedIdx((p) => Math.min(filteredPurchases.length - 1, p + 1));
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [isTableFocused, activePo, deleteCheckState, filteredPurchases]);
 
   // Escape to close detail or go back
   useHotkeys('esc', (e) => {
     e.preventDefault();
-    if (activePo) {
+    if (deleteCheckState.status !== 'idle') {
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+    } else if (activePo) {
       setActivePo(null);
       setIsInfoHidden(false);
     } else if (showFilterPage) {
@@ -213,7 +300,7 @@ export const HistoryPembelian: React.FC = () => {
     } else {
       setShowFilterPage(true);
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [deleteCheckState, activePo, showFilterPage, isTableFocused, fromHistory]);
 
   if (showFilterPage) {
     return (
@@ -572,6 +659,116 @@ export const HistoryPembelian: React.FC = () => {
               <span>Tutup</span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
             </button>
+          </div>
+        </div>
+      )}
+
+      {deleteCheckState.status === 'checking' && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-white border border-slate-200 rounded-xl p-6 max-w-xs w-full shadow-2xl animate-scale-in text-center space-y-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+              <p className="text-xs font-bold text-slate-700">Memeriksa status pembayaran PO...</p>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {deleteCheckState.status === 'cannot_delete' && deleteCheckState.targetItem && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              {/* Danger/Blocked Header */}
+              <div className="flex flex-col items-center justify-center gap-2 bg-red-500/10 border-b border-red-500/20 px-5 py-4 text-white text-center w-full">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <X size={18} className="text-red-400" />
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <h2 className="font-bold text-sm text-black">Transaksi Tidak Dapat Dihapus</h2>
+                  <p className="text-xs text-red-405 mt-0.5 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-5 bg-white text-xs">
+                <p className="text-slate-700 font-semibold leading-relaxed">
+                  Data transaksi pembelian <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> tidak dapat dihapus karena sudah memiliki pelunasan/pembayaran sebagian sebesar <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> atau sudah memiliki dokumen retur.
+                </p>
+                <p className="text-slate-500 mt-2">
+                  Harap batalkan/hapus pembayaran terkait di menu penagihan/pelunasan terlebih dahulu sebelum menghapus transaksi ini.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
+                <button
+                  onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
+                >
+                  Tutup (Enter / Esc)
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {deleteCheckState.status === 'can_delete' && deleteCheckState.targetItem && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              {/* Amber Header */}
+              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500/10 border-b border-amber-500/20 px-5 py-4 text-white text-center w-full">
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <AlertTriangle size={18} className="text-amber-400" />
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <h2 className="font-bold text-sm text-white">Konfirmasi Hapus Transaksi PO</h2>
+                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">Tindakan ini akan mengembalikan stok barang ke gudang</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-5 bg-white text-xs">
+                <p className="text-slate-700 font-semibold leading-relaxed">
+                  Apakah Anda yakin ingin membatalkan dan menghapus transaksi Purchase Order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>?
+                </p>
+                <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-655">
+                  <div><span className="font-bold">Tanggal PO:</span> {formatDate(deleteCheckState.targetItem.order_date)}</div>
+                  <div><span className="font-bold">Supplier:</span> {deleteCheckState.targetItem.supplier?.nama}</div>
+                  <div><span className="font-bold">Total Nilai PO:</span> {formatCurrency(deleteCheckState.targetItem.subtotal)}</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2.5 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
+                <button
+                  onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-250 text-slate-600 hover:bg-slate-100 transition-all bg-white"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  onClick={confirmDeletePurchase}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
+                >
+                  Ya, Hapus (Enter)
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in-right">
+          <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${
+            toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+          }`}>
+            <span className="!text-white">{toast.message}</span>
           </div>
         </div>
       )}
