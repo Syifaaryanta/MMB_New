@@ -117,6 +117,31 @@ productRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_GUDANG)
         where: { id: product.id },
         data: { stok: totalStock }
       });
+
+      // Automatically log initial stock to StockAdjustment if greater than 0
+      if (totalStock > 0) {
+        let staffNama = 'Admin';
+        if (req.user && req.user.id) {
+          const profile = await prisma.profile.findUnique({ where: { id: req.user.id } });
+          if (profile) staffNama = profile.nama;
+        }
+
+        await prisma.stockAdjustment.create({
+          data: {
+            id: uuidv4(),
+            product_id: product.id,
+            product_kode: product.kode,
+            product_nama: product.nama,
+            adjustment_date: new Date(),
+            stock_before: 0,
+            stock_after: totalStock,
+            qty_delta: totalStock,
+            staff_nama: staffNama,
+            alasan: 'Stok Awal Barang Baru',
+            created_by: req.user?.id || null,
+          }
+        });
+      }
     }
 
     const created = await prisma.product.findUnique({

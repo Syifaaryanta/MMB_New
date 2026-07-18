@@ -175,7 +175,7 @@ export const HistoryPembelian: React.FC = () => {
       setIsLoading(true);
       await api.delete(`/purchases/${target.id}`);
       showToast('Transaksi PO berhasil dihapus dan stok dikembalikan', 'success');
-      
+
       // Refresh list
       let url = `/purchases?status=received&limit=1000`;
       if (fromDate) url += `&from=${fromDate}`;
@@ -205,7 +205,7 @@ export const HistoryPembelian: React.FC = () => {
       const returns = poDetail.purchase_returns || [];
 
       const totalPaid = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0) +
-                        allocations.reduce((sum: number, a: any) => sum + Number(a.allocated_amount), 0);
+        allocations.reduce((sum: number, a: any) => sum + Number(a.allocated_amount), 0);
       const totalReturned = returns.reduce((sum: number, r: any) => sum + Number(r.total), 0);
 
       if (totalPaid > 0 || totalReturned > 0) {
@@ -301,6 +301,16 @@ export const HistoryPembelian: React.FC = () => {
       setShowFilterPage(true);
     }
   }, { enableOnFormTags: true }, [deleteCheckState, activePo, showFilterPage, isTableFocused, fromHistory]);
+
+  // Y key to navigate to payment history (for supplier pelunasan)
+  useHotkeys('y', (e) => {
+    if (deleteCheckState.status === 'cannot_delete' && deleteCheckState.targetItem) {
+      e.preventDefault();
+      const noOrder = deleteCheckState.targetItem.no_order;
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+      navigate(`/penagihan/history-pelunasan?search=${noOrder}`);
+    }
+  }, { enableOnFormTags: true }, [deleteCheckState]);
 
   if (showFilterPage) {
     return (
@@ -681,13 +691,13 @@ export const HistoryPembelian: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               {/* Danger/Blocked Header */}
-              <div className="flex flex-col items-center justify-center gap-2 bg-red-500/10 border-b border-red-500/20 px-5 py-4 text-white text-center w-full">
-                <div className="p-2 bg-red-500/20 rounded-lg">
-                  <X size={18} className="text-red-400" />
+              <div className="flex flex-col items-center justify-center gap-2 bg-red-600 border-b border-red-700 px-5 py-4 text-center w-full">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <X size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-bold text-sm text-black">Transaksi Tidak Dapat Dihapus</h2>
-                  <p className="text-xs text-red-405 mt-0.5 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Transaksi Tidak Dapat Dihapus</h2>
+                  <p className="text-xs text-red-100 mt-1 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
                 </div>
               </div>
 
@@ -705,9 +715,19 @@ export const HistoryPembelian: React.FC = () => {
               <div className="flex gap-2 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
                 <button
                   onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                >
+                  Tutup (Esc)
+                </button>
+                <button
+                  onClick={() => {
+                    const noOrder = deleteCheckState.targetItem?.no_order;
+                    setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+                    navigate(`/penagihan/history-pelunasan?search=${noOrder}`);
+                  }}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
-                  Tutup (Enter / Esc)
+                  Lihat Pembayaran (Y)
                 </button>
               </div>
             </div>
@@ -721,13 +741,13 @@ export const HistoryPembelian: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               {/* Amber Header */}
-              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500/10 border-b border-amber-500/20 px-5 py-4 text-white text-center w-full">
-                <div className="p-2 bg-amber-500/20 rounded-lg">
-                  <AlertTriangle size={18} className="text-amber-400" />
+              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500 border-b border-amber-600 px-5 py-4 text-center w-full">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <AlertTriangle size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-bold text-sm text-white">Konfirmasi Hapus Transaksi PO</h2>
-                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">Tindakan ini akan mengurangi stok barang di gudang</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Konfirmasi Hapus Transaksi PO</h2>
+                  <p className="text-xs text-amber-50 mt-1 font-semibold">Tindakan ini akan mengurangi stok barang di gudang</p>
                 </div>
               </div>
 
@@ -765,9 +785,8 @@ export const HistoryPembelian: React.FC = () => {
 
       {toast && (
         <div className="fixed top-4 right-4 z-[100] animate-slide-in-right">
-          <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${
-            toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
-          }`}>
+          <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+            }`}>
             <span className="!text-white">{toast.message}</span>
           </div>
         </div>

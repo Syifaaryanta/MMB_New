@@ -158,6 +158,20 @@ export const HistoryPelunasan: React.FC = () => {
     fetchOldestUnpaid();
   }, []);
 
+  // Pre-filter by search query from search parameter (e.g. from PO detail delete blocked popup)
+  useEffect(() => {
+    const searchVal = searchParams.get('search');
+    if (searchVal) {
+      setSearchQuery(searchVal);
+      setTempSearchQuery(searchVal);
+      setShowPopup(false);
+      setFromDate('2020-01-01');
+      const todayStr = new Date().toISOString().slice(0, 10);
+      setToDate(todayStr);
+      setIsTableFocused(true);
+    }
+  }, [searchParams]);
+
   // Set focus to the first input when popup is shown
   useEffect(() => {
     if (showPopup) {

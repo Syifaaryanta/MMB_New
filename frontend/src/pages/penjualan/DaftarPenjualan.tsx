@@ -361,14 +361,19 @@ export const DaftarPenjualan: React.FC = () => {
     }
   }, { enableOnFormTags: true }, [showPrintConfirm, showConfirmReissue, deleteCheckState, activeSo, showFilterPage, isTableFocused, fromHistory]);
 
-  // Y key to confirm reissue
+  // Y key to confirm reissue or navigate to payment history
   useHotkeys('y', (e) => {
     if (showConfirmReissue) {
       e.preventDefault();
       setShowConfirmReissue(false);
       setShowPrintConfirm(true);
+    } else if (deleteCheckState.status === 'cannot_delete' && deleteCheckState.targetItem) {
+      e.preventDefault();
+      const noOrder = deleteCheckState.targetItem.no_order;
+      setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+      navigate(`/penagihan/history-pembayaran?search=${noOrder}`);
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [showConfirmReissue, deleteCheckState]);
 
   // P inside format confirm or detail page to trigger print reissue
   useHotkeys('p', (e) => {
@@ -1127,13 +1132,13 @@ export const DaftarPenjualan: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               {/* Danger/Blocked Header */}
-              <div className="flex flex-col items-center justify-center gap-2 bg-red-500/10 border-b border-red-500/20 px-5 py-4 text-white text-center w-full">
-                <div className="p-2 bg-red-500/20 rounded-lg">
-                  <X size={18} className="text-red-400" />
+              <div className="flex flex-col items-center justify-center gap-2 bg-red-600 border-b border-red-700 px-5 py-4 text-center w-full">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <X size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-bold text-sm text-black">Transaksi Tidak Dapat Dihapus</h2>
-                  <p className="text-xs text-red-405 mt-0.5 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Transaksi Tidak Dapat Dihapus</h2>
+                  <p className="text-xs text-red-100 mt-1 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
                 </div>
               </div>
 
@@ -1151,9 +1156,19 @@ export const DaftarPenjualan: React.FC = () => {
               <div className="flex gap-2 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
                 <button
                   onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                >
+                  Tutup (Esc)
+                </button>
+                <button
+                  onClick={() => {
+                    const noOrder = deleteCheckState.targetItem?.no_order;
+                    setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
+                    navigate(`/penagihan/history-pembayaran?search=${noOrder}`);
+                  }}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
-                  Tutup (Enter / Esc)
+                  Lihat Pembayaran (Y)
                 </button>
               </div>
             </div>
@@ -1167,13 +1182,13 @@ export const DaftarPenjualan: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               {/* Amber Header */}
-              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500/10 border-b border-amber-500/20 px-5 py-4 text-white text-center w-full">
-                <div className="p-2 bg-amber-500/20 rounded-lg">
-                  <AlertTriangle size={18} className="text-amber-400" />
+              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500 border-b border-amber-600 px-5 py-4 text-center w-full">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <AlertTriangle size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-bold text-sm text-white">Konfirmasi Batal Transaksi</h2>
-                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">Tindakan ini akan mengembalikan stok barang ke gudang</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Konfirmasi Batal Transaksi</h2>
+                  <p className="text-xs text-amber-50 mt-1 font-semibold">Tindakan ini akan mengembalikan stok barang ke gudang</p>
                 </div>
               </div>
 
