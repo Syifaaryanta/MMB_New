@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -1126,7 +1127,8 @@ export const InputItemSO: React.FC = () => {
 
       {/* Print Confirmation Modal */}
       {showConfirmPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             onKeyDown={handleConfirmPrintModalKeyDown}
@@ -1249,11 +1251,13 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Cancel Confirmation Modal */}
       {showCancelConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1292,11 +1296,13 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Draft Confirmation Modal */}
       {showDraftConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1335,11 +1341,13 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Stock warning modal */}
       {showStockAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in">
             <div className="flex items-center gap-2.5 text-danger-400 border-b border-surface-700 pb-3 mb-4">
               <AlertCircle size={20} />
@@ -1360,11 +1368,13 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Empty Qty warning popup */}
       {showEmptyQtyAlert && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
@@ -1392,11 +1402,13 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Duplicate Alert Modal */}
       {showDuplicateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1425,6 +1437,7 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Toast Alert */}
@@ -1443,7 +1456,8 @@ export const InputItemSO: React.FC = () => {
 
       {/* Zero stock warning popup */}
       {showZeroStockPopup && zeroStockProduct && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white" />
@@ -1472,11 +1486,13 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Product Selection Popup Modal (Sama persis dengan modul inventory/InformasiHarga) */}
       {showProductPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={productPopupRef}
             tabIndex={0}
@@ -1527,11 +1543,13 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Invoice Complete / Print Dialog */}
       {showPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             onKeyDown={handlePrintModalKeyDown}
@@ -1596,6 +1614,7 @@ export const InputItemSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Print Layout */}

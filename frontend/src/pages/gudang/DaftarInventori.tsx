@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -57,7 +58,8 @@ interface ConfirmArchiveModalProps {
   onCancel: () => void;
 }
 const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, onConfirm, onCancel }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={onCancel}>
+  <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={onCancel}>
     <div
       className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
       onClick={(e) => e.stopPropagation()}
@@ -103,6 +105,7 @@ const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, 
       </div>
     </div>
   </div>
+        </ModalPortal>
 );
 
 /* ─── Main Component ─────────────────────────────────────────── */
@@ -498,7 +501,8 @@ export const DaftarInventori: React.FC = () => {
           const photos = getPhotosList(products[selectedIdx]);
           const photoUrl = photos.length > 0 ? photos[0] : null;
           return photoUrl ? (
-            <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={() => setIsZoomed(false)}>
+            <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={() => setIsZoomed(false)}>
               <div className="relative max-w-3xl w-full max-h-screen p-4 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setIsZoomed(false)}
@@ -509,6 +513,7 @@ export const DaftarInventori: React.FC = () => {
                 <img src={photoUrl} alt="Product full preview" className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl" />
               </div>
             </div>
+        </ModalPortal>
           ) : null;
         })()
       )}

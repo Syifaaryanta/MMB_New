@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -576,7 +577,8 @@ export const MasterData: React.FC = () => {
 
       {/* Form Add / Edit Modal */}
       {showAddEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowAddEditModal(false)} />
           <form
             onSubmit={handleSave}
@@ -784,21 +786,25 @@ export const MasterData: React.FC = () => {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* Delete / Deactivate Checker Modals */}
       {deleteCheckState.status === 'checking' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/45 backdrop-blur-xs" />
           <div className="z-10 bg-white border border-slate-200 rounded-xl p-6 max-w-xs w-full shadow-2xl animate-scale-in text-center space-y-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
             <p className="text-xs font-bold text-slate-700">Memeriksa status piutang/hutang...</p>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {deleteCheckState.status === 'cannot_delete' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null })} />
           <div className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-sm w-full mx-4 shadow-2xl animate-scale-in flex flex-col text-slate-800">
             <div className="flex items-center gap-3 bg-red-50 border-b border-red-100 px-6 py-4 text-red-750">
@@ -829,10 +835,12 @@ export const MasterData: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {deleteCheckState.status === 'can_delete' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setDeleteCheckState({ status: 'idle', amount: 0, targetItem: null })} />
           <div className="z-10 bg-white border border-slate-200 rounded-xl overflow-hidden max-w-sm w-full mx-4 shadow-2xl animate-scale-in flex flex-col text-slate-800">
             <div className="flex items-center gap-3 bg-red-500/10 border-b border-red-500/20 px-6 py-4 text-red-655">
@@ -865,6 +873,7 @@ export const MasterData: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

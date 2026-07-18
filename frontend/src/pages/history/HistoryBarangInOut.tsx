@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -294,13 +295,10 @@ export const HistoryBarangInOut: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-2 rounded-lg bg-primary-600/10 text-primary-400">
-                <History size={18} />
-              </div>
+            <div className="mb-1">
               <h1 className="text-2xl font-extrabold text-white">Histori Pergerakan Barang</h1>
             </div>
-            <p className="text-slate-400 ml-10">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
+            <p className="text-slate-400">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
           </div>
           <div className="bg-surface-800 border border-surface-700 px-4 py-2.5 rounded-lg text-slate-350 font-mono text-xs flex items-center justify-center shadow-sm min-w-[200px] self-start sm:self-auto">
             {realtimeTime}
@@ -379,13 +377,10 @@ export const HistoryBarangInOut: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="p-2 rounded-lg bg-primary-600/10 text-primary-400">
-              <History size={18} />
-            </div>
+          <div className="mb-1">
             <h1 className="text-2xl font-extrabold text-white">Histori Pergerakan Barang</h1>
           </div>
-          <p className="text-slate-400 ml-10">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
+          <p className="text-slate-400">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
         </div>
         <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
           <div className="px-3 py-2.5 rounded-lg border border-surface-700 text-xs text-slate-350 font-semibold flex items-center gap-2 bg-surface-800/50 shadow-sm font-mono">
@@ -943,7 +938,8 @@ export const HistoryBarangInOut: React.FC = () => {
 
       {/* Popup Delete Adjustment Confirmation Modal */}
       {deleteAdjTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteAdjTarget(null)}>
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteAdjTarget(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
             {/* Amber Header */}
@@ -987,11 +983,13 @@ export const HistoryBarangInOut: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Popup Delete Blocked Modal */}
       {showBlockedDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setShowBlockedDeleteModal(false)}>
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setShowBlockedDeleteModal(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
             {/* Danger/Blocked Header */}
@@ -1026,6 +1024,7 @@ export const HistoryBarangInOut: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -1167,7 +1168,8 @@ export const ReturPenjualan: React.FC = () => {
 
       {/* CUSTOMER SEARCH POPUP MODAL */}
       {showCustomerPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={customerPopupRef}
             tabIndex={0}
@@ -1215,11 +1217,13 @@ export const ReturPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* PRODUCT SEARCH POPUP MODAL */}
       {showProductPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={productPopupRef}
             tabIndex={0}
@@ -1269,11 +1273,13 @@ export const ReturPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* PRINT CONFIRMATION MODAL */}
       {showConfirmPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowConfirmPrintModal(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-sm p-5 animate-scale-in z-10 space-y-3.5">
             <div className="flex items-center gap-2 text-blue-600 border-b pb-2">
@@ -1317,6 +1323,7 @@ export const ReturPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* PRINT LAYOUT WITH BLUE BORDERS */}

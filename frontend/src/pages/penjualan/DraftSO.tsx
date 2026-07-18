@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -447,7 +448,8 @@ export const DraftSO: React.FC = () => {
 
       {/* Detail Modal Popup */}
       {isPopupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
           <div className="bg-white border border-slate-200 rounded-xl max-w-4xl w-full mx-auto shadow-2xl animate-scale-in outline-none flex flex-col max-h-[90vh] text-slate-800">
             {isDetailLoading && !selectedDraftDetail ? (
               <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-xl">
@@ -612,11 +614,13 @@ export const DraftSO: React.FC = () => {
             )}
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Print Confirmation Modal */}
       {showConfirmPrintModal && selectedDraftDetail && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center modal-overlay p-4">
           <div
             ref={confirmModalRef}
             tabIndex={0}
@@ -729,6 +733,7 @@ export const DraftSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Print Layout */}

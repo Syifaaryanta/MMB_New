@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -480,7 +481,8 @@ export const BuatOrderPO: React.FC = () => {
 
       {/* Supplier Selection Popup Modal (Sama persis dengan modul inventory/customer) */}
       {showSupplierPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={supplierPopupRef}
             tabIndex={0}
@@ -529,6 +531,7 @@ export const BuatOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

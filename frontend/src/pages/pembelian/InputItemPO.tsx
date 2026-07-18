@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -782,7 +783,8 @@ export const InputItemPO: React.FC = () => {
 
       {/* Product Selection Popup Modal */}
       {showProductPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={productPopupRef}
             tabIndex={0}
@@ -834,11 +836,13 @@ export const InputItemPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Cancel Confirmation Modal */}
       {showCancelConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -877,11 +881,13 @@ export const InputItemPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Draft Confirmation Modal */}
       {showDraftConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -920,11 +926,13 @@ export const InputItemPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Complete PO Confirmation Modal */}
       {showCompleteConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -963,11 +971,13 @@ export const InputItemPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Duplicate Alert Modal */}
       {showDuplicateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -996,6 +1006,7 @@ export const InputItemPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

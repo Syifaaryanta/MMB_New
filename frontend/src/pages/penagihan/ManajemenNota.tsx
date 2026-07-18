@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -703,7 +704,8 @@ export const ManajemenNota: React.FC = () => {
 
       {/* Customer Selection Search Popup Modal */}
       {showSearchPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={searchPopupRef}
             tabIndex={0}
@@ -776,6 +778,7 @@ export const ManajemenNota: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

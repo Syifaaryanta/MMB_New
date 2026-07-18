@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -380,7 +381,8 @@ export const DetailProduk: React.FC = () => {
 
       {/* Lightbox zoom modal */}
       {isZoomed && activePhoto && (
-        <div
+        <ModalPortal>
+          <div
           className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md"
           onClick={() => setIsZoomed(false)}
         >
@@ -451,6 +453,7 @@ export const DetailProduk: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

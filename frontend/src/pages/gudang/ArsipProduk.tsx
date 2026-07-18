@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -190,7 +191,8 @@ export const ArsipProduk: React.FC = () => {
 
       {/* Restore Confirm Modal */}
       {restoreTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setRestoreTarget(null)}>
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setRestoreTarget(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 bg-blue-500/10 border-b border-blue-500/20 px-5 py-4">
@@ -216,6 +218,7 @@ export const ArsipProduk: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

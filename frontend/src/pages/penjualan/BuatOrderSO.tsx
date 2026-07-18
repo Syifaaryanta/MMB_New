@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -701,7 +702,8 @@ export const BuatOrderSO: React.FC = () => {
 
       {/* Quick Add Customer Modal (F2) */}
       {showAddCustomerModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in">
             <div className="flex justify-between items-center border-b border-surface-700 pb-3 mb-4">
               <h3 className="text-lg font-bold text-white">Tambah Pelanggan Cepat</h3>
@@ -767,13 +769,15 @@ export const BuatOrderSO: React.FC = () => {
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
 
 
 
       {/* Customer Selection Popup Modal (Sama persis dengan modul inventory/InformasiHarga) */}
       {showCustomerPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={customerPopupRef}
             tabIndex={0}
@@ -821,9 +825,11 @@ export const BuatOrderSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
       {showLimitConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div className="bg-surface-800 border border-danger-500/40 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in">
             <div className="flex justify-between items-center border-b border-surface-700 pb-3 mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-1.5 text-danger-400">
@@ -855,6 +861,7 @@ export const BuatOrderSO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

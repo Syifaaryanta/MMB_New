@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -814,7 +815,8 @@ export const KelolaProduk: React.FC = () => {
 
       {/* Archive Confirm Modal */}
       {archiveTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setArchiveTarget(null)}>
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setArchiveTarget(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 bg-amber-500/10 border-b border-amber-500/20 px-5 py-4">
@@ -840,6 +842,7 @@ export const KelolaProduk: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1042,6 +1045,7 @@ export const KelolaProduk: React.FC = () => {
         };
 
         return (
+          <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
             <div
               ref={editTypeModalRef}
@@ -1084,10 +1088,12 @@ export const KelolaProduk: React.FC = () => {
               </div>
             </div>
           </div>
+        </ModalPortal>
         );
       })()}      {/* Popup 2: Form Modal (Add / Edit) */}
       {showFormModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay overflow-y-auto">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay overflow-y-auto">
           <div
             style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)' }}
             className="border border-blue-200 rounded-xl max-w-2xl w-full my-4 mx-4 shadow-2xl animate-scale-in flex flex-col overflow-hidden"
@@ -1394,11 +1400,13 @@ export const KelolaProduk: React.FC = () => {
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Popup 3: Lightbox Gallery Modal */}
       {showGalleryModal && currentProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div className="relative max-w-lg w-full p-4 animate-scale-in">
             <button
               onClick={() => setShowGalleryModal(false)}
@@ -1422,11 +1430,13 @@ export const KelolaProduk: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Product Selection Popup Modal */}
       {showSearchPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={searchPopupRef}
             tabIndex={0}
@@ -1475,11 +1485,13 @@ export const KelolaProduk: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Supplier Selection Popup Modal */}
       {showSupplierPopup && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
           <div
             ref={supplierPopupRef}
             tabIndex={0}
@@ -1551,6 +1563,7 @@ export const KelolaProduk: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

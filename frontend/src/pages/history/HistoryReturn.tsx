@@ -393,21 +393,13 @@ export const HistoryReturn: React.FC = () => {
             </div>
 
             {/* Keyboard hints info panel */}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-550 border-t pt-3">
-              <div className="flex items-center gap-2">
-                <span className="bg-slate-100 border px-1.5 py-0.5 rounded text-slate-700 font-bold">F1</span>
-                <span>Focus Cari</span>
-                <span className="mx-1 text-slate-300">|</span>
-                <span className="bg-slate-100 border px-1.5 py-0.5 rounded text-slate-700 font-bold">Esc</span>
-                <span>Kembali ke Menu Histori</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>Gunakan</span>
-                <kbd className="bg-slate-100 border px-1 rounded text-slate-700 font-bold">↑</kbd>
-                <kbd className="bg-slate-100 border px-1 rounded text-slate-700 font-bold">↓</kbd>
-                <span>navigasi baris tabel,</span>
-                <kbd className="bg-slate-100 border px-1 rounded text-slate-700 font-bold">Enter</kbd>
-                <span>buka detail.</span>
+            <div className="pt-2">
+              <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-3">
+                <span>Pencarian Cepat:</span>
+                <span><kbd className="shortcut-badge text-[10px]">F1</kbd> Fokus Cari</span>
+                <span><kbd className="shortcut-badge text-[10px]">Esc</kbd> Kembali ke Menu Histori</span>
+                <span><kbd className="shortcut-badge text-[10px]">↑ ↓</kbd> Pilih Baris</span>
+                <span><kbd className="shortcut-badge text-[10px]">Enter</kbd> Detail</span>
               </div>
             </div>
           </div>

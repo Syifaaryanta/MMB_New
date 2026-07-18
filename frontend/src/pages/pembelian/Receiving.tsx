@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -839,7 +840,8 @@ export const Receiving: React.FC = () => {
 
       {/* ── SUMMARY CONFIRMATION MODAL ── */}
       {modalState === 'summary' && activePo && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-2xl max-w-md w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden border border-slate-200">
             {/* Modal Header */}
             <div className="bg-primary-600 text-white px-6 py-5 flex flex-col items-center justify-center gap-2">
@@ -907,6 +909,7 @@ export const Receiving: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Toast Notification */}

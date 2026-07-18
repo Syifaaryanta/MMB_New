@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -813,6 +814,7 @@ export const DaftarPenjualan: React.FC = () => {
 
         {/* Simple Reissue Confirmation Modal (Modal A) */}
         {showConfirmReissue && activeSo && (
+          <ModalPortal>
           <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden border border-blue-200">
               <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2 border-b border-primary-700/80">
@@ -845,10 +847,12 @@ export const DaftarPenjualan: React.FC = () => {
               </div>
             </div>
           </div>
+        </ModalPortal>
         )}
 
         {/* Print Confirmation Dialog (Modal B) */}
         {showPrintConfirm && activeSo && (
+          <ModalPortal>
           <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
             <div className="bg-white border border-blue-200 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800">
               
@@ -960,6 +964,7 @@ export const DaftarPenjualan: React.FC = () => {
 
             </div>
           </div>
+        </ModalPortal>
         )}
 
       </div>
@@ -1104,7 +1109,8 @@ export const DaftarPenjualan: React.FC = () => {
       )}
 
       {showDeleteConfirm && saleToDelete && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
@@ -1136,6 +1142,7 @@ export const DaftarPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {toast && (

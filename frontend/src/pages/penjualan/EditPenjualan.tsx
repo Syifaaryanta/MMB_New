@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -1319,7 +1320,8 @@ export const EditPenjualan: React.FC = () => {
 
       {/* Empty Qty warning popup */}
       {showEmptyQtyAlert && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
@@ -1347,11 +1349,13 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Draft SO Not Found warning popup */}
       {showSoNotFoundPopup && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white" />
@@ -1379,6 +1383,7 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Toast Alert */}
@@ -1396,7 +1401,8 @@ export const EditPenjualan: React.FC = () => {
 
       {/* Stock warning modal */}
       {showStockAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in text-center text-slate-200">
             <AlertCircle size={40} className="text-danger-400 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-white mb-2">Stok Tidak Mencukupi</h3>
@@ -1415,11 +1421,13 @@ export const EditPenjualan: React.FC = () => {
             </button>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Zero stock warning popup */}
       {showZeroStockPopup && zeroStockProduct && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white" />
@@ -1448,11 +1456,13 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Print Confirmation Modal */}
       {showConfirmPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             onKeyDown={handleConfirmPrintModalKeyDown}
@@ -1575,11 +1585,13 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Cancel Confirmation Modal */}
       {showCancelConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1617,11 +1629,13 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Draft Confirmation Modal */}
       {showDraftConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1660,13 +1674,15 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
 
 
       {/* Customer Selection Popup Modal */}
       {showCustomerPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={customerPopupRef}
             tabIndex={0}
@@ -1719,11 +1735,13 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Product Selection Popup Modal */}
       {showProductPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={productPopupRef}
             tabIndex={0}
@@ -1779,6 +1797,7 @@ export const EditPenjualan: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Print Layout */}

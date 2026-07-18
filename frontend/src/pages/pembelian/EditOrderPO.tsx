@@ -1,3 +1,4 @@
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -1039,7 +1040,8 @@ export const EditOrderPO: React.FC = () => {
 
       {/* Supplier Selection Popup Modal */}
       {showSupplierPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
           <div
             ref={supplierPopupRef}
             tabIndex={0}
@@ -1097,11 +1099,13 @@ export const EditOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Product Selection Popup Modal */}
       {showProductPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             ref={productPopupRef}
             tabIndex={0}
@@ -1152,11 +1156,13 @@ export const EditOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Cancel Confirmation Modal */}
       {showCancelConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1194,11 +1200,13 @@ export const EditOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Draft Confirmation Modal */}
       {showDraftConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1237,11 +1245,13 @@ export const EditOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Complete PO Confirmation Modal */}
       {showCompleteConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
           <div
             tabIndex={0}
             ref={(el) => el?.focus()}
@@ -1280,11 +1290,13 @@ export const EditOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Empty Qty warning popup */}
       {showEmptyQtyAlert && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
@@ -1312,11 +1324,13 @@ export const EditOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Draft PO Not Found warning popup */}
       {showPoNotFoundPopup && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white" />
@@ -1344,6 +1358,7 @@ export const EditOrderPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Toast Alert */}
