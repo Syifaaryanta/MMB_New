@@ -727,14 +727,14 @@ export const HistoryPembelian: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-center text-center">
                   <h2 className="font-bold text-sm text-white">Konfirmasi Hapus Transaksi PO</h2>
-                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">Tindakan ini akan mengembalikan stok barang ke gudang</p>
+                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">Tindakan ini akan mengurangi stok barang di gudang</p>
                 </div>
               </div>
 
               {/* Body */}
               <div className="px-5 py-5 bg-white text-xs">
                 <p className="text-slate-700 font-semibold leading-relaxed">
-                  Apakah Anda yakin ingin membatalkan dan menghapus transaksi Purchase Order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>?
+                  Apakah Anda yakin ingin membatalkan dan menghapus transaksi Purchase Order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>? (Stok produk di gudang akan dikurangi)
                 </p>
                 <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-655">
                   <div><span className="font-bold">Tanggal PO:</span> {formatDate(deleteCheckState.targetItem.order_date)}</div>
