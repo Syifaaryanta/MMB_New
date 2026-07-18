@@ -135,6 +135,28 @@ export const ReturPenjualan: React.FC = () => {
   const bagusBtnRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const rusakBtnRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const catatanInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const activeCustItemRef = useRef<HTMLButtonElement | null>(null);
+  const activeProdItemRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (showCustomerPopup && activeCustItemRef.current) {
+      activeCustItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [focusedCustIdx, showCustomerPopup]);
+
+  useEffect(() => {
+    if (showProductPopup && activeProdItemRef.current) {
+      activeProdItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [focusedProdIdx, showProductPopup]);
+
+
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -266,6 +288,22 @@ export const ReturPenjualan: React.FC = () => {
       ...h
     }))
   );
+
+  useEffect(() => {
+    if (activeStep === 'cards' && flatHistoryCards.length > 0) {
+      const card = flatHistoryCards[focusedCardIdx];
+      if (card) {
+        const cardKey = `${card.productId}-${card.sale_id}`;
+        const element = cardContainerRefs.current[cardKey];
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+          });
+        }
+      }
+    }
+  }, [focusedCardIdx, activeStep, flatHistoryCards]);
 
   // Hotkeys: Escape to close modal
   useHotkeys('esc', (e) => {
@@ -1151,6 +1189,7 @@ export const ReturPenjualan: React.FC = () => {
                   <button
                     type="button"
                     key={cust.id}
+                    ref={idx === focusedCustIdx ? activeCustItemRef : null}
                     onClick={() => selectCustomer(cust)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg ${idx === focusedCustIdx
                       ? 'border-blue-500 bg-blue-50 text-blue-900 font-semibold ring-2 ring-blue-500/20 scale-[1.01]'
@@ -1202,6 +1241,7 @@ export const ReturPenjualan: React.FC = () => {
                   <button
                     type="button"
                     key={prod.id}
+                    ref={idx === focusedProdIdx ? activeProdItemRef : null}
                     onClick={() => selectProduct(prod)}
                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg ${idx === focusedProdIdx
                       ? 'border-blue-500 bg-blue-50 text-blue-900 font-semibold ring-2 ring-blue-500/20 scale-[1.01]'

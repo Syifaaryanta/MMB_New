@@ -112,10 +112,16 @@ export const DaftarInventori: React.FC = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
-  const [search, setSearch] = useState(searchParams.get('q') || '');
+  const [page, setPage] = useState(() => {
+    return Number(searchParams.get('page')) || Number(sessionStorage.getItem('mmb_daftar_inventori_page')) || 1;
+  });
+  const [search, setSearch] = useState(() => {
+    return searchParams.get('q') || sessionStorage.getItem('mmb_daftar_inventori_search') || '';
+  });
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [selectedIdx, setSelectedIdx] = useState(() => {
+    return Number(sessionStorage.getItem('mmb_daftar_inventori_selectedIdx')) || 0;
+  });
   const [isZoomed, setIsZoomed] = useState(false);
 
   // Confirm archive modal state
@@ -126,6 +132,7 @@ export const DaftarInventori: React.FC = () => {
   const toastIdRef = useRef(0);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const activeRowRef = useRef<HTMLTableRowElement | null>(null);
 
   /* ── Helpers ──────────────────────────────────── */
   const addToast = (type: Toast['type'], message: string) => {
@@ -151,7 +158,7 @@ export const DaftarInventori: React.FC = () => {
   const fetchInventory = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get(`/products?q=${search}&page=${page}&limit=15`);
+      const res = await api.get(`/products?q=${search}&page=${page}&limit=50`);
       setProducts(res.data.data || []);
       setTotalProducts(res.data.total || 0);
       setSelectedIdx(0);
@@ -177,6 +184,23 @@ export const DaftarInventori: React.FC = () => {
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
+
+  // Auto scroll table row when selectedIdx changes
+  useEffect(() => {
+    if (activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedIdx]);
+
+  // Sync state to sessionStorage for persistence on refresh
+  useEffect(() => {
+    sessionStorage.setItem('mmb_daftar_inventori_page', String(page));
+    sessionStorage.setItem('mmb_daftar_inventori_search', search);
+    sessionStorage.setItem('mmb_daftar_inventori_selectedIdx', String(selectedIdx));
+  }, [page, search, selectedIdx]);
 
   /* ── Archive logic ────────────────────────────── */
   const handleArchive = (id: string, nama: string) => {
@@ -231,7 +255,7 @@ export const DaftarInventori: React.FC = () => {
 
   useHotkeys('pagedown', (e) => {
     e.preventDefault();
-    const maxPage = Math.ceil(totalProducts / 15);
+    const maxPage = Math.ceil(totalProducts / 50);
     setPage((p) => Math.min(maxPage, p + 1));
   }, { enableOnFormTags: false });
 
@@ -265,7 +289,7 @@ export const DaftarInventori: React.FC = () => {
     } else if (search) {
       setSearch('');
     } else {
-      navigate('/dashboard');
+      navigate('/gudang');
     }
   }, { enableOnFormTags: true });
 
@@ -327,12 +351,27 @@ export const DaftarInventori: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs text-slate-400 shrink-0">
-          <span className="bg-surface-800 px-2 py-1 rounded">F1: Cari</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">F2: Zoom Gambar</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">Enter: Detail</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">Del: Arsipkan</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">Esc: Kembali</span>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+            <span>Cari</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
+            <span>Zoom</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Enter</kbd>
+            <span>Detail</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Del</kbd>
+            <span>Arsip</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+            <span>Kembali</span>
+          </span>
         </div>
       </div>
 
@@ -365,6 +404,7 @@ export const DaftarInventori: React.FC = () => {
                     <React.Fragment key={p.id}>
                       <tr
                         onClick={() => setSelectedIdx(idx)}
+                        ref={idx === selectedIdx ? activeRowRef : null}
                         className={`hover:bg-surface-800/20 cursor-pointer transition-colors ${
                           idx === selectedIdx ? 'table-row-selected border-b-0' : ''
                         }`}
@@ -438,7 +478,7 @@ export const DaftarInventori: React.FC = () => {
               <span className="text-xs px-3 font-semibold">Halaman {page}</span>
               <button
                 onClick={() => setPage((p) => p + 1)}
-                disabled={products.length < 15}
+                disabled={products.length < 50}
                 className="btn-secondary p-1.5 rounded-lg disabled:opacity-50"
               >
                 <ChevronRight size={16} />

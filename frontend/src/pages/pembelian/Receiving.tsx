@@ -80,6 +80,7 @@ export const Receiving: React.FC = () => {
   const qtyTerimaRefs = useRef<Array<HTMLInputElement | null>>([]);
   const qtyRusakRefs = useRef<Array<HTMLInputElement | null>>([]);
   const rowRefs = useRef<Array<HTMLTableRowElement | null>>([]);
+  const mainRowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -150,6 +151,16 @@ export const Receiving: React.FC = () => {
       });
     }
   }, [activeItemIdx, activePo]);
+
+  // Auto-scroll logic for main PO list table row
+  useEffect(() => {
+    if (!activePo && isTableFocused && mainRowRefs.current[selectedIdx]) {
+      mainRowRefs.current[selectedIdx]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedIdx, isTableFocused, activePo]);
 
   const filteredPurchases = purchases.filter((p) =>
     p.supplier?.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -545,6 +556,9 @@ export const Receiving: React.FC = () => {
                       };
                       return (
                         <tr key={p.id}
+                          ref={(el) => {
+                            mainRowRefs.current[idx] = el;
+                          }}
                           onClick={() => { setSelectedIdx(idx); setIsTableFocused(true); }}
                           onDoubleClick={() => handleOpenChecklist(p)}
                           className={`cursor-pointer ${rowBg}`}

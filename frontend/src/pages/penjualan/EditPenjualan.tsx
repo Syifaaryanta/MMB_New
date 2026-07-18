@@ -126,6 +126,7 @@ export const EditPenjualan: React.FC = () => {
   const productPopupRef = useRef<HTMLDivElement>(null);
   const customerItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const productItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const activeRowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     if (showCustomerPopup) {
@@ -144,6 +145,15 @@ export const EditPenjualan: React.FC = () => {
       }
     }
   }, [focusedProdIdx, showProductPopup]);
+
+  useEffect(() => {
+    if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedRowIdx, activeStep]);
 
   const btnAsliRef = useRef<HTMLButtonElement>(null);
   const btnAbjadRef = useRef<HTMLButtonElement>(null);
@@ -1077,6 +1087,7 @@ export const EditPenjualan: React.FC = () => {
                           return (
                             <tr
                               key={item.product_id}
+                              ref={idx === selectedRowIdx ? activeRowRef : null}
                               onClick={() => {
                                 setSelectedRowIdx(idx);
                                 setActiveStep('table');

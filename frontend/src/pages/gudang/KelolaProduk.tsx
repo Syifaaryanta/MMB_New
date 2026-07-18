@@ -52,6 +52,17 @@ export const KelolaProduk: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const editTypeModalRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const activeRowRef = useRef<HTMLTableRowElement | null>(null);
+  const activePopupItemRef = useRef<HTMLButtonElement | null>(null);
+  const supplierPopupRef = useRef<HTMLDivElement>(null);
+  const supplierPopupInputRef = useRef<HTMLInputElement>(null);
+  const activeSupplierPopupItemRef = useRef<HTMLButtonElement | null>(null);
+
+  // Supplier selection popup modal states
+  const [showSupplierPopup, setShowSupplierPopup] = useState(false);
+  const [supplierPopupSearch, setSupplierPopupSearch] = useState('');
+  const [supplierPopupFocusedIdx, setSupplierPopupFocusedIdx] = useState(0);
+  const [activeSupplierRowIdx, setActiveSupplierRowIdx] = useState<number | null>(null);
 
   // Modal selection state
   const [editModeSelectIdx, setEditModeSelectIdx] = useState(0);
@@ -60,43 +71,86 @@ export const KelolaProduk: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(() => {
+    return Number(sessionStorage.getItem('mmb_kelola_produk_page')) || 1;
+  });
+  const [search, setSearch] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_search') || '';
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // Search Popup States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchPopup, setShowSearchPopup] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_searchQuery') || '';
+  });
+  const [showSearchPopup, setShowSearchPopup] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_showSearchPopup') === 'true';
+  });
   const [popupProducts, setPopupProducts] = useState<Product[]>([]);
-  const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
+  const [popupFocusedIndex, setPopupFocusedIndex] = useState(() => {
+    return Number(sessionStorage.getItem('mmb_kelola_produk_popupFocusedIndex')) || 0;
+  });
   const searchPopupRef = useRef<HTMLDivElement>(null);
 
   // Table Navigation
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [selectedIdx, setSelectedIdx] = useState(() => {
+    return Number(sessionStorage.getItem('mmb_kelola_produk_selectedIdx')) || 0;
+  });
 
   // Modal States
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditTypeModal, setShowEditTypeModal] = useState(false);
-  const [showFormModal, setShowFormModal] = useState(false);
-  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showEditTypeModal, setShowEditTypeModal] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_showEditTypeModal') === 'true';
+  });
+  const [showFormModal, setShowFormModal] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_showFormModal') === 'true';
+  });
+  const [showGalleryModal, setShowGalleryModal] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_showGalleryModal') === 'true';
+  });
 
   // Edit configurations
-  const [editMode, setEditMode] = useState<'create' | 'full' | 'info' | 'prices'>('create');
-  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const [editMode, setEditMode] = useState<'create' | 'full' | 'info' | 'prices'>(() => {
+    return (sessionStorage.getItem('mmb_kelola_produk_editMode') as any) || 'create';
+  });
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(() => {
+    const saved = sessionStorage.getItem('mmb_kelola_produk_currentProduct');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // Form Fields
-  const [kode, setKode] = useState('');
-  const [nama, setNama] = useState('');
-  const [deskripsi, setDeskripsi] = useState('');
-  const [satuan, setSatuan] = useState('pcs');
-  const [fotoUrls, setFotoUrls] = useState<string[]>([]);
-  const [priceRows, setPriceRows] = useState<Array<{ supplier_id: string; stok: number; harga_beli: number; aktif: boolean }>>([]);
+  const [kode, setKode] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_kode') || '';
+  });
+  const [nama, setNama] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_nama') || '';
+  });
+  const [deskripsi, setDeskripsi] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_deskripsi') || '';
+  });
+  const [satuan, setSatuan] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_satuan') || 'pcs';
+  });
+  const [fotoUrls, setFotoUrls] = useState<string[]>(() => {
+    const saved = sessionStorage.getItem('mmb_kelola_produk_fotoUrls');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [priceRows, setPriceRows] = useState<Array<{ supplier_id: string; stok: number | ''; harga_beli: number | ''; aktif: boolean }>>(() => {
+    const saved = sessionStorage.getItem('mmb_kelola_produk_priceRows');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Form Validation and Refs
   const descRef = useRef<HTMLTextAreaElement>(null);
-  const [tanggalDiubah, setTanggalDiubah] = useState('');
-  const [diubahOleh, setDiubahOleh] = useState('');
-  const [alasanDiubah, setAlasanDiubah] = useState('');
+  const [tanggalDiubah, setTanggalDiubah] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_tanggalDiubah') || '';
+  });
+  const [diubahOleh, setDiubahOleh] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_diubahOleh') || '';
+  });
+  const [alasanDiubah, setAlasanDiubah] = useState(() => {
+    return sessionStorage.getItem('mmb_kelola_produk_alasanDiubah') || '';
+  });
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,6 +181,121 @@ export const KelolaProduk: React.FC = () => {
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
+
+  // Auto scroll table row when selectedIdx changes
+  useEffect(() => {
+    if (activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedIdx]);
+
+  // Auto scroll popup item when popupFocusedIndex changes
+  useEffect(() => {
+    if (activePopupItemRef.current) {
+      activePopupItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [popupFocusedIndex]);
+
+  // Focus supplier search input inside the popup modal when it opens
+  useEffect(() => {
+    if (showSupplierPopup) {
+      setTimeout(() => {
+        supplierPopupInputRef.current?.focus();
+      }, 50);
+    }
+  }, [showSupplierPopup]);
+
+  // Auto scroll selected supplier popup item into view when focused index changes
+  useEffect(() => {
+    if (activeSupplierPopupItemRef.current) {
+      activeSupplierPopupItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [supplierPopupFocusedIdx]);
+
+  const selectSupplierForActiveRow = (sup: Supplier) => {
+    if (activeSupplierRowIdx !== null) {
+      const copy = [...priceRows];
+      copy[activeSupplierRowIdx].supplier_id = sup.id;
+      setPriceRows(copy);
+      setShowSupplierPopup(false);
+
+      // Auto-focus next field (stok input) in the active row
+      setTimeout(() => {
+        const rowEl = document.querySelectorAll('.supplier-row')[activeSupplierRowIdx];
+        const stokInput = rowEl?.querySelector('input[type="number"]') as HTMLElement | null;
+        stokInput?.focus();
+      }, 50);
+    }
+  };
+
+  const handleSupplierPopupKeyDown = (e: React.KeyboardEvent) => {
+    const filtered = suppliers.filter(s =>
+      s.nama.toLowerCase().includes(supplierPopupSearch.toLowerCase()) ||
+      s.kode.toLowerCase().includes(supplierPopupSearch.toLowerCase())
+    );
+
+    if (e.key === 'ArrowDown') {
+      if (filtered.length === 0) return;
+      e.preventDefault();
+      setSupplierPopupFocusedIdx((prev) => (prev + 1) % filtered.length);
+    } else if (e.key === 'ArrowUp') {
+      if (filtered.length === 0) return;
+      e.preventDefault();
+      setSupplierPopupFocusedIdx((prev) => (prev - 1 + filtered.length) % filtered.length);
+    } else if (e.key === 'Enter') {
+      if (filtered.length === 0) return;
+      e.preventDefault();
+      selectSupplierForActiveRow(filtered[supplierPopupFocusedIdx]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowSupplierPopup(false);
+      // Focus back to the row input trigger
+      setTimeout(() => {
+        if (activeSupplierRowIdx !== null) {
+          const rowEl = document.querySelectorAll('.supplier-row')[activeSupplierRowIdx];
+          const triggerInput = rowEl?.querySelector('input[type="text"]') as HTMLElement | null;
+          triggerInput?.focus();
+        }
+      }, 50);
+    }
+  };
+
+  // Sync state to sessionStorage for persistence on refresh
+  useEffect(() => {
+    sessionStorage.setItem('mmb_kelola_produk_page', String(page));
+    sessionStorage.setItem('mmb_kelola_produk_search', search);
+    sessionStorage.setItem('mmb_kelola_produk_searchQuery', searchQuery);
+    sessionStorage.setItem('mmb_kelola_produk_showSearchPopup', String(showSearchPopup));
+    sessionStorage.setItem('mmb_kelola_produk_popupFocusedIndex', String(popupFocusedIndex));
+    sessionStorage.setItem('mmb_kelola_produk_selectedIdx', String(selectedIdx));
+    sessionStorage.setItem('mmb_kelola_produk_showEditTypeModal', String(showEditTypeModal));
+    sessionStorage.setItem('mmb_kelola_produk_showFormModal', String(showFormModal));
+    sessionStorage.setItem('mmb_kelola_produk_showGalleryModal', String(showGalleryModal));
+    sessionStorage.setItem('mmb_kelola_produk_editMode', editMode);
+    sessionStorage.setItem('mmb_kelola_produk_currentProduct', currentProduct ? JSON.stringify(currentProduct) : '');
+    sessionStorage.setItem('mmb_kelola_produk_kode', kode);
+    sessionStorage.setItem('mmb_kelola_produk_nama', nama);
+    sessionStorage.setItem('mmb_kelola_produk_deskripsi', deskripsi);
+    sessionStorage.setItem('mmb_kelola_produk_satuan', satuan);
+    sessionStorage.setItem('mmb_kelola_produk_fotoUrls', JSON.stringify(fotoUrls));
+    sessionStorage.setItem('mmb_kelola_produk_priceRows', JSON.stringify(priceRows));
+    sessionStorage.setItem('mmb_kelola_produk_tanggalDiubah', tanggalDiubah);
+    sessionStorage.setItem('mmb_kelola_produk_diubahOleh', diubahOleh);
+    sessionStorage.setItem('mmb_kelola_produk_alasanDiubah', alasanDiubah);
+  }, [
+    page, search, searchQuery, showSearchPopup, popupFocusedIndex, selectedIdx,
+    showEditTypeModal, showFormModal, showGalleryModal, editMode, currentProduct,
+    kode, nama, deskripsi, satuan, fotoUrls, priceRows, tanggalDiubah, diubahOleh, alasanDiubah
+  ]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -180,6 +349,13 @@ export const KelolaProduk: React.FC = () => {
   };
 
   const handleSearchPopupKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowSearchPopup(false);
+      searchInputRef.current?.focus();
+      return;
+    }
     if (popupProducts.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -193,11 +369,6 @@ export const KelolaProduk: React.FC = () => {
       e.preventDefault();
       e.stopPropagation();
       selectProduct(popupProducts[popupFocusedIndex]);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      setShowSearchPopup(false);
-      searchInputRef.current?.focus();
     }
   };
 
@@ -322,10 +493,10 @@ export const KelolaProduk: React.FC = () => {
     setFotoUrls(imgs);
 
     // Map supplier prices
-    const rows = currentProduct.product_prices.map((p) => ({
+    const rows: Array<{ supplier_id: string; stok: number | ''; harga_beli: number | ''; aktif: boolean }> = currentProduct.product_prices.map((p) => ({
       supplier_id: p.supplier.id,
-      stok: Number(p.stok),
-      harga_beli: Number(p.harga_beli),
+      stok: (Number(p.stok) === 0 ? '' : Number(p.stok)) as number | '',
+      harga_beli: (Number(p.harga_beli) === 0 ? '' : Number(p.harga_beli)) as number | '',
       aktif: p.aktif ?? true,
     }));
     setPriceRows(rows);
@@ -363,11 +534,19 @@ export const KelolaProduk: React.FC = () => {
       addToast('error', 'Semua supplier terdaftar sudah dimasukkan.');
       return;
     }
-    setPriceRows((prev) => [...prev, { supplier_id: available.id, stok: 0, harga_beli: 0, aktif: true }]);
+    setPriceRows((prev) => [...prev, { supplier_id: available.id, stok: '', harga_beli: '', aktif: true }]);
   };
 
   const removePriceRow = (idx: number) => {
     setPriceRows((prev) => prev.filter((_, i) => i !== idx));
+    if (idx - 1 >= 0) {
+      setTimeout(() => {
+        const rows = document.querySelectorAll('.supplier-row');
+        const prevRow = rows[idx - 1];
+        const triggerInput = prevRow?.querySelector('input[type="text"]') as HTMLElement | null;
+        triggerInput?.focus();
+      }, 50);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -386,7 +565,11 @@ export const KelolaProduk: React.FC = () => {
       deskripsi,
       satuan,
       foto_urls: fotoUrls,
-      prices: priceRows,
+      prices: priceRows.map(row => ({
+        ...row,
+        stok: row.stok === '' ? 0 : Number(row.stok),
+        harga_beli: row.harga_beli === '' ? 0 : Number(row.harga_beli)
+      })),
       validation: editMode === 'prices' ? {
         tanggal: tanggalDiubah,
         oleh: diubahOleh,
@@ -472,16 +655,16 @@ export const KelolaProduk: React.FC = () => {
     }
   }, [showFormModal, editMode]);
 
-  // F4 inside the form modal to add a new supplier row
-  useHotkeys('f4', (e) => {
+  // F2 inside the form modal to add a new supplier row
+  useHotkeys('f2', (e) => {
     e.preventDefault();
     if (showFormModal && (editMode === 'create' || editMode === 'full' || editMode === 'prices')) {
       addPriceRow();
     }
   }, { enableOnFormTags: true });
 
-  // F5 inside the form modal to upload/select a photo
-  useHotkeys('f5', (e) => {
+  // F1 inside the form modal to upload/select a photo
+  useHotkeys('f1', (e) => {
     e.preventDefault();
     if (showFormModal && (editMode === 'create' || editMode === 'full' || editMode === 'info')) {
       fileInputRef.current?.click();
@@ -579,7 +762,9 @@ export const KelolaProduk: React.FC = () => {
   // Esc: Tutup modal aktif atau clear search / kembali ke gudang
   useHotkeys('esc', (e) => {
     e.preventDefault();
-    if (showGalleryModal) {
+    if (showSupplierPopup) {
+      setShowSupplierPopup(false);
+    } else if (showGalleryModal) {
       setShowGalleryModal(false);
     } else if (showFormModal) {
       setShowFormModal(false);
@@ -593,7 +778,7 @@ export const KelolaProduk: React.FC = () => {
       setSearchQuery('');
       setSearch('');
     } else {
-      navigate('/dashboard');
+      navigate('/gudang');
     }
   }, { enableOnFormTags: true });
 
@@ -618,9 +803,8 @@ export const KelolaProduk: React.FC = () => {
       {/* Toast Notifications */}
       <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
-          <div key={t.id} className={`pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-sm ${
-            t.type === 'success' ? 'bg-emerald-950/90 border-emerald-700/60 text-emerald-100' : 'bg-red-950/90 border-red-700/60 text-red-100'
-          }`}>
+          <div key={t.id} className={`pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-sm ${t.type === 'success' ? 'bg-emerald-950/90 border-emerald-700/60 text-emerald-100' : 'bg-red-950/90 border-red-700/60 text-red-100'
+            }`}>
             {t.type === 'success' ? <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-400" /> : <XCircle size={18} className="mt-0.5 shrink-0 text-red-400" />}
             <p className="text-sm font-medium flex-1">{t.message}</p>
             <button onClick={() => dismissToast(t.id)} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"><X size={14} /></button>
@@ -704,13 +888,35 @@ export const KelolaProduk: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs text-slate-400 shrink-0">
-          <span className="bg-surface-800 px-2 py-1 rounded">F1: Cari</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">F2: Galeri</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">F3: Tambah</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">Enter: Edit</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">Del: Arsip</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">PgUp/PgDn: Hal</span>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+            <span>Cari</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
+            <span>Galeri</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F3</kbd>
+            <span>Tambah</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Enter</kbd>
+            <span>Edit</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Del</kbd>
+            <span>Arsip</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">PgUp/PgDn</kbd>
+            <span>Hal</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+            <span>Kembali</span>
+          </span>
         </div>
       </div>
 
@@ -752,9 +958,9 @@ export const KelolaProduk: React.FC = () => {
                       key={p.id}
                       onClick={() => setSelectedIdx(idx)}
                       onDoubleClick={handleOpenEditSelect}
-                      className={`hover:bg-surface-800/40 cursor-pointer transition-colors ${
-                        idx === selectedIdx ? 'table-row-selected' : ''
-                      }`}
+                      ref={idx === selectedIdx ? activeRowRef : null}
+                      className={`hover:bg-surface-800/40 cursor-pointer transition-colors ${idx === selectedIdx ? 'table-row-selected' : ''
+                        }`}
                     >
                       <td className="p-4 font-mono font-semibold text-slate-300">{p.kode}</td>
                       <td className="p-4 font-bold text-white">{p.nama}</td>
@@ -861,11 +1067,10 @@ export const KelolaProduk: React.FC = () => {
                       key={opt.mode}
                       type="button"
                       onClick={() => handleStartEdit(opt.mode)}
-                      className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm transition-all border rounded-lg ${
-                        isActive
-                          ? opt.activeColorClass + ' font-semibold scale-[1.01]'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                      }`}
+                      className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm transition-all border rounded-lg ${isActive
+                        ? opt.activeColorClass + ' font-semibold scale-[1.01]'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                        }`}
                     >
                       <Icon size={16} className={isActive ? '' : opt.colorClass} />
                       <span>{opt.label}</span>
@@ -885,11 +1090,11 @@ export const KelolaProduk: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay overflow-y-auto">
           <div
             style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)' }}
-            className="border border-blue-200 rounded-xl max-w-2xl w-full my-8 mx-4 shadow-2xl animate-scale-in flex flex-col overflow-hidden"
+            className="border border-blue-200 rounded-xl max-w-2xl w-full my-4 mx-4 shadow-2xl animate-scale-in flex flex-col overflow-hidden"
           >
-            <form id="kelola-produk-form" onSubmit={handleSave} onKeyDown={handleFormKeyDown} className="space-y-6">
+            <form id="kelola-produk-form" onSubmit={handleSave} onKeyDown={handleFormKeyDown} className="space-y-3">
               {/* Header inside form as first-child to match index.css */}
-              <div className="flex justify-between items-center w-full">
+              <div className="flex justify-between items-center w-full px-5 py-3">
                 <div>
                   <h3 className="text-lg font-bold text-white">
                     {editMode === 'create'
@@ -938,66 +1143,54 @@ export const KelolaProduk: React.FC = () => {
 
               {/* Product Info Section (Visible in 'create', 'full', 'info') */}
               {(editMode === 'create' || editMode === 'full' || editMode === 'info') && (
-                <div className="space-y-4 mx-6 p-5 rounded-xl border border-blue-100 bg-blue-50/20 shadow-xs mt-6">
+                <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
                   <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">A. Informasi Barang</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1.5">Kode Barang</label>
+                      <label className="block text-xs text-slate-700 font-semibold mb-1">Kode Barang</label>
                       <input
                         type="text"
                         required
                         value={kode}
                         onChange={(e) => setKode(e.target.value)}
-                        placeholder="Contoh: BES-10MM"
+                        placeholder="Tambahkan Kode Barang"
                         className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                         disabled={editMode !== 'create' && editMode !== 'full'}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1.5">Nama Produk</label>
+                      <label className="block text-xs text-slate-700 font-semibold mb-1">Nama Produk</label>
                       <input
                         type="text"
                         required
                         value={nama}
                         onChange={(e) => setNama(e.target.value)}
-                        placeholder="Contoh: Besi Beton 10mm"
+                        placeholder="Tambahkan Nama Produk"
                         className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1.5">Satuan</label>
-                      <input
-                        type="text"
-                        value={satuan}
-                        onChange={(e) => setSatuan(e.target.value)}
-                        placeholder="Contoh: batang, sak, pcs"
-                        className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1.5">Keterangan/Deskripsi</label>
-                      <textarea
-                        ref={descRef}
-                        value={deskripsi}
-                        onChange={(e) => {
-                          setDeskripsi(e.target.value);
-                          adjustDescHeight();
-                        }}
-                        placeholder="Tambahkan detail produk..."
-                        className="input-field min-h-[40px] resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 overflow-hidden"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs text-slate-700 font-semibold mb-1">Keterangan/Deskripsi</label>
+                    <textarea
+                      ref={descRef}
+                      value={deskripsi}
+                      onChange={(e) => {
+                        setDeskripsi(e.target.value);
+                        adjustDescHeight();
+                      }}
+                      placeholder="Tambahkan detail produk..."
+                      className="input-field min-h-[40px] resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 overflow-hidden"
+                    />
                   </div>
 
                   {/* Images Upload Area */}
                   <div>
-                    <label className="block text-xs text-slate-700 font-semibold mb-1.5">Foto Produk (Maks 3, {"<150KB"} per file)</label>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <label className="block text-xs text-slate-700 font-semibold mb-1">Foto Produk (Maks 3, {"<150KB"} per file)</label>
+                    <div className="flex flex-wrap items-center gap-2">
                       {fotoUrls.map((url, idx) => (
-                        <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-blue-200 bg-white group">
+                        <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-blue-200 bg-white group">
                           <img src={url} alt="preview" className="w-full h-full object-cover" />
                           <button
                             type="button"
@@ -1010,9 +1203,9 @@ export const KelolaProduk: React.FC = () => {
                       ))}
 
                       {fotoUrls.length < 3 && (
-                        <label className="w-20 h-20 border border-dashed border-blue-200 hover:border-blue-500 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-blue-600 bg-white cursor-pointer transition-colors">
-                          <Upload size={18} />
-                          <span className="text-[10px] mt-1">Upload (F5)</span>
+                        <label className="w-16 h-16 border border-dashed border-blue-200 hover:border-blue-500 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-blue-600 bg-white cursor-pointer transition-colors">
+                          <Upload size={16} />
+                          <span className="text-[9px] mt-0.5">Upload (F1)</span>
                           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" multiple />
                         </label>
                       )}
@@ -1023,48 +1216,73 @@ export const KelolaProduk: React.FC = () => {
 
               {/* Price / Supplier Section (Visible in 'create', 'full', 'prices') */}
               {(editMode === 'create' || editMode === 'full' || editMode === 'prices') && (
-                <div className="space-y-4 mx-6 p-5 rounded-xl border border-blue-100 bg-blue-50/20 shadow-xs mt-6">
+                <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
                   <div className="flex justify-between items-center">
                     <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">B. Harga Beli & Stok per Supplier</h4>
                     <button type="button" onClick={addPriceRow} className="btn-secondary py-1 px-2.5 text-xs border-blue-200 hover:bg-blue-50 text-blue-700 bg-white">
                       <Plus size={12} />
-                      <span>Tambah Supplier (F4)</span>
+                      <span>Tambah Supplier (F2)</span>
                     </button>
                   </div>
 
                   {priceRows.length > 0 ? (
-                    <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {priceRows.map((row, idx) => (
-                        <div key={idx} className="flex flex-col sm:flex-row gap-3 items-center bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
+                        <div key={idx} className="flex flex-col sm:flex-row gap-2.5 items-center bg-white p-2.5 rounded-lg border border-blue-100 shadow-sm supplier-row">
                           {/* Supplier Selector */}
-                          <div className="w-full sm:flex-1">
-                            <select
-                              value={row.supplier_id}
-                              onChange={(e) => {
-                                const copy = [...priceRows];
-                                copy[idx].supplier_id = e.target.value;
-                                setPriceRows(copy);
+                          <div className="w-full sm:flex-1 relative">
+                            <input
+                              type="text"
+                              readOnly
+                              autoFocus={idx === priceRows.length - 1}
+                              value={suppliers.find((s) => s.id === row.supplier_id)?.nama || ''}
+                              onClick={() => {
+                                setActiveSupplierRowIdx(idx);
+                                setSupplierPopupSearch('');
+                                setSupplierPopupFocusedIdx(0);
+                                setShowSupplierPopup(true);
                               }}
-                              className="input-field py-2 w-full font-semibold bg-white border-blue-200 text-slate-800"
-                            >
-                              {suppliers.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                  {s.nama} ({s.kode})
-                                </option>
-                              ))}
-                            </select>
+                              onFocus={() => {
+                                setActiveSupplierRowIdx(idx);
+                                setSupplierPopupSearch('');
+                                setSupplierPopupFocusedIdx(0);
+                                setShowSupplierPopup(true);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  setActiveSupplierRowIdx(idx);
+                                  setSupplierPopupSearch('');
+                                  setSupplierPopupFocusedIdx(0);
+                                  setShowSupplierPopup(true);
+                                } else if (e.key === 'Delete' || e.key === 'Del') {
+                                  e.preventDefault();
+                                  removePriceRow(idx);
+                                }
+                              }}
+                              placeholder="Pilih Supplier..."
+                              className="input-field py-2 pr-8 w-full font-semibold bg-white border-blue-200 text-slate-800 cursor-pointer"
+                            />
+                            <span className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 pointer-events-none">
+                              <Search size={14} />
+                            </span>
                           </div>
 
                           {/* Stok Input */}
                           <div className="w-full sm:w-28">
                             <input
                               type="number"
-                              required
                               value={row.stok}
                               onChange={(e) => {
                                 const copy = [...priceRows];
-                                copy[idx].stok = parseFloat(e.target.value) || 0;
+                                copy[idx].stok = e.target.value === '' ? '' : parseFloat(e.target.value);
                                 setPriceRows(copy);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Delete' || e.key === 'Del') {
+                                  e.preventDefault();
+                                  removePriceRow(idx);
+                                }
                               }}
                               placeholder="Stok"
                               className="input-field py-2 font-semibold w-full bg-white border-blue-200 text-slate-800"
@@ -1075,12 +1293,17 @@ export const KelolaProduk: React.FC = () => {
                           <div className="w-full sm:w-40">
                             <input
                               type="text"
-                              required
                               value={formatRupiahInput(row.harga_beli)}
                               onChange={(e) => {
                                 const copy = [...priceRows];
-                                copy[idx].harga_beli = parseRupiahInput(e.target.value);
+                                copy[idx].harga_beli = e.target.value === '' ? '' : parseRupiahInput(e.target.value);
                                 setPriceRows(copy);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Delete' || e.key === 'Del') {
+                                  e.preventDefault();
+                                  removePriceRow(idx);
+                                }
                               }}
                               placeholder="Harga Beli"
                               className="input-field py-2 text-emerald-600 w-full font-mono font-semibold bg-white border-blue-200"
@@ -1100,7 +1323,7 @@ export const KelolaProduk: React.FC = () => {
                     </div>
                   ) : (
                     <div className="text-center p-4 bg-white rounded border border-dashed border-blue-200 text-xs text-slate-500">
-                      Belum ada supplier harga yang ditambahkan. Silakan klik Tambah Supplier di atas atau tekan F4.
+                      Belum ada supplier harga yang ditambahkan. Silakan klik Tambah Supplier di atas atau tekan F2.
                     </div>
                   )}
                 </div>
@@ -1108,14 +1331,14 @@ export const KelolaProduk: React.FC = () => {
 
               {/* Validation Section (Visible only in 'prices' mode) */}
               {editMode === 'prices' && (
-                <div className="space-y-4 mx-6 p-5 rounded-xl border border-blue-100 bg-blue-50/20 shadow-xs mt-6">
+                <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
                   <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle size={14} className="text-blue-600" />
                     <span>Validasi Perubahan Stok</span>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Tanggal Diubah</label>
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Tanggal Diubah</label>
                       <input
                         type="date"
                         required
@@ -1125,7 +1348,7 @@ export const KelolaProduk: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Diubah Oleh</label>
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Diubah Oleh</label>
                       <input
                         type="text"
                         required
@@ -1137,7 +1360,7 @@ export const KelolaProduk: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Alasan Diubah</label>
+                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Alasan Diubah</label>
                     <textarea
                       required
                       value={alasanDiubah}
@@ -1150,7 +1373,7 @@ export const KelolaProduk: React.FC = () => {
               )}
 
               {/* Submit Buttons */}
-              <div className="flex justify-end gap-2 border-t border-blue-100 pt-4 px-6 pb-6 mt-6">
+              <div className="flex justify-end gap-2 border-t border-blue-100 pt-3 px-4 pb-4 mt-3">
                 <button type="button" onClick={() => setShowFormModal(false)} className="btn-secondary border-slate-200 hover:bg-slate-50 text-slate-700 bg-white">
                   Batal
                 </button>
@@ -1225,11 +1448,11 @@ export const KelolaProduk: React.FC = () => {
                   <button
                     key={prod.id}
                     onClick={() => selectProduct(prod)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${
-                      idx === popupFocusedIndex
-                        ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                    }`}
+                    ref={idx === popupFocusedIndex ? activePopupItemRef : null}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === popupFocusedIndex
+                      ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                      }`}
                   >
                     <div>
                       <p className={`font-semibold ${idx === popupFocusedIndex ? 'text-primary-900' : 'text-slate-900'}`}>{prod.nama}</p>
@@ -1246,6 +1469,82 @@ export const KelolaProduk: React.FC = () => {
                 </div>
               )}
             </div>
+            <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
+              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
+              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Supplier Selection Popup Modal */}
+      {showSupplierPopup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
+          <div
+            ref={supplierPopupRef}
+            tabIndex={0}
+            onKeyDown={handleSupplierPopupKeyDown}
+            className="bg-surface-800 border border-surface-700 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col p-6"
+          >
+            <div className="flex justify-between items-center w-full">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Search size={18} />
+                <span>Pilih Supplier</span>
+              </h3>
+              <button onClick={() => setShowSupplierPopup(false)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search Input inside Popup */}
+            <div className="relative mt-4 w-full">
+              <Search size={16} className="absolute left-10  top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                ref={supplierPopupInputRef}
+                type="text"
+                value={supplierPopupSearch}
+                onChange={(e) => {
+                  setSupplierPopupSearch(e.target.value);
+                  setSupplierPopupFocusedIdx(0);
+                }}
+                placeholder="Cari Kode atau Nama Supplier..."
+                className="input-field pl-10 w-full bg-white text-slate-800"
+              />
+            </div>
+
+            {/* Supplier List */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
+              {(() => {
+                const filtered = suppliers.filter(s =>
+                  s.nama.toLowerCase().includes(supplierPopupSearch.toLowerCase()) ||
+                  s.kode.toLowerCase().includes(supplierPopupSearch.toLowerCase())
+                );
+                return filtered.length > 0 ? (
+                  filtered.map((sup, idx) => (
+                    <button
+                      key={sup.id}
+                      type="button"
+                      onClick={() => selectSupplierForActiveRow(sup)}
+                      ref={idx === supplierPopupFocusedIdx ? activeSupplierPopupItemRef : null}
+                      className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === supplierPopupFocusedIdx
+                        ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                        }`}
+                    >
+                      <div>
+                        <p className={`font-semibold ${idx === supplierPopupFocusedIdx ? 'text-primary-900' : 'text-slate-900'}`}>{sup.nama}</p>
+                        <p className="text-xs text-slate-500 font-mono">{sup.kode}</p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    Tidak ada supplier yang cocok dengan "{supplierPopupSearch}".
+                  </div>
+                );
+              })()}
+            </div>
+
             <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
               <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
               <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>

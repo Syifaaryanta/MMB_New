@@ -143,6 +143,7 @@ export const InputItemSO: React.FC = () => {
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const activeRowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     if (showProductPopup) {
@@ -152,6 +153,15 @@ export const InputItemSO: React.FC = () => {
       }
     }
   }, [focusedProdIdx, showProductPopup]);
+
+  useEffect(() => {
+    if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedRowIdx, activeStep]);
 
   const btnAsliRef = useRef<HTMLButtonElement>(null);
   const btnAbjadRef = useRef<HTMLButtonElement>(null);
@@ -884,6 +894,7 @@ export const InputItemSO: React.FC = () => {
                         return (
                           <tr
                             key={item.product_id}
+                            ref={idx === selectedRowIdx ? activeRowRef : null}
                           onClick={() => {
                             (document.activeElement as HTMLElement)?.blur();
                             setSelectedRowIdx(idx);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { Search, RotateCcw, ChevronLeft, ChevronRight, X, CheckCircle, XCircle } from 'lucide-react';
+import { Search, RotateCcw, ChevronLeft, ChevronRight, X, CheckCircle, XCircle, AlertCircle, Archive } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -17,13 +17,20 @@ export const ArsipProduk: React.FC = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(() => {
+    return Number(sessionStorage.getItem('mmb_arsip_produk_page')) || 1;
+  });
+  const [search, setSearch] = useState(() => {
+    return sessionStorage.getItem('mmb_arsip_produk_search') || '';
+  });
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [selectedIdx, setSelectedIdx] = useState(() => {
+    return Number(sessionStorage.getItem('mmb_arsip_produk_selectedIdx')) || 0;
+  });
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const toastIdRef = useRef(0);
+  const activeRowRef = useRef<HTMLTableRowElement | null>(null);
 
   // Restore confirm modal state
   const [restoreTarget, setRestoreTarget] = useState<{ id: string; nama: string } | null>(null);
@@ -61,6 +68,23 @@ export const ArsipProduk: React.FC = () => {
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
+
+  // Auto scroll selected table row into view
+  useEffect(() => {
+    if (activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedIdx]);
+
+  // Sync state to sessionStorage for persistence on refresh
+  useEffect(() => {
+    sessionStorage.setItem('mmb_arsip_produk_page', String(page));
+    sessionStorage.setItem('mmb_arsip_produk_search', search);
+    sessionStorage.setItem('mmb_arsip_produk_selectedIdx', String(selectedIdx));
+  }, [page, search, selectedIdx]);
 
   const handleRestore = () => {
     const active = products[selectedIdx];
@@ -136,7 +160,7 @@ export const ArsipProduk: React.FC = () => {
     } else if (search) {
       setSearch('');
     } else {
-      navigate('/dashboard');
+      navigate('/gudang');
     }
   }, { enableOnFormTags: true });
 
@@ -236,10 +260,21 @@ export const ArsipProduk: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs text-slate-400 shrink-0">
-          <span className="bg-surface-800 px-2 py-1 rounded">F1: Cari</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">F3 / Enter: Pulihkan</span>
-          <span className="bg-surface-800 px-2 py-1 rounded">Esc: Kembali</span>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+            <span>Cari</span>
+          </span>
+
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F3 / Enter</kbd>
+            <span>Pulihkan</span>
+          </span>
+
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+            <span>Kembali</span>
+          </span>
         </div>
       </div>
 
@@ -267,6 +302,7 @@ export const ArsipProduk: React.FC = () => {
                   <tr
                     key={p.id}
                     onClick={() => setSelectedIdx(idx)}
+                    ref={idx === selectedIdx ? activeRowRef : null}
                     className={`hover:bg-surface-800/40 cursor-pointer transition-colors ${idx === selectedIdx ? 'table-row-selected' : ''
                       }`}
                   >
@@ -312,9 +348,17 @@ export const ArsipProduk: React.FC = () => {
             </div>
           </div>
         </div>
+      ) : search.trim() !== '' ? (
+        <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10 min-h-[250px]">
+          <AlertCircle className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
+          <h3 className="text-lg font-bold text-slate-400">Produk Terarsip Tidak Ditemukan</h3>
+          <p className="text-sm mt-1 max-w-xs">Tidak ada produk terarsip yang cocok dengan pencarian "{search}".</p>
+        </div>
       ) : (
-        <div className="text-center p-12 bg-surface-800/20 border border-dashed border-surface-700 rounded-xl">
-          Tidak ada produk terarsip saat ini.
+        <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10 min-h-[250px]">
+          <Archive className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
+          <h3 className="text-lg font-bold text-slate-400">Arsip Kosong</h3>
+          <p className="text-sm mt-1 max-w-xs">Tidak ada produk terarsip saat ini.</p>
         </div>
       )}
     </div>

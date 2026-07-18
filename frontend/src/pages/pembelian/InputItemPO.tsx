@@ -88,6 +88,7 @@ export const InputItemPO: React.FC = () => {
   const priceInputRef = useRef<HTMLInputElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const activeRowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     if (showProductPopup) {
@@ -97,6 +98,15 @@ export const InputItemPO: React.FC = () => {
       }
     }
   }, [focusedProdIdx, showProductPopup]);
+
+  useEffect(() => {
+    if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedRowIdx, activeStep]);
 
   useEffect(() => {
     const raw = sessionStorage.getItem('po_step1');
@@ -599,6 +609,7 @@ export const InputItemPO: React.FC = () => {
                     return (
                       <tr
                         key={idx}
+                        ref={idx === selectedRowIdx ? activeRowRef : null}
                         onClick={() => {
                           (document.activeElement as HTMLElement)?.blur();
                           setSelectedRowIdx(idx);

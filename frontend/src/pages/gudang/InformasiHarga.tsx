@@ -50,19 +50,35 @@ export const InformasiHarga: React.FC = () => {
   const navigate = useNavigate();
 
   // Search Queries
-  const [productQuery, setProductQuery] = useState('');
-  const [customerQuery, setCustomerQuery] = useState('');
+  const [productQuery, setProductQuery] = useState(() => {
+    return sessionStorage.getItem('mmb_info_harga_productQuery') || '';
+  });
+  const [customerQuery, setCustomerQuery] = useState(() => {
+    return sessionStorage.getItem('mmb_info_harga_customerQuery') || '';
+  });
 
   // Results & Selection
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
+    const saved = sessionStorage.getItem('mmb_info_harga_selectedProduct');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(() => {
+    const saved = sessionStorage.getItem('mmb_info_harga_selectedCustomer');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // Popup Modals instead of Dropdowns
-  const [showProductPopup, setShowProductPopup] = useState(false);
-  const [showCustomerPopup, setShowCustomerPopup] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [showProductPopup, setShowProductPopup] = useState(() => {
+    return sessionStorage.getItem('mmb_info_harga_showProductPopup') === 'true';
+  });
+  const [showCustomerPopup, setShowCustomerPopup] = useState(() => {
+    return sessionStorage.getItem('mmb_info_harga_showCustomerPopup') === 'true';
+  });
+  const [focusedIndex, setFocusedIndex] = useState(() => {
+    return Number(sessionStorage.getItem('mmb_info_harga_focusedIndex')) || 0;
+  });
 
   // Detail Info / Purchase History
   const [customerHistory, setCustomerHistory] = useState<SaleHistoryItem[]>([]);
@@ -74,6 +90,7 @@ export const InformasiHarga: React.FC = () => {
   const customerInputRef = useRef<HTMLInputElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
   const customerPopupRef = useRef<HTMLDivElement>(null);
+  const activeItemRef = useRef<HTMLButtonElement | null>(null);
 
   // Focus Search Product on mount
   useEffect(() => {
@@ -107,27 +124,21 @@ export const InformasiHarga: React.FC = () => {
     }
   }, { enableOnFormTags: true });
 
-  // Alt + N: New Product
-  useHotkeys('alt+n', (e) => {
-    e.preventDefault();
-    navigate('/gudang/katalog');
-  }, { enableOnFormTags: false });
-
-  // Esc Handler: Back 1 page or reset
-  useHotkeys('esc', (e) => {
-    e.preventDefault();
-    if (showProductPopup) {
-      setShowProductPopup(false);
-      productInputRef.current?.focus();
-    } else if (showCustomerPopup) {
-      setShowCustomerPopup(false);
-      customerInputRef.current?.focus();
-    } else if (selectedProduct || selectedCustomer) {
-      resetAll();
-    } else {
-      navigate('/dashboard');
-    }
-  }, { enableOnFormTags: true });
+      {/* Esc Handler: Back 1 page or reset */}
+      useHotkeys('esc', (e) => {
+        e.preventDefault();
+        if (showProductPopup) {
+          setShowProductPopup(false);
+          productInputRef.current?.focus();
+        } else if (showCustomerPopup) {
+          setShowCustomerPopup(false);
+          customerInputRef.current?.focus();
+        } else if (selectedProduct || selectedCustomer) {
+          resetAll();
+        } else {
+          navigate('/gudang');
+        }
+      }, { enableOnFormTags: true });
 
   // Native PageDown & PageUp Scrolling Handler
   useEffect(() => {
@@ -252,6 +263,27 @@ export const InformasiHarga: React.FC = () => {
     }
   }, [showCustomerPopup]);
 
+  // Auto scroll popup item into view when focused index changes
+  useEffect(() => {
+    if (activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [focusedIndex]);
+
+  // Sync states to sessionStorage for persistence on refresh
+  useEffect(() => {
+    sessionStorage.setItem('mmb_info_harga_productQuery', productQuery);
+    sessionStorage.setItem('mmb_info_harga_customerQuery', customerQuery);
+    sessionStorage.setItem('mmb_info_harga_selectedProduct', selectedProduct ? JSON.stringify(selectedProduct) : '');
+    sessionStorage.setItem('mmb_info_harga_selectedCustomer', selectedCustomer ? JSON.stringify(selectedCustomer) : '');
+    sessionStorage.setItem('mmb_info_harga_showProductPopup', String(showProductPopup));
+    sessionStorage.setItem('mmb_info_harga_showCustomerPopup', String(showCustomerPopup));
+    sessionStorage.setItem('mmb_info_harga_focusedIndex', String(focusedIndex));
+  }, [productQuery, customerQuery, selectedProduct, selectedCustomer, showProductPopup, showCustomerPopup, focusedIndex]);
+
   const selectProduct = (prod: Product) => {
     setSelectedProduct(prod);
     setProductQuery(prod.nama);
@@ -351,12 +383,6 @@ export const InformasiHarga: React.FC = () => {
           <h1 className="text-2xl md:text-3xl font-extrabold text-white">Informasi Harga</h1>
           <p className="text-slate-400">Pencarian cepat detail harga produk dan riwayat penjualan pelanggan</p>
         </div>
-        <button
-          onClick={() => navigate('/gudang/katalog')}
-          className="btn-secondary text-xs"
-        >
-          <span>Katalog Produk (Alt+N)</span>
-        </button>
       </div>
 
       {/* Search Grid */}
@@ -437,6 +463,28 @@ export const InformasiHarga: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Keyboard Shortcuts Helper */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 w-fit">
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+          <span>Cari Barang</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
+          <span>Cari Pelanggan</span>
+        </span>
+        {selectedProduct && (
+          <span className="flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F4</kbd>
+            <span>Lihat Detail</span>
+          </span>
+        )}
+        <span className="flex items-center gap-1.5">
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+          <span>Kembali</span>
+        </span>
+      </div>
 
       {/* Main Content Area: Split Details */}
       {selectedProduct ? (
@@ -492,11 +540,10 @@ export const InformasiHarga: React.FC = () => {
                               <h4 className="font-bold text-slate-800 text-sm">{p.supplier.nama}</h4>
                               <p className="text-[11px] text-slate-400 font-mono mt-0.5">{p.supplier.kode}</p>
                             </div>
-                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                              Number(p.stok) > 0 
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50' 
-                                : 'bg-slate-50 text-slate-400 border-slate-200/50'
-                            }`}>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${Number(p.stok) > 0
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
+                              : 'bg-slate-50 text-slate-400 border-slate-200/50'
+                              }`}>
                               {Number(p.stok)} {selectedProduct.satuan} tersedia
                             </span>
                           </div>
@@ -643,11 +690,11 @@ export const InformasiHarga: React.FC = () => {
                   <button
                     key={prod.id}
                     onClick={() => selectProduct(prod)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${
-                      idx === focusedIndex
-                        ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                    }`}
+                    ref={idx === focusedIndex ? activeItemRef : null}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedIndex
+                      ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                      }`}
                   >
                     <div>
                       <p className={`font-semibold ${idx === focusedIndex ? 'text-primary-900' : 'text-slate-900'}`}>{prod.nama}</p>
@@ -696,11 +743,11 @@ export const InformasiHarga: React.FC = () => {
                   <button
                     key={cust.id}
                     onClick={() => selectCustomer(cust)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${
-                      idx === focusedIndex
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                    }`}
+                    ref={idx === focusedIndex ? activeItemRef : null}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedIndex
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                      }`}
                   >
                     <div>
                       <p className={`font-semibold ${idx === focusedIndex ? 'text-emerald-900' : 'text-slate-900'}`}>{cust.nama}</p>

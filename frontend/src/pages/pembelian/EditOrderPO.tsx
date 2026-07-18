@@ -117,6 +117,7 @@ export const EditOrderPO: React.FC = () => {
   const supplierPopupRef = useRef<HTMLDivElement>(null);
   const supplierItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const productItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const activeRowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     if (showSupplierPopup) {
@@ -135,6 +136,15 @@ export const EditOrderPO: React.FC = () => {
       }
     }
   }, [focusedProdIdx, showProductPopup]);
+
+  useEffect(() => {
+    if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedRowIdx, activeStep]);
 
   // Focus po search input or load param on mount
   useEffect(() => {
@@ -885,6 +895,7 @@ export const EditOrderPO: React.FC = () => {
                         return (
                           <tr
                             key={idx}
+                            ref={idx === selectedRowIdx ? activeRowRef : null}
                             onClick={() => {
                               setSelectedRowIdx(idx);
                               setActiveStep('table');
