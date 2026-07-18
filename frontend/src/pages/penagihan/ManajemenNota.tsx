@@ -61,6 +61,40 @@ export const ManajemenNota: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchPopupRef = useRef<HTMLDivElement>(null);
 
+  const customerRowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const invoiceRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const popupItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (selectedInvoiceIdx === null && customerRowRefs.current[selectedCustIdx]) {
+      customerRowRefs.current[selectedCustIdx]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedCustIdx, selectedInvoiceIdx]);
+
+  useEffect(() => {
+    if (selectedInvoiceIdx !== null) {
+      const activeKey = `${selectedCustIdx}-${selectedInvoiceIdx}`;
+      if (invoiceRowRefs.current[activeKey]) {
+        invoiceRowRefs.current[activeKey]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      }
+    }
+  }, [selectedCustIdx, selectedInvoiceIdx]);
+
+  useEffect(() => {
+    if (showSearchPopup && popupItemRefs.current[popupFocusedIndex]) {
+      popupItemRefs.current[popupFocusedIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [popupFocusedIndex, showSearchPopup]);
+
   const fetchInvoices = async () => {
     setIsLoading(true);
     try {
@@ -509,6 +543,9 @@ export const ManajemenNota: React.FC = () => {
             return (
               <div
                 key={group.customer_nama}
+                ref={(el) => {
+                  customerRowRefs.current[cIdx] = el;
+                }}
                 className={`card p-0 overflow-hidden border transition-all ${isCustSelected ? 'card-hovered border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
                   }`}
               >
@@ -583,6 +620,9 @@ export const ManajemenNota: React.FC = () => {
                           return (
                             <tr
                               key={inv.id}
+                              ref={(el) => {
+                                invoiceRowRefs.current[`${cIdx}-${iIdx}`] = el;
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleRowClick(cIdx, iIdx);
@@ -700,6 +740,9 @@ export const ManajemenNota: React.FC = () => {
                   <button
                     type="button"
                     key={group.customer_nama}
+                    ref={(el) => {
+                      popupItemRefs.current[idx] = el;
+                    }}
                     onClick={() => {
                       setSelectedCustIdx(idx);
                       setSelectedInvoiceIdx(null);

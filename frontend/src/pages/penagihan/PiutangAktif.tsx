@@ -125,6 +125,8 @@ export const PiutangAktif: React.FC = () => {
   const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
   const searchPopupRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const customerRowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const invoiceRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
   useEffect(() => {
     if (showSearchPopup) {
@@ -134,6 +136,27 @@ export const PiutangAktif: React.FC = () => {
       }
     }
   }, [popupFocusedIndex, showSearchPopup]);
+
+  useEffect(() => {
+    if (selectedInvoiceIdx === null && customerRowRefs.current[selectedCustIdx]) {
+      customerRowRefs.current[selectedCustIdx]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedCustIdx, selectedInvoiceIdx]);
+
+  useEffect(() => {
+    if (selectedInvoiceIdx !== null) {
+      const activeKey = `${selectedCustIdx}-${selectedInvoiceIdx}`;
+      if (invoiceRowRefs.current[activeKey]) {
+        invoiceRowRefs.current[activeKey]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      }
+    }
+  }, [selectedCustIdx, selectedInvoiceIdx]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -845,6 +868,9 @@ export const PiutangAktif: React.FC = () => {
             return (
               <div
                 key={cust.id}
+                ref={(el) => {
+                  customerRowRefs.current[cIdx] = el;
+                }}
                 className={`card p-0 overflow-hidden border transition-all ${isSelected ? 'card-hovered border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
                   }`}
               >
@@ -930,6 +956,9 @@ export const PiutangAktif: React.FC = () => {
                           return (
                             <tr
                               key={inv.id}
+                              ref={(el) => {
+                                invoiceRowRefs.current[`${cIdx}-${iIdx}`] = el;
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedCustIdx(cIdx);

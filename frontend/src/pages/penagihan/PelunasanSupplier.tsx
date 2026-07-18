@@ -115,6 +115,8 @@ export const PelunasanSupplier: React.FC = () => {
   const [popupFocusedIndex, setPopupFocusedIndex] = useState(0);
   const searchPopupRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const supplierRowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const purchaseRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
   useEffect(() => {
     if (showSearchPopup) {
@@ -124,6 +126,27 @@ export const PelunasanSupplier: React.FC = () => {
       }
     }
   }, [popupFocusedIndex, showSearchPopup]);
+
+  useEffect(() => {
+    if (selectedPurchaseIdx === null && supplierRowRefs.current[selectedSuppIdx]) {
+      supplierRowRefs.current[selectedSuppIdx]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedSuppIdx, selectedPurchaseIdx]);
+
+  useEffect(() => {
+    if (selectedPurchaseIdx !== null) {
+      const activeKey = `${selectedSuppIdx}-${selectedPurchaseIdx}`;
+      if (purchaseRowRefs.current[activeKey]) {
+        purchaseRowRefs.current[activeKey]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      }
+    }
+  }, [selectedSuppIdx, selectedPurchaseIdx]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -824,6 +847,9 @@ export const PelunasanSupplier: React.FC = () => {
             return (
               <div
                 key={supp.id}
+                ref={(el) => {
+                  supplierRowRefs.current[cIdx] = el;
+                }}
                 className={`card p-0 overflow-hidden border transition-all ${isSelected ? 'card-hovered border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
                   }`}
               >
@@ -893,6 +919,9 @@ export const PelunasanSupplier: React.FC = () => {
                             return (
                               <tr
                                 key={pur.id}
+                                ref={(el) => {
+                                  purchaseRowRefs.current[`${cIdx}-${pIdx}`] = el;
+                                }}
                                 onClick={() => {
                                   setSelectedSuppIdx(cIdx);
                                   setSelectedPurchaseIdx(pIdx);
