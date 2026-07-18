@@ -525,40 +525,43 @@ export const DraftSO: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Items Table */}
+                  {/* Items Card List */}
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold text-slate-750 uppercase tracking-wider">Item Barang</h4>
-                    <div className="overflow-x-auto border border-slate-200 rounded-lg max-h-[250px] overflow-y-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
-                            <th className="p-3 w-10 text-center">No</th>
-                            <th className="p-3">Kode</th>
-                            <th className="p-3">Nama Barang</th>
-                            <th className="p-3 text-right w-24">Kuantitas</th>
-                            <th className="p-3 text-right w-32">Harga Satuan</th>
-                            <th className="p-3 text-right w-32">Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200">
-                          {selectedDraftDetail.sale_items?.map((item: any, index: number) => (
-                            <tr key={item.id} className="bg-white hover:bg-slate-50 text-slate-800">
-                              <td className="p-3 text-center text-slate-400">{index + 1}</td>
-                              <td className="p-3 font-mono text-slate-650">{item.product_kode || item.product?.kode}</td>
-                              <td className="p-3 font-semibold text-slate-900">{item.product_nama || item.product?.nama}</td>
-                              <td className="p-3 text-right font-medium text-slate-755">
-                                {Number(item.qty)}
-                              </td>
-                              <td className="p-3 text-right font-mono text-slate-600">
-                                {formatCurrency(Number(item.unit_price))}
-                              </td>
-                              <td className="p-3 text-right font-mono font-bold text-slate-900">
-                                {formatCurrency(Number(item.total))}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                      {selectedDraftDetail.sale_items?.map((item: any, index: number) => {
+                        const unitPrice = Number(item.unit_price);
+                        const total = Number(item.total);
+
+                        return (
+                          <div key={item.id} className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs space-y-3">
+                            {/* Product Header */}
+                            <div className="flex justify-between items-start border-b border-slate-100 pb-2">
+                              <div>
+                                <h4 className="font-bold text-sm text-slate-800">
+                                  {item.product_nama || item.product?.nama || '-'}
+                                </h4>
+                                <p className="text-[11px] text-slate-450 font-mono mt-0.5">{item.product_kode || item.product?.kode || '-'}</p>
+                              </div>
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold border bg-blue-50 text-blue-700 border-blue-200/50">
+                                Qty: {Number(item.qty)}
+                              </span>
+                            </div>
+
+                            {/* Price Details Grid */}
+                            <div className="grid grid-cols-2 gap-4 pt-1">
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Harga Satuan</span>
+                                <strong className="text-xs font-bold text-slate-650 block">{formatCurrency(unitPrice)}</strong>
+                              </div>
+                              <div className="space-y-0.5 text-right">
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Total Nilai</span>
+                                <strong className="text-base font-extrabold text-blue-600 block">{formatCurrency(total)}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 

@@ -419,183 +419,138 @@ export const HistoryBarangMasuk: React.FC = () => {
           )}
         </div>
       ) : (
-        /* PO Detail Sheet */
-        <div className="bg-white rounded-xl shadow-xl border border-emerald-200 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
-          {/* Green Header Bar */}
-          <div className="bg-emerald-600 !text-white px-6 py-3 flex justify-between items-center border-b border-emerald-700">
-            <div className="flex items-center gap-2">
-              <div className="p-1 bg-white/10 rounded-md">
-                <FileText size={14} className="!text-white" />
-              </div>
-              <h2 className="text-xs font-bold !text-white uppercase tracking-wider">
-                Detail Penerimaan: {activePo.no_order}
-              </h2>
-            </div>
-            <button
-              onClick={() => {
-                setActivePo(null);
-                setIsInfoHidden(false);
-              }}
-              className="!text-white/80 hover:!text-white transition-colors focus:outline-none"
-            >
-              <X size={16} className="!text-white" />
-            </button>
+        /* PO Detail View (3 Cards Layout) */
+        <div className="space-y-4 animate-fade-in text-slate-800">
+          {/* Detail Page Title (Teks saja) */}
+          <div className="pb-1">
+            <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <FileText size={18} className="text-blue-600" />
+              <span>Detail Penerimaan: {activePo.no_order}</span>
+            </h1>
+            <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-emerald-600 uppercase">DITERIMA</span></p>
           </div>
 
-          {/* Body content */}
-          <div className="p-4 bg-slate-50/50 space-y-4">
-            {/* Grid for Informasi PO & Supplier */}
-            {!isInfoHidden ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                {/* Informasi PO Card */}
-                <div className="bg-gradient-to-br from-white to-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm space-y-3">
-                  <div className="border-b border-slate-100 pb-2">
-                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Informasi Penerimaan</h3>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. PO:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activePo.no_order}</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Order:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activePo.order_date)}</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Diterima:</span>
-                      <span className="text-xs font-bold text-emerald-700 mt-0.5 block">
-                        {activePo.received_at ? formatDate(activePo.received_at) : '-'}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Termin:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">
-                        {activePo.terms}
-                      </span>
-                    </div>
-                  </div>
+          {/* 3 Separate Cards Layout */}
+          {!isInfoHidden && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: Informasi Penerimaan */}
+              <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
+                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Penerimaan</h3>
                 </div>
-
-                {/* Supplier Card */}
-                <div className="bg-gradient-to-br from-white to-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm space-y-3">
-                  <div className="border-b border-slate-100 pb-2">
-                    <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Pemasok (Supplier)</h3>
+                <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-600">
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. PO</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.no_order}</span>
                   </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama:</span>
-                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activePo.supplier?.nama}</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Alamat:</span>
-                      <span className="text-xs font-medium text-slate-700 mt-0.5 block leading-relaxed">
-                        {activePo.supplier?.alamat || 'Alamat tidak dicantumkan'}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-semibold text-slate-455 tracking-wider block font-mono">Kode: {activePo.supplier?.kode || '-'}</span>
-                    </div>
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Order</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activePo.order_date)}</span>
                   </div>
-                </div>
-
-              </div>
-            ) : (
-              <div className="bg-gradient-to-r from-white to-emerald-50/30 p-4 rounded-xl border border-emerald-200 shadow-sm flex flex-wrap gap-x-8 gap-y-3 text-slate-800">
-                <div>
-                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama Supplier</span>
-                  <span className="text-xs font-bold text-slate-850 mt-0.5 block">{activePo.supplier?.nama}</span>
-                </div>
-                <div className="border-l border-emerald-100 pl-6">
-                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Diterima</span>
-                  <span className="text-xs font-bold text-emerald-700 mt-0.5 block font-mono">
-                    {activePo.received_at ? formatDate(activePo.received_at) : '-'}
-                  </span>
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Diterima</span>
+                    <span className="text-xs font-bold text-emerald-700 mt-0.5 block font-mono">{activePo.received_at ? formatDate(activePo.received_at) : '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Termin</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">{activePo.terms}</span>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* Daftar Barang Section */}
-            <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm space-y-3">
-              <div className="border-b border-slate-100 pb-2">
-                <h3 className="font-bold text-slate-855 text-xs uppercase tracking-wider">Daftar Barang yang Diterima</h3>
+              {/* Card 2: Pemasok (Supplier) */}
+              <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
+                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Pemasok (Supplier)</h3>
+                </div>
+                <div className="space-y-3.5 p-3.5 text-xs text-slate-600">
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Supplier</span>
+                    <span className="text-xs font-extrabold text-slate-850 mt-0.5 block">{activePo.supplier?.nama}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Alamat Pemasok</span>
+                    <span className="text-xs font-semibold text-slate-700 mt-0.5 block leading-normal">
+                      {activePo.supplier?.alamat || 'Alamat tidak dicantumkan'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Kode Supplier</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.supplier?.kode || '-'}</span>
+                  </div>
+                </div>
               </div>
+            </div>
+          )}
 
-              <div className="overflow-hidden rounded-lg border border-emerald-200">
+          {/* Card 3: Daftar Barang */}
+          <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
+            <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
+              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang yang Diterima</h3>
+            </div>
+            <div className="p-4">
+              <div className="overflow-hidden rounded-lg border border-slate-200">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-emerald-600 text-white font-bold text-xs uppercase">
+                    <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
                       <th className="p-3 w-12 text-center">#</th>
                       <th className="p-3 w-32 text-center">Kode</th>
                       <th className="p-3">Nama Barang</th>
-                      <th className="p-3 text-center w-20">Qty</th>
+                      <th className="p-3 text-center w-24">Qty</th>
                       <th className="p-3 text-right w-36">Harga Beli</th>
                       <th className="p-3 text-right w-40">Subtotal</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-emerald-100 bg-white">
+                  <tbody className="divide-y divide-slate-100 bg-white">
                     {activePo.purchase_items.map((item: any, idx: number) => (
-                      <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-800">
-                        <td className="p-3 text-center text-slate-500 font-semibold">{idx + 1}</td>
+                      <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-855">
+                        <td className="p-3 text-center font-semibold text-slate-550">{idx + 1}</td>
                         <td className="p-3 text-center">
-                          <span className="px-2.5 py-1 text-[10px] font-bold font-mono rounded-lg bg-emerald-50/50 text-emerald-700 border border-emerald-100">
+                          <span className="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-slate-100 text-slate-700 border border-slate-200/60">
                             {item.product?.kode || '-'}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-slate-900">{item.product?.nama || '-'}</td>
+                        <td className="p-3 font-bold text-slate-800">{item.product?.nama || '-'}</td>
                         <td className="p-3 text-center font-bold text-slate-700">{Number(item.qty)}</td>
-                        <td className="p-3 text-right font-semibold text-slate-550">
-                          {formatCurrency(Number(item.harga_beli))}
-                        </td>
-                        <td className="p-3 text-right font-bold text-slate-900">
-                          {formatCurrency(Number(item.qty) * Number(item.harga_beli))}
-                        </td>
+                        <td className="p-3 text-right font-semibold text-slate-600">{formatCurrency(Number(item.harga_beli))}</td>
+                        <td className="p-3 text-right font-bold text-slate-900">{formatCurrency(Number(item.qty) * Number(item.harga_beli))}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-
-                {/* Table summary subtotal block */}
-                <div className="bg-slate-50/50 border-t border-emerald-200 p-3.5 flex flex-col items-end gap-1.5">
-                  <div className="flex gap-4 text-xs font-bold items-center">
-                    <span className="text-slate-800">Total Barang Masuk:</span>
-                    <span className="text-emerald-600 font-black text-sm font-mono">
+                <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
+                  <div className="flex gap-6 items-center">
+                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Total Barang Masuk</span>
+                    <span className="text-base font-extrabold text-emerald-600 font-mono">
                       {formatCurrency(Number(activePo.subtotal))}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Bottom Actions Buttons */}
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsInfoHidden((prev) => !prev)}
-                className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white flex items-center gap-1.5"
-              >
-                <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
-                <kbd className="text-[10px] text-slate-400 font-bold font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">F1</kbd>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActivePo(null);
-                  setIsInfoHidden(false);
-                }}
-                className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white"
-              >
-                Tutup <kbd className="text-[10px] text-slate-400 font-bold ml-1 font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">Esc</kbd>
-              </button>
-            </div>
-
+          {/* Bottom Actions Buttons */}
+          <div className="flex justify-end gap-3 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsInfoHidden((prev) => !prev)}
+              className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+            >
+              <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+              <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActivePo(null);
+                setIsInfoHidden(false);
+              }}
+              className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+            >
+              <span>Tutup</span>
+              <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
+            </button>
           </div>
         </div>
       )}

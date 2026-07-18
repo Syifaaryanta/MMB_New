@@ -488,127 +488,140 @@ export const HistoryReturn: React.FC = () => {
           )}
         </div>
       ) : (
-        /* Detail Sheet Component (Consistent with HistoryBarangInOut details) */
-        <div className={`bg-white rounded-xl shadow-xl border overflow-hidden animate-scale-in text-slate-800 flex flex-col ${
-          activeReturn.type === 'purchase' ? 'border-emerald-200' : 'border-rose-200'
-        }`}>
-          {/* Header Bar */}
-          <div className={`px-6 py-3 flex justify-between items-center border-b !text-white ${
-            activeReturn.type === 'purchase' ? 'bg-emerald-600 border-emerald-700' : 'bg-rose-600 border-rose-700'
-          }`}>
-            <div className="flex items-center gap-2">
-              <div className="p-1 bg-white/10 rounded-md">
-                <ArrowRightLeft size={14} className="!text-white" />
-              </div>
-              <h2 className="text-xs font-bold !text-white uppercase tracking-wider">
-                Detail Retur {activeReturn.type === 'purchase' ? 'Pembelian PO' : 'Penjualan SO'}: {activeReturn.no_retur}
-              </h2>
-            </div>
-            <button
-              onClick={() => setActiveReturn(null)}
-              className="!text-white/80 hover:!text-white transition-colors focus:outline-none"
-            >
-              <X size={16} className="!text-white" />
-            </button>
+        /* Detail View (3 Cards Layout) */
+        <div className="space-y-4 animate-fade-in text-slate-800">
+          {/* Detail Page Title (Teks saja) */}
+          <div className="pb-1">
+            <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <ArrowRightLeft size={18} className="text-blue-600" />
+              <span>Detail Retur {activeReturn.type === 'purchase' ? 'Pembelian PO' : 'Penjualan SO'}: {activeReturn.no_retur}</span>
+            </h1>
+            <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-blue-650 uppercase">PROSES RETUR</span></p>
           </div>
 
-          {/* Body Content */}
-          <div className="p-6 space-y-6 bg-slate-50/50">
-            {/* Metadata Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-              <div>
-                <p className="text-[10px] text-slate-400 uppercase font-bold">Nomor Transaksi Asal</p>
-                <p className="text-xs font-bold text-slate-800 mt-0.5 font-mono">{activeReturn.no_order}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card 1: Informasi Retur */}
+            <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+              <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
+                <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Retur</h3>
               </div>
-              {activeReturn.no_faktur && (
+              <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-650">
                 <div>
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Nomor Faktur</p>
-                  <p className="text-xs font-bold text-slate-800 mt-0.5 font-mono">{activeReturn.no_faktur}</p>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Transaksi Asal</span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.no_order}</span>
                 </div>
-              )}
-              <div>
-                <p className="text-[10px] text-slate-400 uppercase font-bold">Tanggal Retur</p>
-                <p className="text-xs font-bold text-slate-800 mt-0.5">{formatDate(activeReturn.retur_date)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 uppercase font-bold">Metode Kompensasi</p>
-                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mt-0.5 ${
-                  activeReturn.type === 'purchase' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
-                }`}>
-                  {getMetodeLabel(activeReturn.metode_kompensasi, activeReturn.type)}
-                </span>
-              </div>
-              <div className="col-span-2 md:col-span-4 mt-1">
-                <p className="text-[10px] text-slate-400 uppercase font-bold">
-                  {activeReturn.type === 'purchase' ? 'Nama Supplier' : 'Nama Customer'}
-                </p>
-                <p className="text-xs font-bold text-slate-800 mt-0.5">{activeReturn.party_nama}</p>
+                {activeReturn.no_faktur && (
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Faktur</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.no_faktur}</span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Retur</span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activeReturn.retur_date)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Metode Kompensasi</span>
+                  <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mt-1 ${
+                    activeReturn.type === 'purchase' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                  }`}>
+                    {getMetodeLabel(activeReturn.metode_kompensasi, activeReturn.type)}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Items List Table */}
-            <div className={`border rounded-xl overflow-hidden bg-white shadow-sm ${
-              activeReturn.type === 'purchase' ? 'border-emerald-100' : 'border-rose-100'
-            }`}>
-              <div className={`px-4 py-3 flex items-center justify-between border-b ${
-                activeReturn.type === 'purchase' ? 'bg-emerald-50/30 border-emerald-100' : 'bg-rose-50/30 border-rose-100'
-              }`}>
-                <h3 className="font-bold text-slate-850 text-xs uppercase tracking-wider">
-                  Daftar Barang Yang Diretur
+            {/* Card 2: Pihak Terkait */}
+            <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+              <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
+                <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                  {activeReturn.type === 'purchase' ? 'Pemasok (Supplier)' : 'Data Customer'}
                 </h3>
               </div>
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                    <th className="p-3 w-12 text-center">No</th>
-                    <th className="p-3">Kode</th>
-                    <th className="p-3">Nama Barang</th>
-                    <th className="p-3 text-center">Jumlah Retur</th>
-                    <th className="p-3 text-center">Kondisi</th>
-                    <th className="p-3 text-right">Harga Satuan</th>
-                    <th className="p-3 text-right">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {activeReturn.items?.map((item, idx) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50">
-                      <td className="p-3 text-center text-slate-400 font-mono">{idx + 1}</td>
-                      <td className="p-3 text-slate-500 font-mono">{item.product_kode}</td>
-                      <td className="p-3 font-semibold text-slate-850">{item.product_nama}</td>
-                      <td className="p-3 text-center font-bold text-slate-700">
-                        {Number(item.qty)} {item.product?.satuan || 'pcs'}
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                          item.kondisi === 'bagus' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'
-                        }`}>
-                          {item.kondisi}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right text-slate-600">{formatCurrency(Number(item.unit_price))}</td>
-                      <td className="p-3 text-right font-bold text-slate-800">{formatCurrency(Number(item.total))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Actions / Total Footer */}
-            <div className="flex items-center justify-between pt-2">
-              <div className="text-left">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Total Nilai Retur</span>
-                <p className={`text-base font-extrabold ${
-                  activeReturn.type === 'purchase' ? 'text-emerald-600' : 'text-rose-600'
-                }`}>{formatCurrency(activeReturn.total)}</p>
+              <div className="space-y-3.5 p-3.5 text-xs text-slate-650">
+                <div>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama</span>
+                  <span className="text-xs font-extrabold text-slate-855 mt-0.5 block">{activeReturn.party_nama}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">ID Pihak</span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.party_id}</span>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setActiveReturn(null)}
-                className="px-5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm"
-              >
-                Tutup (Esc)
-              </button>
             </div>
+          </div>
+
+          {/* Card 3: Daftar Barang */}
+          <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
+            <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
+              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang yang Diretur</h3>
+            </div>
+            <div className="p-4">
+              <div className="overflow-hidden rounded-lg border border-slate-200">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
+                      <th className="p-3 w-12 text-center">#</th>
+                      <th className="p-3 w-32 text-center">Kode</th>
+                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3 text-center w-24">Jumlah Retur</th>
+                      <th className="p-3 text-center w-24">Kondisi</th>
+                      <th className="p-3 text-right w-32">Harga Satuan</th>
+                      <th className="p-3 text-right w-36">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {activeReturn.items?.map((item, idx) => (
+                      <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-855">
+                        <td className="p-3 text-center font-semibold text-slate-550">{idx + 1}</td>
+                        <td className="p-3 text-center">
+                          <span className="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-slate-100 text-slate-700 border border-slate-200/60">
+                            {item.product_kode}
+                          </span>
+                        </td>
+                        <td className="p-3 font-bold text-slate-805">{item.product_nama}</td>
+                        <td className="p-3 text-center font-bold text-slate-700">
+                          {Number(item.qty)} {item.product?.satuan || 'pcs'}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                            item.kondisi === 'bagus' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {item.kondisi}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-semibold text-slate-600">{formatCurrency(Number(item.unit_price))}</td>
+                        <td className="p-3 text-right font-bold text-slate-900">{formatCurrency(Number(item.total))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
+                  <div className="flex gap-6 items-center">
+                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Total Nilai Retur</span>
+                    <span className={`text-base font-extrabold font-mono ${
+                      activeReturn.type === 'purchase' ? 'text-emerald-600' : 'text-rose-600'
+                    }`}>
+                      {formatCurrency(Number(activeReturn.total))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Actions Buttons */}
+          <div className="flex justify-end gap-3 pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveReturn(null);
+              }}
+              className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+            >
+              <span>Tutup</span>
+              <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
+            </button>
           </div>
         </div>
       )}

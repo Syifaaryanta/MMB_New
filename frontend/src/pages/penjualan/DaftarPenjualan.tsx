@@ -591,138 +591,103 @@ export const DaftarPenjualan: React.FC = () => {
             )}
           </div>
         ) : (
-          /* SO Detail Sheet */
-          <div className="bg-white rounded-xl shadow-xl border border-blue-200 overflow-hidden animate-scale-in text-slate-800 flex flex-col">
-            {/* Blue Header Bar */}
-            <div className="bg-primary-600 text-white px-4 py-2.5 flex justify-between items-center border-b border-primary-700">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-white/10 rounded-md">
-                  <FileText size={14} className="text-white" />
-                </div>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-white">
-                  Detail Order: {activeSo.no_order}
-                </h2>
-              </div>
-              <button
-                onClick={() => setActiveSo(null)}
-                className="text-white/80 hover:text-white transition-colors focus:outline-none"
-              >
-                <X size={16} />
-              </button>
+          /* SO Detail View (3 Cards Layout) */
+          <div className="space-y-4 animate-fade-in text-slate-800">
+            {/* Detail Page Title (Teks saja) */}
+            <div className="pb-1">
+              <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <FileText size={18} className="text-blue-600" />
+                <span>Detail Order: {activeSo.no_order}</span>
+              </h1>
+              <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-blue-600 uppercase">{activeSo.status}</span></p>
             </div>
 
-            {/* Body content */}
-            <div className="p-4 bg-slate-50/50 space-y-4">
-              {/* Grid for Informasi Order & Customer */}
-              {!isInfoHidden ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  {/* Informasi Order Card */}
-                  <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
-                    <div className="border-b border-slate-100 pb-2">
-                      <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Informasi Order</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3.5">
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Order:</span>
-                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_order}</span>
-                      </div>
-                      
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Faktur:</span>
-                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.no_faktur || '-'}</span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal:</span>
-                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activeSo.order_date)}</span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Pengiriman:</span>
-                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">
-                          {activeSo.diantar ? 'Diantar' : 'Diambil'}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Jatuh Tempo:</span>
-                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">
-                          {activeSo.limit_bulan !== undefined ? `${activeSo.limit_bulan + 1} Bulan` : '-'}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Status Cetak:</span>
-                        <span className={`text-xs font-bold mt-0.5 block ${activeSo.print_count && activeSo.print_count > 0 ? 'text-green-650 font-semibold' : 'text-amber-650 font-semibold'}`}>
-                          {activeSo.print_count && activeSo.print_count > 0 ? `Sudah Dicetak (${activeSo.print_count}x)` : 'Belum Dicetak'}
-                        </span>
-                      </div>
-                    </div>
+            {/* 3 Separate Cards Layout */}
+            {!isInfoHidden && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Card 1: Informasi Order */}
+                <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                  <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
+                    <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Order</h3>
                   </div>
-
-                  {/* Customer Card */}
-                  <div className="bg-gradient-to-br from-white to-blue-50/50 p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
-                    <div className="border-b border-slate-100 pb-2">
-                      <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Customer</h3>
+                  <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-600">
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Order</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeSo.no_order}</span>
                     </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama:</span>
-                        <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activeSo.customer_nama}</span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Alamat:</span>
-                        <span className="text-xs font-medium text-slate-700 mt-0.5 block leading-relaxed">
-                          {activeSo.customer_alamat || 'Alamat tidak dicantumkan'}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">No. Telp:</span>
-                        <span className="text-xs font-semibold text-slate-700 mt-0.5 block font-mono">
-                          {activeSo.customer_telp || '-'}
-                        </span>
-                      </div>
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Faktur</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeSo.no_faktur || '-'}</span>
                     </div>
-                  </div>
-
-                </div>
-              ) : (
-                <div className="bg-gradient-to-r from-white to-blue-50/30 p-4 rounded-xl border border-blue-200 shadow-sm flex flex-wrap gap-x-8 gap-y-3 text-slate-800">
-                  <div>
-                    <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nama Customer</span>
-                    <span className="text-xs font-bold text-slate-850 mt-0.5 block">{activeSo.customer_nama}</span>
-                  </div>
-                  <div className="border-l border-blue-100 pl-6">
-                    <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Order</span>
-                    <span className="text-xs font-bold text-slate-850 mt-0.5 block font-mono">{formatDate(activeSo.order_date)}</span>
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Order</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activeSo.order_date)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Pengiriman</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                        {activeSo.diantar ? 'Diantar' : 'Diambil'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Jatuh Tempo</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                        {activeSo.limit_bulan !== undefined ? `${activeSo.limit_bulan + 1} Bulan` : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Status Cetak</span>
+                      <span className={`text-xs font-bold mt-0.5 block ${activeSo.print_count && activeSo.print_count > 0 ? 'text-green-650' : 'text-amber-600'}`}>
+                        {activeSo.print_count && activeSo.print_count > 0 ? `Sudah Cetak (${activeSo.print_count}x)` : 'Belum Cetak'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Daftar Barang Section */}
-              <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-sm space-y-3">
-                <div className="border-b border-slate-100 pb-2">
-                  <h3 className="font-bold text-slate-850 text-xs uppercase tracking-wider">Daftar Barang</h3>
+                {/* Card 2: Data Customer */}
+                <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                  <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
+                    <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Data Customer</h3>
+                  </div>
+                  <div className="space-y-3.5 p-3.5 text-xs text-slate-600">
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Customer</span>
+                      <span className="text-xs font-extrabold text-slate-850 mt-0.5 block">{activeSo.customer_nama}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Alamat Pengiriman</span>
+                      <span className="text-xs font-semibold text-slate-700 mt-0.5 block leading-normal">
+                        {activeSo.customer_alamat || 'Alamat tidak dicantumkan'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Telepon / Kontak</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeSo.customer_telp || '-'}</span>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            )}
 
-                <div className="overflow-hidden rounded-lg border border-blue-200">
+            {/* Card 3: Daftar Barang */}
+            <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
+              <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
+                <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang</h3>
+              </div>
+              <div className="p-4">
+                <div className="overflow-hidden rounded-lg border border-slate-200">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-primary-600 text-white font-bold text-xs uppercase">
+                      <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
                         <th className="p-3 w-12 text-center">#</th>
                         <th className="p-3 w-32 text-center">Kode</th>
                         <th className="p-3">Nama Barang</th>
-                        <th className="p-3 text-center w-20">Qty</th>
+                        <th className="p-3 text-center w-24">Qty</th>
                         <th className="p-3 text-right w-36">Harga Satuan</th>
-                        <th className="p-3 text-right w-40">Total</th>
+                        <th className="p-3 text-right w-40">Total Harga</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-blue-100 bg-white">
+                    <tbody className="divide-y divide-slate-100 bg-white">
                       {activeSo.sale_items.map((item: any, idx: number) => {
                         const returnedQty = activeSo.sale_returns?.reduce((sum: number, ret: any) => {
                           const retItem = ret.items?.find((it: any) => it.product_id === item.product_id);
@@ -731,23 +696,23 @@ export const DaftarPenjualan: React.FC = () => {
                         const isReturned = returnedQty > 0;
 
                         return (
-                          <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-800">
-                            <td className="p-3 text-center text-slate-500 font-semibold">{idx + 1}</td>
+                          <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-855">
+                            <td className="p-3 text-center font-semibold text-slate-550">{idx + 1}</td>
                             <td className="p-3 text-center">
-                              <span className="px-2.5 py-1 text-[10px] font-bold font-mono rounded-lg bg-blue-50/50 text-primary-700 border border-blue-100">
+                              <span className="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-slate-100 text-slate-700 border border-slate-200/60">
                                 {item.product_kode}
                               </span>
                             </td>
-                            <td className={`p-3 font-bold ${isReturned ? 'text-red-600' : 'text-slate-900'}`}>{item.product_nama}</td>
-                            <td className={`p-3 text-center font-bold ${isReturned ? 'text-red-600' : 'text-slate-700'}`}>
+                            <td className={`p-3 font-bold ${isReturned ? 'text-rose-700 font-extrabold' : 'text-slate-800'}`}>{item.product_nama}</td>
+                            <td className={`p-3 text-center font-bold ${isReturned ? 'text-rose-700' : 'text-slate-700'}`}>
                               {Number(item.qty)}
                               {isReturned && (
-                                <span className="text-[10px] block text-red-500 font-semibold mt-0.5">
+                                <span className="text-[10px] block text-red-500 font-bold mt-0.5">
                                   (Retur: {returnedQty})
                                 </span>
                               )}
                             </td>
-                            <td className="p-3 text-right font-semibold text-slate-550">
+                            <td className="p-3 text-right font-semibold text-slate-600">
                               {formatCurrency(Number(item.unit_price))}
                             </td>
                             <td className="p-3 text-right font-bold text-slate-900">
@@ -758,56 +723,54 @@ export const DaftarPenjualan: React.FC = () => {
                       })}
                     </tbody>
                   </table>
-                  
-                  {/* Table summary subtotal block */}
-                  <div className="bg-slate-50/50 border-t border-blue-200 p-3.5 flex flex-col items-end gap-1.5">
+                  <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
                     {Number(activeSo.extra_charge_amount) !== 0 && (
-                      <div className="flex gap-4 text-xs font-semibold text-slate-600">
+                      <div className="flex gap-4 text-xs font-semibold text-slate-650">
                         <span>Penyesuaian ({activeSo.extra_charge_desc}):</span>
                         <span className="font-mono text-slate-800">{formatCurrency(Number(activeSo.extra_charge_amount))}</span>
                       </div>
                     )}
-                    <div className="flex gap-4 text-xs font-bold items-center">
-                      <span className="text-slate-800">Subtotal:</span>
-                      <span className="text-emerald-600 font-black text-sm font-mono">
+                    <div className="flex gap-6 items-center">
+                      <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Subtotal Keseluruhan</span>
+                      <span className="text-base font-extrabold text-blue-600 font-mono">
                         {formatCurrency(Number(activeSo.subtotal))}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Bottom Actions Buttons */}
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsInfoHidden((prev) => !prev)}
-                  className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white flex items-center gap-1.5"
-                >
-                  <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
-                  <kbd className="text-[10px] text-slate-400 font-bold font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">F1</kbd>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveSo(null);
-                    setIsInfoHidden(false);
-                  }}
-                  className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white"
-                >
-                  Tutup <kbd className="text-[10px] text-slate-400 font-bold ml-1 font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">Esc</kbd>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmReissue(true)}
-                  className="px-5 py-2.5 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md flex items-center gap-2"
-                >
-                  <Printer size={14} />
-                  <span>Print</span>
-                  <kbd className="text-[10px] text-white/70 font-bold font-mono uppercase bg-primary-700/80 px-1 py-0.5 rounded">P</kbd>
-                </button>
-              </div>
-
+            {/* Bottom Actions Buttons (Styled beautifully) */}
+            <div className="flex justify-end gap-3 pt-3">
+              <button
+                type="button"
+                onClick={() => setIsInfoHidden((prev) => !prev)}
+                className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+              >
+                <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+                <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSo(null);
+                  setIsInfoHidden(false);
+                }}
+                className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+              >
+                <span>Tutup</span>
+                <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirmReissue(true)}
+                className="px-6 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-extrabold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/10 flex items-center gap-2 focus:outline-none"
+              >
+                <Printer size={15} />
+                <span>Cetak Nota</span>
+                <kbd className="text-[10px] text-blue-200 font-bold font-mono uppercase bg-blue-700 px-1.5 py-0.5 rounded ml-1">P</kbd>
+              </button>
             </div>
           </div>
         )}
