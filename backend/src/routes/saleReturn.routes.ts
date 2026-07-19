@@ -373,3 +373,88 @@ saleReturnRouter.patch('/:id/print', authenticate, async (req: AuthRequest, res:
     res.json(updatedReturn);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
+
+// DELETE /api/sale-returns/:id - Cancel/Delete a sales return
+saleReturnRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+
+    const saleReturn = await prisma.saleReturn.findUnique({
+      where: { id },
+      include: { 
+        items: true,
+        sale: true
+      },
+    });
+
+    if (!saleReturn) {
+      res.status(404).json({ error: 'Retur tidak ditemukan' });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Decrement stock back if item condition was 'bagus'
+      for (const item of saleReturn.items) {
+        if (item.kondisi === 'bagus') {
+          const product = await tx.product.findUnique({
+            where: { id: item.product_id },
+          });
+
+          if (product) {
+            const stockBefore = Number(product.stok);
+            const qtyDelta = Number(item.qty);
+            const stockAfter = stockBefore - qtyDelta;
+
+            await tx.product.update({
+              where: { id: item.product_id },
+              data: {
+                stok: {
+                  decrement: qtyDelta,
+                },
+              },
+            });
+
+            // Create StockAdjustment record
+            await tx.stockAdjustment.create({
+              data: {
+                id: uuidv4(),
+                product_id: product.id,
+                product_kode: product.kode,
+                product_nama: product.nama,
+                adjustment_date: new Date(),
+                stock_before: stockBefore,
+                stock_after: stockAfter,
+                qty_delta: -qtyDelta, // negative delta
+                staff_nama: req.user?.nama || 'System',
+                alasan: `Pembatalan Retur Penjualan (${saleReturn.no_retur})`,
+                created_by: req.user?.id || null,
+              },
+            });
+          }
+        }
+      }
+
+      // 2. Increment Customer Receivable (Piutang) if metode_kompensasi was 'potong_piutang' and it was a credit sale
+      if (saleReturn.metode_kompensasi === 'potong_piutang' && Number(saleReturn.sale.limit_bulan) > 0) {
+        await tx.customer.update({
+          where: { id: saleReturn.sale.customer_id },
+          data: {
+            saldo_piutang: {
+              increment: Number(saleReturn.total),
+            },
+          },
+        });
+      }
+
+      // 3. Delete the sales return (cascades to items)
+      await tx.saleReturn.delete({
+        where: { id },
+      });
+    });
+
+    res.json({ message: 'Retur penjualan berhasil dibatalkan' });
+  } catch (err) {
+    console.error('Error deleting sales return:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});

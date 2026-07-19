@@ -363,3 +363,71 @@ purchaseReturnRouter.patch('/:id/print', authenticate, async (req: AuthRequest, 
     res.json(purchaseReturn);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
+
+// DELETE /api/purchase-returns/:id - Cancel/Delete a purchase return and restore stock
+purchaseReturnRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+
+    const purchaseReturn = await prisma.purchaseReturn.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+
+    if (!purchaseReturn) {
+      res.status(404).json({ error: 'Retur tidak ditemukan' });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Increment Stock back (since we are cancelling the return to supplier, the stock is returned to our warehouse)
+      for (const item of purchaseReturn.items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.product_id },
+        });
+
+        if (product) {
+          const stockBefore = Number(product.stok);
+          const qtyDelta = Number(item.qty);
+          const stockAfter = stockBefore + qtyDelta;
+
+          await tx.product.update({
+            where: { id: item.product_id },
+            data: {
+              stok: {
+                increment: qtyDelta,
+              },
+            },
+          });
+
+          // Create StockAdjustment record
+          await tx.stockAdjustment.create({
+            data: {
+              id: uuidv4(),
+              product_id: product.id,
+              product_kode: product.kode,
+              product_nama: product.nama,
+              adjustment_date: new Date(),
+              stock_before: stockBefore,
+              stock_after: stockAfter,
+              qty_delta: qtyDelta,
+              staff_nama: req.user?.nama || 'System',
+              alasan: `Pembatalan Retur Pembelian (${purchaseReturn.no_retur})`,
+              created_by: req.user?.id || null,
+            },
+          });
+        }
+      }
+
+      // 2. Delete the purchase return (cascades to items)
+      await tx.purchaseReturn.delete({
+        where: { id },
+      });
+    });
+
+    res.json({ message: 'Retur pembelian berhasil dibatalkan dan stok dikembalikan' });
+  } catch (err) {
+    console.error('Error deleting purchase return:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});

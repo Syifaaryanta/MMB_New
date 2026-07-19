@@ -143,19 +143,10 @@ export const EditOrderPO: React.FC = () => {
 
   useEffect(() => {
     if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
-      const container = tableContainerRef.current;
-      const row = activeRowRef.current;
-      if (container && row) {
-        const containerTop = container.scrollTop;
-        const containerBottom = containerTop + container.clientHeight;
-        const rowTop = row.offsetTop;
-        const rowBottom = rowTop + row.offsetHeight;
-        if (rowTop < containerTop) {
-          container.scrollTo({ top: rowTop - 8, behavior: 'smooth' });
-        } else if (rowBottom > containerBottom) {
-          container.scrollTo({ top: rowBottom - container.clientHeight + 8, behavior: 'smooth' });
-        }
-      }
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
     }
   }, [selectedRowIdx, activeStep]);
 
@@ -573,12 +564,20 @@ export const EditOrderPO: React.FC = () => {
   }, { enableOnFormTags: true });
 
   // Delete row shortcut when a row is selected
-  useHotkeys('del', (e) => {
-    e.preventDefault();
-    if (activePo && selectedRowIdx !== null) {
+  useHotkeys('delete, del', (e) => {
+    const activeEl = document.activeElement;
+    const isFormTag = activeEl && (
+      activeEl.tagName === 'INPUT' || 
+      activeEl.tagName === 'TEXTAREA' || 
+      activeEl.tagName === 'SELECT'
+    );
+    if (isFormTag) return;
+
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
       deleteRow(selectedRowIdx);
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: true }, [activeStep, selectedRowIdx]);
 
   // Table row navigation arrows
   useHotkeys('up', (e) => {
@@ -897,7 +896,7 @@ export const EditOrderPO: React.FC = () => {
               <div
                 ref={tableContainerRef}
                 tabIndex={0}
-                className="overflow-x-auto max-h-[360px] overflow-y-auto outline-none"
+                className="overflow-x-auto max-h-[360px] overflow-y-auto outline-none no-focus-outline"
               >
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>

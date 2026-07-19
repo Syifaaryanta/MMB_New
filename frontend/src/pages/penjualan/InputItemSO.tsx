@@ -569,12 +569,20 @@ export const InputItemSO: React.FC = () => {
   }, { enableOnFormTags: true });
 
   // Delete row
-  useHotkeys('del', (e) => {
-    e.preventDefault();
-    if (selectedRowIdx !== null) {
+  useHotkeys('delete, del', (e) => {
+    const activeEl = document.activeElement;
+    const isFormTag = activeEl && (
+      activeEl.tagName === 'INPUT' || 
+      activeEl.tagName === 'TEXTAREA' || 
+      activeEl.tagName === 'SELECT'
+    );
+    if (isFormTag) return;
+
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
       deleteRow(selectedRowIdx);
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: true }, [activeStep, selectedRowIdx]);
 
   // Escape handling
   useHotkeys('esc', (e) => {

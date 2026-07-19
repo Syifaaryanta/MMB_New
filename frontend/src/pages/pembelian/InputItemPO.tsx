@@ -360,11 +360,19 @@ export const InputItemPO: React.FC = () => {
 
   // Delete row shortcut when a row is selected
   useHotkeys('delete, del', (e) => {
-    e.preventDefault();
-    if (selectedRowIdx !== null) {
+    const activeEl = document.activeElement;
+    const isFormTag = activeEl && (
+      activeEl.tagName === 'INPUT' || 
+      activeEl.tagName === 'TEXTAREA' || 
+      activeEl.tagName === 'SELECT'
+    );
+    if (isFormTag) return;
+
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
       deleteRow(selectedRowIdx);
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: true }, [activeStep, selectedRowIdx]);
 
   // Up/Down table arrows
   useHotkeys('up', (e) => {

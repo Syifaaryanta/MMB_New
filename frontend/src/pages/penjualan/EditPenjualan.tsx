@@ -150,19 +150,10 @@ export const EditPenjualan: React.FC = () => {
 
   useEffect(() => {
     if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
-      const container = tableContainerRef.current;
-      const row = activeRowRef.current;
-      if (container && row) {
-        const containerTop = container.scrollTop;
-        const containerBottom = containerTop + container.clientHeight;
-        const rowTop = row.offsetTop;
-        const rowBottom = rowTop + row.offsetHeight;
-        if (rowTop < containerTop) {
-          container.scrollTo({ top: rowTop - 8, behavior: 'smooth' });
-        } else if (rowBottom > containerBottom) {
-          container.scrollTo({ top: rowBottom - container.clientHeight + 8, behavior: 'smooth' });
-        }
-      }
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
     }
   }, [selectedRowIdx, activeStep]);
 
@@ -688,26 +679,6 @@ export const EditPenjualan: React.FC = () => {
     }
   };
 
-  const handleGlobalKeyDown = (e: React.KeyboardEvent) => {
-    if (activeStep === 'table' && selectedRowIdx !== null) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedRowIdx((prev) => (prev !== null && prev < items.length - 1) ? prev + 1 : prev);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedRowIdx((prev) => (prev !== null && prev > 0) ? prev - 1 : prev);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setSelectedRowIdx(null);
-        setActiveStep('search');
-        searchInputRef.current?.focus();
-      } else if (e.key === 'Delete') {
-        e.preventDefault();
-        deleteRow(selectedRowIdx);
-      }
-    }
-  };
-
   // Keyboard Shortcuts
   // F1: Focus customer search
   useHotkeys('f1', (e) => {
@@ -783,12 +754,20 @@ export const EditPenjualan: React.FC = () => {
   }, { enableOnFormTags: true });
 
   // Delete row shortcut
-  useHotkeys('del', (e) => {
-    e.preventDefault();
-    if (selectedRowIdx !== null) {
+  useHotkeys('delete, del', (e) => {
+    const activeEl = document.activeElement;
+    const isFormTag = activeEl && (
+      activeEl.tagName === 'INPUT' || 
+      activeEl.tagName === 'TEXTAREA' || 
+      activeEl.tagName === 'SELECT'
+    );
+    if (isFormTag) return;
+
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
       deleteRow(selectedRowIdx);
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: true }, [activeStep, selectedRowIdx]);
 
   // Escape handling
   useHotkeys('esc', (e) => {
@@ -871,7 +850,7 @@ export const EditPenjualan: React.FC = () => {
   const adjustmentDesc = items.filter(item => item.is_adjustment).map(item => item.product_nama).join(', ');
 
   return (
-    <div className="space-y-6" onKeyDown={handleGlobalKeyDown}>
+    <div className="space-y-6">
       <div className="print:hidden space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1131,7 +1110,7 @@ export const EditPenjualan: React.FC = () => {
                   <div
                     ref={tableContainerRef}
                     tabIndex={0}
-                    className="overflow-x-auto max-h-[360px] overflow-y-auto outline-none"
+                    className="overflow-x-auto max-h-[360px] overflow-y-auto outline-none no-focus-outline"
                   >
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>

@@ -606,41 +606,41 @@ export const DraftPO: React.FC = () => {
       {showCompleteConfirmModal && selectedDraftDetail && (
         <ModalPortal>
           <div className="fixed inset-0 z-[60] flex items-center justify-center modal-overlay p-4">
-          <div
-            tabIndex={0}
-            ref={(el) => el?.focus()}
-            onKeyDown={handleCompleteConfirmModalKeyDown}
-            className="bg-white rounded-xl p-6 max-w-md w-full mx-auto shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
-          >
-            <div className="flex flex-col items-center justify-center gap-2 text-emerald-400 border-b border-slate-100 pb-3 mb-4 text-center">
-              <CheckSquare size={28} className="text-emerald-400" />
-              <h3 className="text-lg font-bold text-slate-900">Selesaikan Purchase Order</h3>
-            </div>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6 font-medium text-center">
-              PO ini akan diselesaikan dan datanya akan masuk ke antrean <strong className="text-slate-900">Menu Receiving</strong>.
-              Stok di gudang tidak akan bertambah sebelum barang fisik secara resmi diterima.
-            </p>
-            <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowCompleteConfirmModal(false)}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
-              >
-                Batal (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCompleteConfirmModal(false);
-                  handleCompletePO(selectedDraftDetail.id);
-                }}
-                className="px-4 py-2 rounded-lg bg-emerald-600 !text-white text-xs font-bold hover:bg-emerald-500 transition-all shadow-md shadow-emerald-500/10 font-bold"
-              >
-                Selesaikan (Y)
-              </button>
+            <div
+              tabIndex={0}
+              ref={(el) => el?.focus()}
+              onKeyDown={handleCompleteConfirmModalKeyDown}
+              className="bg-white rounded-xl p-6 max-w-md w-full mx-auto shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
+            >
+              <div className="flex flex-col items-center justify-center gap-2 text-emerald-400 border-b border-slate-100 pb-3 mb-4 text-center">
+                <CheckSquare size={28} className="text-emerald-400" />
+                <h3 className="text-lg font-bold text-slate-900">Selesaikan Purchase Order</h3>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed mb-6 font-medium text-center">
+                PO ini akan diselesaikan dan datanya akan masuk ke antrean <strong className="text-slate-900">Menu Receiving</strong>.
+                Stok di gudang tidak akan bertambah sebelum barang fisik secara resmi diterima.
+              </p>
+              <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCompleteConfirmModal(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCompleteConfirmModal(false);
+                    handleCompletePO(selectedDraftDetail.id);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 !text-white text-xs font-bold hover:bg-emerald-500 transition-all shadow-md shadow-emerald-500/10 font-bold"
+                >
+                  Selesaikan (Y)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -695,9 +695,8 @@ export const DraftPO: React.FC = () => {
 
       {/* Toast Alert */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${
-          toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+          }`}>
           {toast.type === 'success' ? (
             <CheckCircle className="w-4 h-4 shrink-0 text-white" />
           ) : (

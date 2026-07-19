@@ -124,6 +124,13 @@ export const ReturPenjualan: React.FC = () => {
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  // History Selection Popup States
+  const [showHistoryPopup, setShowHistoryPopup] = useState(false);
+  const [historyPopupProduct, setHistoryPopupProduct] = useState<Product | null>(null);
+  const [historyPopupList, setHistoryPopupList] = useState<PurchaseHistoryItem[]>([]);
+  const [focusedHistoryIdx, setFocusedHistoryIdx] = useState(0);
+  const historyPopupRef = useRef<HTMLDivElement>(null);
+
   // Refs for focusing
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const productSearchRef = useRef<HTMLInputElement>(null);
@@ -138,6 +145,7 @@ export const ReturPenjualan: React.FC = () => {
   const catatanInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const activeCustItemRef = useRef<HTMLButtonElement | null>(null);
   const activeProdItemRef = useRef<HTMLButtonElement | null>(null);
+  const activeHistoryRowRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     if (showCustomerPopup && activeCustItemRef.current) {
@@ -156,6 +164,15 @@ export const ReturPenjualan: React.FC = () => {
       });
     }
   }, [focusedProdIdx, showProductPopup]);
+
+  useEffect(() => {
+    if (showHistoryPopup && activeHistoryRowRef.current) {
+      activeHistoryRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [focusedHistoryIdx, showHistoryPopup]);
 
 
 
@@ -385,6 +402,81 @@ export const ReturPenjualan: React.FC = () => {
     }
   };
 
+  const handleHistoryPopupKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeHistoryPopup();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedHistoryIdx((prev) => (prev + 1) % historyPopupList.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedHistoryIdx((prev) => (prev - 1 + historyPopupList.length) % historyPopupList.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (historyPopupList[focusedHistoryIdx]) {
+        confirmHistorySelection(historyPopupList[focusedHistoryIdx]);
+      }
+    }
+  };
+
+  const closeHistoryPopup = () => {
+    setShowHistoryPopup(false);
+    setHistoryPopupProduct(null);
+    setHistoryPopupList([]);
+    setTimeout(() => {
+      productSearchRef.current?.focus();
+      productSearchRef.current?.select();
+    }, 50);
+  };
+
+  const confirmHistorySelection = (selectedItem: PurchaseHistoryItem) => {
+    if (!historyPopupProduct) return;
+
+    const exists = returnProducts.some(
+      rp => rp.id === historyPopupProduct.id && rp.history.some(h => h.sale_id === selectedItem.sale_id)
+    );
+    if (exists) {
+      showToast('Transaksi barang ini sudah ditambahkan ke daftar retur.', 'error');
+      closeHistoryPopup();
+      return;
+    }
+
+    setReturnProducts(prev => {
+      const existingProductIdx = prev.findIndex(rp => rp.id === historyPopupProduct.id);
+      if (existingProductIdx > -1) {
+        const updated = [...prev];
+        updated[existingProductIdx] = {
+          ...updated[existingProductIdx],
+          history: [...updated[existingProductIdx].history, selectedItem]
+        };
+        return updated;
+      } else {
+        return [
+          ...prev,
+          {
+            id: historyPopupProduct.id,
+            kode: historyPopupProduct.kode,
+            nama: historyPopupProduct.nama,
+            satuan: historyPopupProduct.satuan,
+            history: [selectedItem]
+          }
+        ];
+      }
+    });
+
+    setShowHistoryPopup(false);
+    setHistoryPopupProduct(null);
+    setHistoryPopupList([]);
+    showToast('Transaksi berhasil ditambahkan ke daftar retur.', 'success');
+
+    setTimeout(() => {
+      productSearchRef.current?.focus();
+      productSearchRef.current?.select();
+    }, 50);
+  };
+
   const handleDateKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -437,13 +529,6 @@ export const ReturPenjualan: React.FC = () => {
   const selectProduct = async (p: Product) => {
     if (!selectedCustomer) return;
 
-    if (returnProducts.some(rp => rp.id === p.id)) {
-      showToast('Barang sudah ditambahkan ke daftar retur.', 'error');
-      setProductQuery('');
-      setShowProductPopup(false);
-      return;
-    }
-
     try {
       const res = await api.get(
         `/sale-returns/customer-history?customer_id=${selectedCustomer.id}&product_id=${p.id}`
@@ -460,21 +545,13 @@ export const ReturPenjualan: React.FC = () => {
         showToast('Customer belum pernah membeli barang ini.', 'error');
       } else {
         setFormError(null);
-        setReturnProducts(prev => [
-          ...prev,
-          {
-            id: p.id,
-            kode: p.kode,
-            nama: p.nama,
-            satuan: p.satuan,
-            history: historyList
-          }
-        ]);
-
-        setActiveStep('date');
+        setHistoryPopupProduct(p);
+        setHistoryPopupList(historyList);
+        setFocusedHistoryIdx(0);
+        setShowHistoryPopup(true);
         setTimeout(() => {
-          dateInputRef.current?.focus();
-        }, 100);
+          historyPopupRef.current?.focus();
+        }, 80);
       }
     } catch (err) {
       console.error(err);
@@ -1276,53 +1353,121 @@ export const ReturPenjualan: React.FC = () => {
         </ModalPortal>
       )}
 
+      {/* HISTORY SELECTION POPUP MODAL */}
+      {showHistoryPopup && historyPopupProduct && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+            <div
+              ref={historyPopupRef}
+              tabIndex={0}
+              onKeyDown={handleHistoryPopupKeyDown}
+              className="bg-white border border-slate-200 rounded-xl p-6 max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center w-full pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Search size={18} className="text-blue-500" />
+                  <span>Pilih Transaksi - {historyPopupProduct.nama}</span>
+                </h3>
+                <button onClick={closeHistoryPopup} className="text-slate-400 hover:text-slate-650">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
+                <div className="overflow-hidden border border-slate-200 rounded-lg">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-650 font-bold border-b border-slate-200">
+                        <th className="p-3">No Order</th>
+                        <th className="p-3">Tanggal</th>
+                        <th className="p-3 text-right">Harga Jual</th>
+                        <th className="p-3 text-right">Qty Tersedia</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyPopupList.map((h, idx) => {
+                        const isFocused = idx === focusedHistoryIdx;
+                        return (
+                          <tr
+                            key={h.sale_id}
+                            ref={isFocused ? activeHistoryRowRef : null}
+                            onClick={() => confirmHistorySelection(h)}
+                            className={`cursor-pointer border-b border-slate-100 transition-colors ${
+                              isFocused
+                                ? 'bg-blue-100 text-blue-900 font-bold'
+                                : 'hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <td className="p-3 font-mono">{h.no_order}</td>
+                            <td className="p-3">{formatDate(h.order_date)}</td>
+                            <td className="p-3 text-right font-mono">{formatCurrency(h.unit_price)}</td>
+                            <td className="p-3 text-right font-mono">{h.qty_remaining} {historyPopupProduct.satuan}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
+                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
+                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
       {/* PRINT CONFIRMATION MODAL */}
       {showConfirmPrintModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowConfirmPrintModal(false)} />
-          <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-sm p-5 animate-scale-in z-10 space-y-3.5">
-            <div className="flex items-center gap-2 text-blue-600 border-b pb-2">
-              <Printer size={18} />
-              <h3 className="font-extrabold text-slate-800 text-xs">Konfirmasi Simpan & Cetak</h3>
-            </div>
-
-            <p className="text-xs text-slate-500 leading-normal">
-              Apakah Anda yakin ingin memproses retur penjualan ini? Dokumen retur akan disimpan dan nota transaksi akan langsung dicetak.
-            </p>
-
-            <div className="bg-slate-50 border rounded-lg p-2.5 text-[10px] text-slate-500 grid grid-cols-2 gap-2">
-              <div>
-                <span>Total Barang:</span>
-                <p className="font-bold text-slate-800">{calculateTotalItems()} item</p>
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowConfirmPrintModal(false)} />
+            <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-in z-10 flex flex-col text-slate-800">
+              
+              {/* Colored Header */}
+              <div className="bg-blue-600 text-white px-5 py-4 flex items-center gap-2">
+                <Printer size={18} />
+                <h3 className="font-bold text-xs uppercase tracking-wider">Konfirmasi Simpan & Cetak</h3>
               </div>
-              <div>
-                <span>Total Ganti Rugi:</span>
-                <p className="font-bold text-blue-600">{formatCurrency(calculateTotalRefund())}</p>
+
+              {/* Body */}
+              <div className="p-5 space-y-4">
+                <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                  Apakah Anda yakin ingin memproses retur penjualan ini? Dokumen retur akan disimpan dan nota transaksi akan langsung dicetak.
+                </p>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Barang</span>
+                    <p className="font-bold text-slate-800 mt-1">{calculateTotalItems()} item</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Ganti Rugi</span>
+                    <p className="font-bold text-blue-600 mt-1">{formatCurrency(calculateTotalRefund())}</p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-1.5">
-              <button
-                type="button"
-                onClick={() => setShowConfirmPrintModal(false)}
-                className="px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 rounded hover:bg-slate-100 transition-all"
-              >
-                Batal (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSaveAndPrint}
-                className="px-3.5 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded transition-all flex items-center gap-1"
-              >
-                Cetak Nota (P)
-              </button>
-            </div>
+              {/* Footer */}
+              <div className="bg-slate-50 px-5 py-3.5 flex justify-end gap-2.5 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPrintModal(false)}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-655 hover:bg-slate-100 transition-all bg-white"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSaveAndPrint}
+                  className="px-4.5 py-2 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-500/10 flex items-center gap-1"
+                >
+                  Cetak Nota (P)
+                </button>
+              </div>
 
-            <div className="pt-2 border-t border-slate-100 text-[9px] text-slate-400 flex justify-between">
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 

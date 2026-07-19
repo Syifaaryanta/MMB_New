@@ -881,6 +881,13 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* Fix default focus outline on table container when focused programmatically via F4 */
+.no-focus-outline:focus,
+.no-focus-outline:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Selected row highlighted border for tables */
 .table-row-selected td {
   border-top: 2px solid #3b82f6 !important;

@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   Search,
   ChevronRight,
   X,
   Undo2,
-  ArrowRightLeft
+  ArrowRightLeft,
+  AlertTriangle
 } from 'lucide-react';
 
 interface ReturnItem {
@@ -53,6 +55,7 @@ export const HistoryReturn: React.FC = () => {
 
   // Active Detail Modal State
   const [activeReturn, setActiveReturn] = useState<UnifiedReturn | null>(null);
+  const [isInfoHidden, setIsInfoHidden] = useState(false);
 
   // Filters State
   const now = new Date();
@@ -68,11 +71,25 @@ export const HistoryReturn: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'purchase' | 'sale'>('all');
 
   const [showFilterPage, setShowFilterPage] = useState(true);
+
+  // Delete Check State
+  const [deleteCheckState, setDeleteCheckState] = useState<{
+    status: 'idle' | 'can_delete';
+    targetItem: UnifiedReturn | null;
+  }>({
+    status: 'idle',
+    targetItem: null,
+  });
+
+  // Toast
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
   const fromDateRef = useRef<HTMLInputElement>(null);
   const toDateRef = useRef<HTMLInputElement>(null);
   const popupSearchRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listTableRef = useRef<HTMLTableElement>(null);
+  const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
 
   // Load Data from API
   const fetchReturns = async () => {
@@ -143,6 +160,47 @@ export const HistoryReturn: React.FC = () => {
     }
   }, [showFilterPage]);
 
+  // Focus search input when filter page is closed
+  useEffect(() => {
+    if (!showFilterPage) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }, 150);
+    }
+  }, [showFilterPage]);
+
+  // Scroll focused row into view
+  useEffect(() => {
+    const target = rowRefs.current[selectedIdx];
+    if (target && isTableFocused) {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIdx, isTableFocused]);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const confirmDeleteReturn = async () => {
+    const target = deleteCheckState.targetItem;
+    if (!target) return;
+    try {
+      setIsLoading(true);
+      const url = target.type === 'purchase' ? `/purchase-returns/${target.id}` : `/sale-returns/${target.id}`;
+      await api.delete(url);
+      showToast('Transaksi retur berhasil dihapus dan stok disesuaikan', 'success');
+      await fetchReturns();
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Gagal menghapus transaksi retur', 'error');
+    } finally {
+      setIsLoading(false);
+      setDeleteCheckState({ status: 'idle', targetItem: null });
+    }
+  };
+
   const handleFilterSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
     await fetchReturns();
@@ -177,41 +235,62 @@ export const HistoryReturn: React.FC = () => {
 
   // Keyboard Navigation & Actions
   useHotkeys('down', (e) => {
-    if (isTableFocused && !activeReturn && filteredReturns.length > 0) {
+    if (isTableFocused && !activeReturn && deleteCheckState.status === 'idle' && filteredReturns.length > 0) {
       e.preventDefault();
       setSelectedIdx((prev) => Math.min(prev + 1, filteredReturns.length - 1));
     }
-  }, { enableOnFormTags: false }, [isTableFocused, activeReturn, filteredReturns]);
+  }, { enableOnFormTags: false }, [isTableFocused, activeReturn, filteredReturns, deleteCheckState]);
 
   useHotkeys('up', (e) => {
-    if (isTableFocused && !activeReturn && filteredReturns.length > 0) {
+    if (isTableFocused && !activeReturn && deleteCheckState.status === 'idle' && filteredReturns.length > 0) {
       e.preventDefault();
       setSelectedIdx((prev) => Math.max(prev - 1, 0));
     }
-  }, { enableOnFormTags: false }, [isTableFocused, activeReturn, filteredReturns]);
+  }, { enableOnFormTags: false }, [isTableFocused, activeReturn, filteredReturns, deleteCheckState]);
 
   useHotkeys('enter', (e) => {
-    if (isTableFocused && !activeReturn && filteredReturns[selectedIdx]) {
+    if (document.activeElement === searchInputRef.current) {
+      return;
+    }
+    if (deleteCheckState.status === 'can_delete') {
+      e.preventDefault();
+      confirmDeleteReturn();
+    } else if (isTableFocused && !activeReturn && filteredReturns[selectedIdx]) {
       e.preventDefault();
       handleOpenDetail(filteredReturns[selectedIdx]);
     }
-  }, { enableOnFormTags: false }, [isTableFocused, activeReturn, filteredReturns, selectedIdx]);
+  }, { enableOnFormTags: true }, [isTableFocused, activeReturn, filteredReturns, selectedIdx, deleteCheckState]);
+
+  useHotkeys('del, delete', (e) => {
+    if (isTableFocused && !activeReturn && deleteCheckState.status === 'idle' && filteredReturns[selectedIdx]) {
+      e.preventDefault();
+      setDeleteCheckState({
+        status: 'can_delete',
+        targetItem: filteredReturns[selectedIdx],
+      });
+    }
+  }, { enableOnFormTags: false }, [isTableFocused, activeReturn, deleteCheckState, filteredReturns, selectedIdx]);
 
   useHotkeys('esc', (e) => {
     e.preventDefault();
-    if (activeReturn) {
+    if (deleteCheckState.status === 'can_delete') {
+      setDeleteCheckState({ status: 'idle', targetItem: null });
+    } else if (activeReturn) {
       setActiveReturn(null);
+      setIsInfoHidden(false);
     } else if (!showFilterPage) {
       setShowFilterPage(true);
     } else {
       navigate('/history');
     }
-  }, { enableOnFormTags: true }, [isTableFocused, activeReturn, showFilterPage]);
+  }, { enableOnFormTags: true }, [isTableFocused, activeReturn, showFilterPage, deleteCheckState]);
 
-  // Shortcut to focus search (F1)
+  // Shortcut to focus search or toggle info (F1)
   useHotkeys('f1', (e) => {
     e.preventDefault();
-    if (!activeReturn) {
+    if (activeReturn) {
+      setIsInfoHidden((prev) => !prev);
+    } else {
       if (showFilterPage) {
         fromDateRef.current?.focus();
         fromDateRef.current?.select();
@@ -226,6 +305,7 @@ export const HistoryReturn: React.FC = () => {
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       if (filteredReturns.length > 0) {
         setIsTableFocused(true);
         setSelectedIdx(0);
@@ -236,6 +316,7 @@ export const HistoryReturn: React.FC = () => {
 
   const handleOpenDetail = (ret: UnifiedReturn) => {
     setActiveReturn(ret);
+    setIsInfoHidden(false);
   };
 
   const getMetodeLabel = (m: string, type: 'purchase' | 'sale') => {
@@ -430,46 +511,56 @@ export const HistoryReturn: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {filteredReturns.map((ret, idx) => {
                       const isFocused = idx === selectedIdx && isTableFocused;
-                      const rowClass = isFocused
-                        ? 'bg-rose-50/50 border-l-4 border-rose-500 font-bold'
-                        : 'hover:bg-slate-50/50 transition-colors';
+                      const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
+
+                      const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                        let base = "p-4 text-xs transition-all duration-150 border-b ";
+                        if (isFocused) {
+                          base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                          if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                        } else {
+                          base += "text-slate-800 border-slate-200 ";
+                        }
+                        return base;
+                      };
 
                       return (
                         <tr
                           key={ret.id}
+                          ref={(el) => {
+                            rowRefs.current[idx] = el;
+                          }}
                           onClick={() => {
                             setSelectedIdx(idx);
                             setIsTableFocused(true);
                           }}
                           onDoubleClick={() => handleOpenDetail(ret)}
-                          className={`cursor-pointer ${rowClass}`}
+                          className={`cursor-pointer ${rowBgClass}`}
                         >
-                          <td className="p-4 text-center font-mono text-slate-400">{idx + 1}</td>
-                          <td className="p-4">
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                              ret.type === 'purchase'
-                                ? 'bg-red-100 text-red-800 border border-red-200'
-                                : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                            }`}>
+                          <td className={getTdClass('first') + " text-center font-mono text-slate-400"}>{idx + 1}</td>
+                          <td className={getTdClass('middle')}>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${ret.type === 'purchase'
+                              ? 'bg-red-100 text-red-800 border border-red-200'
+                              : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                              }`}>
                               {ret.type === 'purchase' ? 'Pembelian PO' : 'Penjualan SO'}
                             </span>
                           </td>
-                          <td className="p-4 font-mono font-bold text-slate-800">{ret.no_retur}</td>
-                          <td className="p-4 text-slate-600">{formatDate(ret.retur_date)}</td>
-                          <td className="p-4 font-mono text-slate-700">{ret.no_order}</td>
-                          <td className="p-4 text-slate-900 font-semibold">{ret.party_nama}</td>
-                          <td className="p-4">
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                              ret.metode_kompensasi.includes('hutang') || ret.metode_kompensasi.includes('piutang')
-                                ? 'bg-amber-100 text-amber-800'
-                                : ret.metode_kompensasi === 'tukar_barang'
+                          <td className={getTdClass('middle') + " font-mono font-bold text-slate-800"}>{ret.no_retur}</td>
+                          <td className={getTdClass('middle') + " text-slate-600"}>{formatDate(ret.retur_date)}</td>
+                          <td className={getTdClass('middle') + " font-mono text-slate-700"}>{ret.no_order}</td>
+                          <td className={getTdClass('middle') + " text-slate-900 font-semibold"}>{ret.party_nama}</td>
+                          <td className={getTdClass('middle')}>
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${ret.metode_kompensasi.includes('hutang') || ret.metode_kompensasi.includes('piutang')
+                              ? 'bg-amber-100 text-amber-800'
+                              : ret.metode_kompensasi === 'tukar_barang'
                                 ? 'bg-blue-100 text-blue-800'
                                 : 'bg-emerald-100 text-emerald-800'
-                            }`}>
+                              }`}>
                               {getMetodeLabel(ret.metode_kompensasi, ret.type)}
                             </span>
                           </td>
-                          <td className="p-4 text-right font-bold text-slate-900">{formatCurrency(ret.total)}</td>
+                          <td className={getTdClass('last') + " text-right font-bold text-slate-900"}>{formatCurrency(ret.total)}</td>
                         </tr>
                       );
                     })}
@@ -499,57 +590,58 @@ export const HistoryReturn: React.FC = () => {
             <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-blue-650 uppercase">PROSES RETUR</span></p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Card 1: Informasi Retur */}
-            <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
-              <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
-                <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Retur</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-650">
-                <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Transaksi Asal</span>
-                  <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.no_order}</span>
+          {!isInfoHidden && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: Informasi Retur */}
+              <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
+                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Retur</h3>
                 </div>
-                {activeReturn.no_faktur && (
+                <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-650">
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Faktur</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.no_faktur}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Transaksi Asal</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.no_order}</span>
                   </div>
-                )}
-                <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Retur</span>
-                  <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activeReturn.retur_date)}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Metode Kompensasi</span>
-                  <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mt-1 ${
-                    activeReturn.type === 'purchase' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
-                  }`}>
-                    {getMetodeLabel(activeReturn.metode_kompensasi, activeReturn.type)}
-                  </span>
+                  {activeReturn.no_faktur && (
+                    <div>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Faktur</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.no_faktur}</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Retur</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activeReturn.retur_date)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Metode Kompensasi</span>
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mt-1 ${activeReturn.type === 'purchase' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                      }`}>
+                      {getMetodeLabel(activeReturn.metode_kompensasi, activeReturn.type)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Card 2: Pihak Terkait */}
-            <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
-              <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
-                <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
-                  {activeReturn.type === 'purchase' ? 'Pemasok (Supplier)' : 'Data Customer'}
-                </h3>
-              </div>
-              <div className="space-y-3.5 p-3.5 text-xs text-slate-650">
-                <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama</span>
-                  <span className="text-xs font-extrabold text-slate-855 mt-0.5 block">{activeReturn.party_nama}</span>
+              {/* Card 2: Pihak Terkait */}
+              <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
+                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                    {activeReturn.type === 'purchase' ? 'Pemasok (Supplier)' : 'Data Customer'}
+                  </h3>
                 </div>
-                <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">ID Pihak</span>
-                  <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.party_id}</span>
+                <div className="space-y-3.5 p-3.5 text-xs text-slate-650">
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama</span>
+                    <span className="text-xs font-extrabold text-slate-855 mt-0.5 block">{activeReturn.party_nama}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">ID Pihak</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeReturn.party_id}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Card 3: Daftar Barang */}
           <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
@@ -584,9 +676,8 @@ export const HistoryReturn: React.FC = () => {
                           {Number(item.qty)} {item.product?.satuan || 'pcs'}
                         </td>
                         <td className="p-3 text-center">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                            item.kondisi === 'bagus' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'
-                          }`}>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${item.kondisi === 'bagus' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'
+                            }`}>
                             {item.kondisi}
                           </span>
                         </td>
@@ -599,9 +690,8 @@ export const HistoryReturn: React.FC = () => {
                 <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
                   <div className="flex gap-6 items-center">
                     <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Total Nilai Retur</span>
-                    <span className={`text-base font-extrabold font-mono ${
-                      activeReturn.type === 'purchase' ? 'text-emerald-600' : 'text-rose-600'
-                    }`}>
+                    <span className={`text-base font-extrabold font-mono ${activeReturn.type === 'purchase' ? 'text-emerald-600' : 'text-rose-600'
+                      }`}>
                       {formatCurrency(Number(activeReturn.total))}
                     </span>
                   </div>
@@ -614,14 +704,81 @@ export const HistoryReturn: React.FC = () => {
           <div className="flex justify-end gap-3 pt-3">
             <button
               type="button"
+              onClick={() => setIsInfoHidden((prev) => !prev)}
+              className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+            >
+              <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+              <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setActiveReturn(null);
+                setIsInfoHidden(false);
               }}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
               <span>Tutup</span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
             </button>
+          </div>
+        </div>
+      )}
+
+      {deleteCheckState.status === 'can_delete' && deleteCheckState.targetItem && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteCheckState({ status: 'idle', targetItem: null })}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-surface-900 border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              {/* Amber Header */}
+              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500 border-b border-amber-600 px-5 py-4 text-center w-full">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <AlertTriangle size={20} className="text-white" />
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Konfirmasi Hapus Transaksi Retur</h2>
+                  <p className="text-xs text-amber-55 text-white mt-1 font-semibold">Tindakan ini akan menyesuaikan kembali stok barang di gudang</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-5 bg-white text-xs">
+                <p className="text-slate-700 font-semibold leading-relaxed">
+                  Apakah Anda yakin ingin membatalkan dan menghapus transaksi retur <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_retur}"</span>?
+                </p>
+                <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-650">
+                  <div><span className="font-bold">Tanggal Retur:</span> {formatDate(deleteCheckState.targetItem.retur_date)}</div>
+                  <div><span className="font-bold">Jenis Retur:</span> {deleteCheckState.targetItem.type === 'purchase' ? 'Retur Pembelian (PO)' : 'Retur Penjualan (SO)'}</div>
+                  <div><span className="font-bold">Supplier/Customer:</span> {deleteCheckState.targetItem.party_nama}</div>
+                  <div><span className="font-bold">Total Nilai Retur:</span> {formatCurrency(deleteCheckState.targetItem.total)}</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2.5 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
+                <button
+                  onClick={() => setDeleteCheckState({ status: 'idle', targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-250 text-slate-650 hover:bg-slate-100 transition-all bg-white"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  onClick={confirmDeleteReturn}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
+                >
+                  Ya, Hapus (Enter)
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in-right">
+          <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+            }`}>
+            <span className="!text-white">{toast.message}</span>
           </div>
         </div>
       )}
