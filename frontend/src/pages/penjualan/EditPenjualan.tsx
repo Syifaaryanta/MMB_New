@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { formatCurrency, formatDate, formatRupiahInput, parseRupiahInput } from '@/lib/utils';
+import { formatCurrency, formatDate, formatRupiahInput, parseRupiahInput, parseAdjustments } from '@/lib/utils';
 import { Search, Save, Printer, Trash2, X, AlertCircle, ShoppingCart, Truck, User, AlertTriangle, Calendar, CheckCircle, XCircle } from 'lucide-react';
 
 interface Customer {
@@ -35,6 +35,7 @@ interface SOItem {
   qty: number;
   unit_price: number;
   total: number;
+  is_adjustment?: boolean;
 }
 
 export const EditPenjualan: React.FC = () => {
@@ -72,9 +73,8 @@ export const EditPenjualan: React.FC = () => {
   const [focusedProdIdx, setFocusedProdIdx] = useState(0);
 
   // Adjustments & Notes
-  const [adjustmentDesc, setAdjustmentDesc] = useState('');
-  const [adjustmentAmount, setAdjustmentAmount] = useState<number>(0);
-  const [adjustmentAmountInput, setAdjustmentAmountInput] = useState<string>('');
+  const [tempAdjustmentDesc, setTempAdjustmentDesc] = useState('');
+  const [tempAdjustmentAmountInput, setTempAdjustmentAmountInput] = useState('');
   const [senderNote, setSenderNote] = useState('');
 
   // Custom states for price history and step tracking
@@ -121,13 +121,14 @@ export const EditPenjualan: React.FC = () => {
   const priceInputRef = useRef<HTMLInputElement>(null);
   const adjustmentDescRef = useRef<HTMLInputElement>(null);
   const adjustmentAmountRef = useRef<HTMLInputElement>(null);
-  const noteInputRef = useRef<HTMLTextAreaElement>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null);
 
   const customerPopupRef = useRef<HTMLDivElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
   const customerItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const productItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const activeRowRef = useRef<HTMLTableRowElement | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (showCustomerPopup) {
@@ -149,10 +150,19 @@ export const EditPenjualan: React.FC = () => {
 
   useEffect(() => {
     if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
-      activeRowRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
+      const container = tableContainerRef.current;
+      const row = activeRowRef.current;
+      if (container && row) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+        const rowTop = row.offsetTop;
+        const rowBottom = rowTop + row.offsetHeight;
+        if (rowTop < containerTop) {
+          container.scrollTo({ top: rowTop - 8, behavior: 'smooth' });
+        } else if (rowBottom > containerBottom) {
+          container.scrollTo({ top: rowBottom - container.clientHeight + 8, behavior: 'smooth' });
+        }
+      }
     }
   }, [selectedRowIdx, activeStep]);
 
@@ -164,13 +174,17 @@ export const EditPenjualan: React.FC = () => {
   // Focus modal popups when shown
   useEffect(() => {
     if (showCustomerPopup) {
-      customerPopupRef.current?.focus();
+      setTimeout(() => {
+        customerPopupRef.current?.focus();
+      }, 100);
     }
   }, [showCustomerPopup]);
 
   useEffect(() => {
     if (showProductPopup) {
-      productPopupRef.current?.focus();
+      setTimeout(() => {
+        productPopupRef.current?.focus();
+      }, 100);
     }
   }, [showProductPopup]);
 
@@ -208,18 +222,22 @@ export const EditPenjualan: React.FC = () => {
       setActiveSo(so);
       setDiantar(so.diantar);
       setLimitBulan(so.limit_bulan);
-      setAdjustmentDesc(so.extra_charge_desc || '');
-      setAdjustmentAmount(Number(so.extra_charge_amount) || 0);
-      setAdjustmentAmountInput(formatRupiahInput(Number(so.extra_charge_amount) || 0));
       setSenderNote(so.sender_note || '');
-      setItems(so.sale_items.map((i: any) => ({
+      const fetchedItems = so.sale_items.map((i: any) => ({
         product_id: i.product_id,
         product_kode: i.product_kode,
         product_nama: i.product_nama,
         qty: Number(i.qty),
         unit_price: Number(i.unit_price),
         total: Number(i.total),
-      })));
+      }));
+
+      if (Number(so.extra_charge_amount) !== 0) {
+        const adjs = parseAdjustments(so.extra_charge_desc, so.extra_charge_amount);
+        fetchedItems.push(...adjs);
+      }
+
+      setItems(fetchedItems);
 
       // Set customer selection info
       setSelectedCustomer({
@@ -319,6 +337,7 @@ export const EditPenjualan: React.FC = () => {
       setFocusedCustIdx((prev) => (prev - 1 + customers.length) % customers.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       selectCustomer(customers[focusedCustIdx]);
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -385,6 +404,7 @@ export const EditPenjualan: React.FC = () => {
       setFocusedProdIdx((prev) => (prev - 1 + products.length) % products.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       selectProduct(products[focusedProdIdx]);
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -520,8 +540,42 @@ export const EditPenjualan: React.FC = () => {
     showToast('Item berhasil dihapus dari daftar', 'success');
   };
 
+  const addAdjustmentToTable = () => {
+    if (!tempAdjustmentDesc.trim()) {
+      showToast('Penjelasan penyesuaian tidak boleh kosong', 'error');
+      return;
+    }
+    const val = tempAdjustmentAmountInput;
+    const parsed = parseRupiahInput(val);
+    if (parsed === 0) {
+      showToast('Nilai penyesuaian tidak boleh 0', 'error');
+      return;
+    }
+
+    const newAdjItem = {
+      is_adjustment: true,
+      product_id: `ADJ-${Date.now()}`,
+      product_kode: 'ADJ',
+      product_nama: tempAdjustmentDesc,
+      qty: 1,
+      unit_price: parsed,
+      total: parsed,
+    };
+
+    setItems((prev) => [...prev, newAdjItem]);
+    setTempAdjustmentDesc('');
+    setTempAdjustmentAmountInput('');
+    adjustmentDescRef.current?.focus();
+    showToast('Penyesuaian berhasil dimasukkan', 'success');
+  };
+
   const handleUpdateSO = async (isFinal: boolean, toDraftPage?: boolean) => {
-    if (!activeSo || !selectedCustomer || items.length === 0) return;
+    const productItems = items.filter(item => !item.is_adjustment);
+    const adjustmentsList = items.filter(item => item.is_adjustment);
+    const serializedAdjustments = JSON.stringify(adjustmentsList.map(adj => ({ desc: adj.product_nama, amount: adj.total })));
+    const totalAdjAmount = adjustmentsList.reduce((sum, adj) => sum + adj.total, 0);
+
+    if (!activeSo || !selectedCustomer || productItems.length === 0) return;
 
     setIsSaving(true);
     try {
@@ -532,10 +586,10 @@ export const EditPenjualan: React.FC = () => {
         customer_telp: selectedCustomer.no_telp,
         diantar,
         limit_bulan: limitBulan,
-        extra_charge_desc: adjustmentDesc,
-        extra_charge_amount: adjustmentAmount,
+        extra_charge_desc: serializedAdjustments,
+        extra_charge_amount: totalAdjAmount,
         sender_note: senderNote,
-        items,
+        items: productItems,
       };
 
       await api.put(`/sales/${activeSo.id}`, payload);
@@ -685,24 +739,43 @@ export const EditPenjualan: React.FC = () => {
     }
   }, { enableOnFormTags: true });
 
-  // F4: Focus first row in table
+  // F4: Focus table row selection
   useHotkeys('f4', (e) => {
     e.preventDefault();
     if (activeSo && items.length > 0) {
-      setActiveStep('table');
       setSelectedRowIdx(0);
+      setActiveStep('table');
+      setTimeout(() => tableContainerRef.current?.focus(), 30);
     }
   }, { enableOnFormTags: true });
 
-  // F10 or Ctrl+S: Show print dialog modal
-  useHotkeys('f10', (e) => {
+  // F6: Focus Keterangan field
+  useHotkeys('f6', (e) => {
     e.preventDefault();
-    if (activeSo && items.length > 0) {
-      setShowConfirmPrintModal(true);
+    if (activeSo) {
+      noteInputRef.current?.focus();
+      noteInputRef.current?.select();
     }
   }, { enableOnFormTags: true });
 
-  useHotkeys('ctrl+s', (e) => {
+  // Arrow Up: Navigate table rows up
+  useHotkeys('up', (e) => {
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
+      setSelectedRowIdx((prev) => (prev !== null && prev > 0) ? prev - 1 : prev);
+    }
+  }, { enableOnFormTags: false }, [activeStep, selectedRowIdx]);
+
+  // Arrow Down: Navigate table rows down
+  useHotkeys('down', (e) => {
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
+      setSelectedRowIdx((prev) => (prev !== null && prev < items.length - 1) ? prev + 1 : prev);
+    }
+  }, { enableOnFormTags: false }, [activeStep, selectedRowIdx, items]);
+
+  // F10: Show print dialog modal
+  useHotkeys('f10', (e) => {
     e.preventDefault();
     if (activeSo && items.length > 0) {
       setShowConfirmPrintModal(true);
@@ -792,8 +865,10 @@ export const EditPenjualan: React.FC = () => {
     }
   }, { enableOnFormTags: true });
 
-  const itemsSubtotal = items.reduce((sum, i) => sum + i.total, 0);
+  const itemsSubtotal = items.filter(item => !item.is_adjustment).reduce((sum, i) => sum + i.total, 0);
+  const adjustmentAmount = items.filter(item => item.is_adjustment).reduce((sum, i) => sum + i.total, 0);
   const grandTotal = itemsSubtotal + adjustmentAmount;
+  const adjustmentDesc = items.filter(item => item.is_adjustment).map(item => item.product_nama).join(', ');
 
   return (
     <div className="space-y-6" onKeyDown={handleGlobalKeyDown}>
@@ -917,8 +992,8 @@ export const EditPenjualan: React.FC = () => {
                             setActiveStep('delivery');
                           }}
                           className={`flex-1 py-1.5 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${diantar
-                              ? 'bg-primary-600/10 border-primary-500 text-primary-400 shadow'
-                              : 'bg-surface-900 border-surface-700/60 text-slate-400 hover:text-slate-200'
+                            ? 'bg-primary-600/10 border-primary-500 text-primary-400 shadow'
+                            : 'bg-surface-900 border-surface-700/60 text-slate-400 hover:text-slate-200'
                             }`}
                         >
                           <Truck size={14} />
@@ -931,8 +1006,8 @@ export const EditPenjualan: React.FC = () => {
                             setActiveStep('delivery');
                           }}
                           className={`flex-1 py-1.5 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${!diantar
-                              ? 'bg-primary-600/10 border-primary-500 text-primary-400 shadow'
-                              : 'bg-surface-900 border-surface-700/60 text-slate-400 hover:text-slate-200'
+                            ? 'bg-primary-600/10 border-primary-500 text-primary-400 shadow'
+                            : 'bg-surface-900 border-surface-700/60 text-slate-400 hover:text-slate-200'
                             }`}
                         >
                           <User size={14} />
@@ -966,8 +1041,8 @@ export const EditPenjualan: React.FC = () => {
                               setActiveStep('terms');
                             }}
                             className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${limitBulan === opt.val
-                                ? 'bg-primary-600 text-white shadow'
-                                : 'text-slate-400 hover:text-slate-200'
+                              ? 'bg-primary-600 text-white shadow'
+                              : 'text-slate-400 hover:text-slate-200'
                               }`}
                           >
                             <span>{opt.label}</span>
@@ -1053,6 +1128,11 @@ export const EditPenjualan: React.FC = () => {
 
                 {/* Added Items Table Grid */}
                 <div className="card card-hovered p-0 overflow-hidden">
+                  <div
+                    ref={tableContainerRef}
+                    tabIndex={0}
+                    className="overflow-x-auto max-h-[360px] overflow-y-auto outline-none"
+                  >
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
@@ -1084,6 +1164,52 @@ export const EditPenjualan: React.FC = () => {
                             }
                             return base;
                           };
+
+                          if (item.is_adjustment) {
+                            const adjBgClass = isFocused
+                              ? 'bg-blue-100'
+                              : idx === selectedRowIdx
+                                ? 'bg-amber-500/10'
+                                : 'bg-amber-500/5 hover:bg-amber-500/10';
+
+                            const getAdjTdClass = (pos: 'first' | 'middle' | 'last') => {
+                              let base = "p-4 transition-all duration-150 border-b ";
+                              if (isFocused) {
+                                base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                                if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                              } else if (idx === selectedRowIdx) {
+                                base += "bg-amber-500/10 text-amber-900 border-amber-250 ";
+                                if (pos === 'first') base += "border-l-4 border-amber-500 ";
+                              } else {
+                                base += "bg-amber-500/5 text-slate-800 border-slate-200/60 ";
+                                if (pos === 'first') base += "border-l-4 border-transparent ";
+                              }
+                              return base;
+                            };
+
+                            return (
+                              <tr
+                                key={item.product_id}
+                                ref={idx === selectedRowIdx ? activeRowRef : null}
+                                onClick={() => {
+                                  setSelectedRowIdx(idx);
+                                  setActiveStep('table');
+                                }}
+                                className={`cursor-pointer transition-all ${adjBgClass}`}
+                              >
+                                <td className={getAdjTdClass('first') + " text-center text-amber-600 font-bold text-xs"}>-</td>
+                                <td className={getAdjTdClass('middle') + " font-mono text-amber-700 font-bold"}>ADJ</td>
+                                <td className={getAdjTdClass('middle') + " font-bold text-amber-800 italic"}>{item.product_nama}</td>
+                                <td className={getAdjTdClass('middle') + " text-right text-slate-500"}>-</td>
+                                <td className={getAdjTdClass('middle') + ` text-right font-mono font-bold ${item.total < 0 ? 'text-danger-600' : 'text-emerald-600'}`}>
+                                  {item.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(item.total))}
+                                </td>
+                                <td className={getAdjTdClass('last') + ` text-right font-mono font-extrabold ${item.total < 0 ? 'text-danger-600' : 'text-emerald-600'}`}>
+                                  {item.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(item.total))}
+                                </td>
+                              </tr>
+                            );
+                          }
 
                           return (
                             <tr
@@ -1117,26 +1243,44 @@ export const EditPenjualan: React.FC = () => {
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
 
-                {/* Grand Totals */}
-                <div className="flex justify-end mt-2 animate-fade-in pr-4">
-                  <div className="flex flex-col text-right space-y-1.5 min-w-[280px]">
-                    <div className="flex justify-between items-center text-xs gap-4">
-                      <span className="text-slate-400 font-medium">Subtotal Belanja:</span>
-                      <span className="font-semibold text-slate-200 currency">{formatCurrency(itemsSubtotal)}</span>
-                    </div>
-                    {adjustmentAmount !== 0 && (
+                {/* Grid for Keterangan (Left) and Grand Totals (Right) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pr-4">
+                  {/* Bottom Left: Note / Keterangan */}
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs text-slate-400 font-semibold">Keterangan (F6)</label>
+                    <input
+                      ref={noteInputRef}
+                      type="text"
+                      placeholder="Input Keterangan..."
+                      value={senderNote}
+                      onChange={(e) => setSenderNote(e.target.value)}
+                      onFocus={() => setActiveStep('adjust')}
+                      className="input-field w-full py-1.5 px-3 text-xs h-8"
+                    />
+                  </div>
+
+                  {/* Bottom Right: Grand Totals */}
+                  <div className="flex justify-end items-start">
+                    <div className="flex flex-col text-right space-y-1.5 min-w-[280px]">
                       <div className="flex justify-between items-center text-xs gap-4">
-                        <span className="text-slate-400 font-medium">Penyesuaian ({adjustmentDesc || 'F3'}):</span>
-                        <span className={`font-semibold currency ${adjustmentAmount < 0 ? 'text-danger-400' : 'text-emerald-400'}`}>
-                          {adjustmentAmount < 0 ? '-' : '+'}{formatCurrency(Math.abs(adjustmentAmount))}
-                        </span>
+                        <span className="text-slate-400 font-medium">Subtotal Belanja:</span>
+                        <span className="font-semibold text-slate-200 currency">{formatCurrency(itemsSubtotal)}</span>
                       </div>
-                    )}
-                    <div className="pt-1.5 border-t border-surface-700/50 flex justify-between items-center gap-4">
-                      <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">Grand Total:</span>
-                      <span className="text-xl font-black text-emerald-400 currency">{formatCurrency(grandTotal)}</span>
+                      {adjustmentAmount !== 0 && (
+                        <div className="flex justify-between items-center text-xs gap-4">
+                          <span className="text-slate-400 font-medium">Penyesuaian ({adjustmentDesc || 'F3'}):</span>
+                          <span className={`font-semibold currency ${adjustmentAmount < 0 ? 'text-danger-400' : 'text-emerald-400'}`}>
+                            {adjustmentAmount < 0 ? '-' : '+'}{formatCurrency(Math.abs(adjustmentAmount))}
+                          </span>
+                        </div>
+                      )}
+                      <div className="pt-1.5 border-t border-surface-700/50 flex justify-between items-center gap-4">
+                        <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">Grand Total:</span>
+                        <span className="text-xl font-black text-emerald-400 currency">{formatCurrency(grandTotal)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1244,18 +1388,19 @@ export const EditPenjualan: React.FC = () => {
                       <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk cari pelanggan</li>
                       <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk cari produk</li>
                       <li>Tekan <kbd className="shortcut-badge text-[9px]">F3</kbd> untuk Penyesuaian (Adj)</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk menuju baris pertama tabel</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Ctrl+S</kbd> untuk simpan</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk simpan draft</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk fokus ke baris tabel</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F6</kbd> untuk menuju kolom Keterangan</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">↑ ↓</kbd> untuk navigasi baris tabel</li>
                       <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk simpan draft</li>
                       <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal edit SO</li>
                     </ul>
                   </div>
                 )}
 
-                {/* Adjustment & Notes Panel */}
+                {/* Adjustment Panel */}
                 <div className="card card-hovered p-6 space-y-6 border border-surface-700 animate-scale-in">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Adjustment & Notes</h3>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Penyesuaian (Adjustment)</h3>
 
                   {/* Adjustments */}
                   <div className="space-y-4">
@@ -1265,8 +1410,8 @@ export const EditPenjualan: React.FC = () => {
                         ref={adjustmentDescRef}
                         type="text"
                         placeholder="Diskon khusus / Ongkos kirim..."
-                        value={adjustmentDesc}
-                        onChange={(e) => setAdjustmentDesc(e.target.value)}
+                        value={tempAdjustmentDesc}
+                        onChange={(e) => setTempAdjustmentDesc(e.target.value)}
                         onFocus={() => setActiveStep('adjust')}
                         onKeyDown={(e) => e.key === 'Enter' && adjustmentAmountRef.current?.focus()}
                         className="input-field w-full py-2 text-xs"
@@ -1278,37 +1423,21 @@ export const EditPenjualan: React.FC = () => {
                         ref={adjustmentAmountRef}
                         type="text"
                         placeholder="Gunakan minus untuk diskon"
-                        value={adjustmentAmountInput}
+                        value={tempAdjustmentAmountInput}
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val === '' || val === '-') {
-                            setAdjustmentAmountInput(val);
-                            setAdjustmentAmount(0);
+                            setTempAdjustmentAmountInput(val);
                           } else {
                             const parsed = parseRupiahInput(val);
-                            setAdjustmentAmount(parsed);
-                            setAdjustmentAmountInput(formatRupiahInput(parsed));
+                            setTempAdjustmentAmountInput(formatRupiahInput(parsed));
                           }
                         }}
                         onFocus={() => setActiveStep('adjust')}
-                        onKeyDown={(e) => e.key === 'Enter' && noteInputRef.current?.focus()}
+                        onKeyDown={(e) => e.key === 'Enter' && addAdjustmentToTable()}
                         className="input-field w-full py-2 text-xs font-mono text-right"
                       />
                     </div>
-                  </div>
-
-                  {/* Sender Note */}
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1.5 font-semibold">Catatan Pengiriman</label>
-                    <textarea
-                      ref={noteInputRef}
-                      rows={3}
-                      placeholder="Instruksi untuk sopir, no handphone, dll..."
-                      value={senderNote}
-                      onChange={(e) => setSenderNote(e.target.value)}
-                      onFocus={() => setActiveStep('adjust')}
-                      className="input-field w-full py-2 text-xs resize-none"
-                    />
                   </div>
                 </div>
 
@@ -1322,33 +1451,33 @@ export const EditPenjualan: React.FC = () => {
       {showEmptyQtyAlert && (
         <ModalPortal>
           <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
-              <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Kuantitas Kosong!</h3>
-            </div>
-            <div className="p-6 text-center">
-              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.
-              </p>
-              <div className="flex justify-center pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEmptyQtyAlert(false);
-                    setTimeout(() => {
-                      qtyInputRef.current?.focus();
-                      qtyInputRef.current?.select();
-                    }, 50);
-                  }}
-                  className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
-                >
-                  Tutup (Enter)
-                </button>
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+              <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Kuantitas Kosong!</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                  Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEmptyQtyAlert(false);
+                      setTimeout(() => {
+                        qtyInputRef.current?.focus();
+                        qtyInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
+                  >
+                    Tutup (Enter)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1356,33 +1485,33 @@ export const EditPenjualan: React.FC = () => {
       {showSoNotFoundPopup && (
         <ModalPortal>
           <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
-              <AlertTriangle size={24} className="shrink-0 text-white" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Draft SO Tidak Ditemukan</h3>
-            </div>
-            <div className="p-6 text-center">
-              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Nomor draft SO yang dicari tidak ditemukan. Pastikan status SO masih berupa <strong>Draft</strong>.
-              </p>
-              <div className="flex justify-center pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSoNotFoundPopup(false);
-                    setTimeout(() => {
-                      soSearchInputRef.current?.focus();
-                      soSearchInputRef.current?.select();
-                    }, 50);
-                  }}
-                  className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
-                >
-                  Tutup (Enter)
-                </button>
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+              <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertTriangle size={24} className="shrink-0 text-white" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Draft SO Tidak Ditemukan</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                  Nomor draft SO yang dicari tidak ditemukan. Pastikan status SO masih berupa <strong>Draft</strong>.
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSoNotFoundPopup(false);
+                      setTimeout(() => {
+                        soSearchInputRef.current?.focus();
+                        soSearchInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
+                  >
+                    Tutup (Enter)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1402,25 +1531,34 @@ export const EditPenjualan: React.FC = () => {
       {/* Stock warning modal */}
       {showStockAlert && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in text-center text-slate-200">
-            <AlertCircle size={40} className="text-danger-400 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-white mb-2">Stok Tidak Mencukupi</h3>
-            <p className="text-xs text-slate-400 mb-6">{stockAlertMsg}</p>
-            <button
-              onClick={() => {
-                setShowStockAlert(false);
-                setTimeout(() => {
-                  qtyInputRef.current?.focus();
-                  qtyInputRef.current?.select();
-                }, 50);
-              }}
-              className="w-full btn-primary justify-center py-2 text-xs font-bold bg-danger-600 hover:bg-danger-550 !text-white"
-            >
-              Tutup (Enter)
-            </button>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+              <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertCircle size={24} className="shrink-0 text-white" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Tidak Mencukupi</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                  {stockAlertMsg}
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowStockAlert(false);
+                      setTimeout(() => {
+                        qtyInputRef.current?.focus();
+                        qtyInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
+                  >
+                    Tutup (Enter)
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1428,34 +1566,34 @@ export const EditPenjualan: React.FC = () => {
       {showZeroStockPopup && zeroStockProduct && (
         <ModalPortal>
           <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
-              <AlertTriangle size={24} className="shrink-0 text-white" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Kosong!</h3>
-            </div>
-            <div className="p-6 text-center">
-              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
-              </p>
-              <div className="flex justify-center pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowZeroStockPopup(false);
-                    setZeroStockProduct(null);
-                    setTimeout(() => {
-                      searchInputRef.current?.focus();
-                      searchInputRef.current?.select();
-                    }, 50);
-                  }}
-                  className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
-                >
-                  Tutup (Enter)
-                </button>
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+              <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertTriangle size={24} className="shrink-0 text-white" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Kosong!</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                  Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowZeroStockPopup(false);
+                      setZeroStockProduct(null);
+                      setTimeout(() => {
+                        searchInputRef.current?.focus();
+                        searchInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
+                  >
+                    Tutup (Enter)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1463,128 +1601,128 @@ export const EditPenjualan: React.FC = () => {
       {showConfirmPrintModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            onKeyDown={handleConfirmPrintModalKeyDown}
-            className="bg-white rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Printer size={18} className="text-primary-600" />
-                <span>Konfirmasi Cetak Nota</span>
-              </h3>
-              <button
-                onClick={() => setShowConfirmPrintModal(false)}
-                className="text-slate-450 hover:text-slate-650 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            <div
+              tabIndex={0}
+              onKeyDown={handleConfirmPrintModalKeyDown}
+              className="bg-white rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Printer size={18} className="text-primary-600" />
+                  <span>Konfirmasi Cetak Nota</span>
+                </h3>
+                <button
+                  onClick={() => setShowConfirmPrintModal(false)}
+                  className="text-slate-450 hover:text-slate-650 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-            {/* Subtitle */}
-            <p className="text-xs text-slate-500 mt-4 font-medium">
-              Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
-            </p>
+              {/* Subtitle */}
+              <p className="text-xs text-slate-500 mt-4 font-medium">
+                Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
+              </p>
 
-            {/* Sorting Pills */}
-            <div className="flex gap-2.5 mt-4">
-              <button
-                ref={btnAsliRef}
-                type="button"
-                onClick={() => setSortOption('asli')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'asli'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Urutan Asli
-              </button>
-              <button
-                ref={btnAbjadRef}
-                type="button"
-                onClick={() => setSortOption('abjad')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'abjad'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Abjad (A-Z)
-              </button>
-              <button
-                ref={btnQtyRef}
-                type="button"
-                onClick={() => setSortOption('qty')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'qty'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Qty Terbanyak
-              </button>
-              <button
-                ref={btnHargaRef}
-                type="button"
-                onClick={() => setSortOption('harga')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'harga'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Harga Tertinggi
-              </button>
-            </div>
+              {/* Sorting Pills */}
+              <div className="flex gap-2.5 mt-4">
+                <button
+                  ref={btnAsliRef}
+                  type="button"
+                  onClick={() => setSortOption('asli')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'asli'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Urutan Asli
+                </button>
+                <button
+                  ref={btnAbjadRef}
+                  type="button"
+                  onClick={() => setSortOption('abjad')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'abjad'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Abjad (A-Z)
+                </button>
+                <button
+                  ref={btnQtyRef}
+                  type="button"
+                  onClick={() => setSortOption('qty')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'qty'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Qty Terbanyak
+                </button>
+                <button
+                  ref={btnHargaRef}
+                  type="button"
+                  onClick={() => setSortOption('harga')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'harga'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Harga Tertinggi
+                </button>
+              </div>
 
-            {/* Preview items table */}
-            <div className="rounded-lg mt-4 overflow-hidden max-h-48 overflow-y-auto bg-slate-50">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-250 text-slate-700 font-bold">
-                    <th className="p-3">Nama Barang</th>
-                    <th className="p-3 text-right w-20">Qty</th>
-                    <th className="p-3 text-right w-32">Harga</th>
-                    <th className="p-3 text-right w-32">Jumlah</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-150">
-                  {getSortedItems(items).map((item, idx) => (
-                    <tr key={idx} className="bg-white hover:bg-slate-50 text-slate-800">
-                      <td className="p-3 font-semibold text-slate-900">{item.product_nama}</td>
-                      <td className="p-3 text-right font-medium text-slate-700">{item.qty}</td>
-                      <td className="p-3 text-right font-mono font-medium text-slate-600">{formatCurrency(item.unit_price)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatCurrency(item.total)}</td>
+              {/* Preview items table */}
+              <div className="rounded-lg mt-4 overflow-hidden max-h-48 overflow-y-auto bg-slate-50">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-250 text-slate-700 font-bold">
+                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3 text-right w-20">Qty</th>
+                      <th className="p-3 text-right w-32">Harga</th>
+                      <th className="p-3 text-right w-32">Jumlah</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-150">
+                    {getSortedItems(items).map((item, idx) => (
+                      <tr key={idx} className="bg-white hover:bg-slate-50 text-slate-800">
+                        <td className="p-3 font-semibold text-slate-900">{item.product_nama}</td>
+                        <td className="p-3 text-right font-medium text-slate-700">{item.qty}</td>
+                        <td className="p-3 text-right font-mono font-medium text-slate-600">{formatCurrency(item.unit_price)}</td>
+                        <td className="p-3 text-right font-mono font-bold text-slate-900">{formatCurrency(item.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            {/* Footer buttons */}
-            <div className="flex justify-end gap-3 mt-6 border-t border-slate-100 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowConfirmPrintModal(false)}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
-              >
-                Batal (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleUpdateSO(false)}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
-              >
-                Simpan Draft (Enter)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleUpdateSO(true)}
-                className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
-              >
-                Print (P)
-              </button>
+              {/* Footer buttons */}
+              <div className="flex justify-end gap-3 mt-6 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPrintModal(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleUpdateSO(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Simpan Draft (Enter)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleUpdateSO(true)}
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
+                >
+                  Print (P)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1592,43 +1730,43 @@ export const EditPenjualan: React.FC = () => {
       {showCancelConfirmModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            ref={(el) => el?.focus()}
-            onKeyDown={handleCancelConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
-          >
-            <div className="flex flex-col items-center justify-center gap-2 text-danger-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <AlertTriangle size={28} />
-              <h3 className="text-lg font-bold text-white">Batal Edit SO</h3>
-            </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              Keluar dari pengeditan draft SO? Seluruh perubahan yang belum disimpan akan hilang sepenuhnya.
-            </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCancelConfirmModal(false);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
-              >
-                Kembali (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCancelConfirmModal(false);
-                  navigate('/penjualan/draft');
-                }}
-                className="btn-primary py-2 px-4 text-xs bg-danger-600 hover:bg-danger-500 font-bold"
-              >
-                Keluar (Enter)
-              </button>
+            <div
+              tabIndex={0}
+              ref={(el) => el?.focus()}
+              onKeyDown={handleCancelConfirmModalKeyDown}
+              className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
+            >
+              <div className="flex flex-col items-center justify-center gap-2 text-danger-600 border-b border-slate-100 pb-3 mb-4 text-center">
+                <AlertTriangle size={28} />
+                <h3 className="text-lg font-bold text-slate-900">Batal Edit SO</h3>
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
+                Keluar dari pengeditan draft SO? Seluruh perubahan yang belum disimpan akan hilang sepenuhnya.
+              </p>
+              <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelConfirmModal(false);
+                    setTimeout(() => searchInputRef.current?.focus(), 50);
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                >
+                  Kembali (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelConfirmModal(false);
+                    navigate('/penjualan/draft');
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-danger-600 hover:bg-danger-700 text-white transition-all shadow-md shadow-danger-500/10"
+                >
+                  Keluar (Enter)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1636,44 +1774,44 @@ export const EditPenjualan: React.FC = () => {
       {showDraftConfirmModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            ref={(el) => el?.focus()}
-            onKeyDown={handleDraftConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
-          >
-            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <Save size={28} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-white">Simpan sebagai Draft</h3>
-            </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              Order penjualan ini akan disimpan sebagai <strong className="text-white">Draft</strong>.
-              Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
-            </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDraftConfirmModal(false);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
-              >
-                Batal (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDraftConfirmModal(false);
-                  handleUpdateSO(false, true);
-                }}
-                className="btn-primary py-2 px-4 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
-              >
-                Simpan & Ke Draft (Enter)
-              </button>
+            <div
+              tabIndex={0}
+              ref={(el) => el?.focus()}
+              onKeyDown={handleDraftConfirmModalKeyDown}
+              className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
+            >
+              <div className="flex flex-col items-center justify-center gap-2 text-amber-600 border-b border-slate-100 pb-3 mb-4 text-center">
+                <Save size={28} className="text-amber-600" />
+                <h3 className="text-lg font-bold text-slate-900">Simpan sebagai Draft</h3>
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
+                Order penjualan ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>.
+                Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
+              </p>
+              <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDraftConfirmModal(false);
+                    setTimeout(() => searchInputRef.current?.focus(), 50);
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDraftConfirmModal(false);
+                    handleUpdateSO(false, true);
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/10"
+                >
+                  Simpan & Ke Draft (Enter)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1683,58 +1821,58 @@ export const EditPenjualan: React.FC = () => {
       {showCustomerPopup && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            ref={customerPopupRef}
-            tabIndex={0}
-            onKeyDown={handleCustomerPopupKeyDown}
-            className="bg-slate-100 border border-slate-200 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
-          >
-            {/* Blue Header */}
-            <div className="bg-primary-600 px-6 py-4 flex items-center justify-between text-white border-b border-primary-700/80 rounded-t-xl">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Search size={18} className="text-white" />
-                <span>Pilih Pelanggan</span>
-              </h3>
-              <button onClick={() => setShowCustomerPopup(false)} className="text-white hover:text-white/80 transition-colors">
-                <X size={18} />
-              </button>
-            </div>
+            <div
+              ref={customerPopupRef}
+              tabIndex={0}
+              onKeyDown={handleCustomerPopupKeyDown}
+              className="bg-slate-100 border border-slate-200 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
+            >
+              {/* Blue Header */}
+              <div className="bg-primary-600 px-6 py-4 flex items-center justify-between text-white border-b border-primary-700/80 rounded-t-xl">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Search size={18} className="text-white" />
+                  <span>Pilih Pelanggan</span>
+                </h3>
+                <button onClick={() => setShowCustomerPopup(false)} className="text-white hover:text-white/80 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
 
-            {/* List */}
-            <div className="flex-1 overflow-y-auto space-y-2.5 p-6 bg-slate-50">
-              {customers.length > 0 ? (
-                customers.map((cust, idx) => (
-                  <button
-                    key={cust.id}
-                    ref={(el) => {
-                      customerItemRefs.current[idx] = el;
-                    }}
-                    onClick={() => selectCustomer(cust)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedCustIdx
+              {/* List */}
+              <div className="flex-1 overflow-y-auto space-y-2.5 p-6 bg-slate-50">
+                {customers.length > 0 ? (
+                  customers.map((cust, idx) => (
+                    <button
+                      key={cust.id}
+                      ref={(el) => {
+                        customerItemRefs.current[idx] = el;
+                      }}
+                      onClick={() => selectCustomer(cust)}
+                      className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedCustIdx
                         ? 'border-emerald-500 bg-emerald-50/80 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-800 bg-white'
-                      }`}
-                  >
-                    <div>
-                      <p className={`font-semibold ${idx === focusedCustIdx ? 'text-emerald-900' : 'text-slate-900'}`}>{cust.nama}</p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">{cust.kode}</p>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  Tidak ada pelanggan yang cocok dengan "{customerQuery}".
-                </div>
-              )}
-            </div>
+                        }`}
+                    >
+                      <div>
+                        <p className={`font-semibold ${idx === focusedCustIdx ? 'text-emerald-900' : 'text-slate-900'}`}>{cust.nama}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">{cust.kode}</p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    Tidak ada pelanggan yang cocok dengan "{customerQuery}".
+                  </div>
+                )}
+              </div>
 
-            {/* Footer */}
-            <div className="bg-slate-100 border-t border-slate-200 px-6 py-3 flex justify-between text-[11px] text-slate-500 rounded-b-xl">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              {/* Footer */}
+              <div className="bg-slate-100 border-t border-slate-200 px-6 py-3 flex justify-between text-[11px] text-slate-500 rounded-b-xl">
+                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
+                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1742,61 +1880,61 @@ export const EditPenjualan: React.FC = () => {
       {showProductPopup && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            ref={productPopupRef}
-            tabIndex={0}
-            onKeyDown={handleProductPopupKeyDown}
-            className="bg-slate-100 border border-slate-200 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
-          >
-            {/* Blue Header */}
-            <div className="bg-primary-600 px-6 py-4 flex items-center justify-between text-white border-b border-primary-700/80 rounded-t-xl">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Search size={18} className="text-white" />
-                <span>Pilih Produk</span>
-              </h3>
-              <button onClick={() => setShowProductPopup(false)} className="text-white hover:text-white/80 transition-colors">
-                <X size={18} />
-              </button>
-            </div>
+            <div
+              ref={productPopupRef}
+              tabIndex={0}
+              onKeyDown={handleProductPopupKeyDown}
+              className="bg-slate-100 border border-slate-200 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
+            >
+              {/* Blue Header */}
+              <div className="bg-primary-600 px-6 py-4 flex items-center justify-between text-white border-b border-primary-700/80 rounded-t-xl">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Search size={18} className="text-white" />
+                  <span>Pilih Produk</span>
+                </h3>
+                <button onClick={() => setShowProductPopup(false)} className="text-white hover:text-white/80 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
 
-            {/* List */}
-            <div className="flex-1 overflow-y-auto space-y-2.5 p-6 bg-slate-50">
-              {products.length > 0 ? (
-                products.map((p, idx) => (
-                  <button
-                    key={p.id}
-                    ref={(el) => {
-                      productItemRefs.current[idx] = el;
-                    }}
-                    onClick={() => selectProduct(p)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedProdIdx
+              {/* List */}
+              <div className="flex-1 overflow-y-auto space-y-2.5 p-6 bg-slate-50">
+                {products.length > 0 ? (
+                  products.map((p, idx) => (
+                    <button
+                      key={p.id}
+                      ref={(el) => {
+                        productItemRefs.current[idx] = el;
+                      }}
+                      onClick={() => selectProduct(p)}
+                      className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedProdIdx
                         ? 'border-emerald-500 bg-emerald-50/80 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-800 bg-white'
-                      }`}
-                  >
-                    <div>
-                      <p className={`font-semibold ${idx === focusedProdIdx ? 'text-emerald-900 font-bold' : 'text-slate-900'}`}>{p.nama}</p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">{p.kode}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-slate-500 font-bold">Stok: {p.stok} {p.satuan}</span>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  Tidak ada produk yang cocok dengan "{prodQuery}".
-                </div>
-              )}
-            </div>
+                        }`}
+                    >
+                      <div>
+                        <p className={`font-semibold ${idx === focusedProdIdx ? 'text-emerald-900 font-bold' : 'text-slate-900'}`}>{p.nama}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">{p.kode}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-slate-500 font-bold">Stok: {p.stok} {p.satuan}</span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    Tidak ada produk yang cocok dengan "{prodQuery}".
+                  </div>
+                )}
+              </div>
 
-            {/* Footer */}
-            <div className="bg-slate-100 border-t border-slate-200 px-6 py-3 flex justify-between text-[11px] text-slate-500 rounded-b-xl">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              {/* Footer */}
+              <div className="bg-slate-100 border-t border-slate-200 px-6 py-3 flex justify-between text-[11px] text-slate-500 rounded-b-xl">
+                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
+                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1845,9 +1983,9 @@ export const EditPenjualan: React.FC = () => {
                 </div>
                 <div className="space-y-0.5 text-right font-semibold">
                   <p>Subtotal: {formatCurrency(itemsSubtotal)}</p>
-                  {Number(completedSo.extra_charge_amount) !== 0 && (
-                    <p>Adj ({completedSo.extra_charge_desc}): {formatCurrency(Number(completedSo.extra_charge_amount))}</p>
-                  )}
+                  {parseAdjustments(completedSo.extra_charge_desc, completedSo.extra_charge_amount).map((adj, index) => (
+                    <p key={index}>{adj.product_nama}: {adj.total < 0 ? '' : '+'}{formatCurrency(adj.total)}</p>
+                  ))}
                   <p className="font-bold text-xs">Total: {formatCurrency(Number(completedSo.subtotal))}</p>
                 </div>
                 <div className="text-center text-[10px] mt-4 pt-2 border-t border-dashed border-black">
@@ -1929,16 +2067,16 @@ export const EditPenjualan: React.FC = () => {
                           <td className="p-1.5 text-right font-bold text-slate-600 uppercase">Subtotal Belanja:</td>
                           <td className="p-1.5 text-right font-bold w-36">{formatCurrency(itemsSubtotal)}</td>
                         </tr>
-                        {Number(completedSo.extra_charge_amount) !== 0 && (
-                          <tr>
+                        {parseAdjustments(completedSo.extra_charge_desc, completedSo.extra_charge_amount).map((adj, index) => (
+                          <tr key={`adj-${index}`}>
                             <td colSpan={1} className="p-1.5 text-right font-bold uppercase text-slate-650">
-                              Penyesuaian ({completedSo.extra_charge_desc})
+                              {adj.product_nama}:
                             </td>
-                            <td className="p-1.5 text-right font-bold text-emerald-600">
-                              {formatCurrency(Number(completedSo.extra_charge_amount))}
+                            <td className={`p-1.5 text-right font-bold ${adj.total < 0 ? 'text-danger-600' : 'text-emerald-600'}`}>
+                              {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
                             </td>
                           </tr>
-                        )}
+                        ))}
                         <tr className="border-t border-slate-300">
                           <td className="p-2 text-right font-black text-slate-800 uppercase text-sm">Grand Total:</td>
                           <td className="p-2 text-right font-black text-sm text-emerald-700">{formatCurrency(Number(completedSo.subtotal))}</td>

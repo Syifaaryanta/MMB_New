@@ -67,7 +67,9 @@ export const BuatOrderPO: React.FC = () => {
   // Focus modal popups when shown
   useEffect(() => {
     if (showSupplierPopup) {
-      supplierPopupRef.current?.focus();
+      setTimeout(() => {
+        supplierPopupRef.current?.focus();
+      }, 100);
     }
   }, [showSupplierPopup]);
 

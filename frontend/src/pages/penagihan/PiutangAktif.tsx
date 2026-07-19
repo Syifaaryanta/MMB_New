@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { formatRupiahInput, parseRupiahInput } from '@/lib/utils';
+import { formatRupiahInput, parseRupiahInput, parseAdjustments, formatExtraChargeDesc } from '@/lib/utils';
 import {
   Search,
   ChevronDown,
@@ -706,12 +706,14 @@ export const PiutangAktif: React.FC = () => {
                         <td className="py-1.5 px-3 text-right font-mono text-blue-900 font-black">{formatCurrency(Number(item.total))}</td>
                       </tr>
                     ))}
-                    {Number(detailInvoice.extra_charge_amount) !== 0 && (
-                      <tr className="text-slate-600 font-semibold bg-slate-50/50">
-                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Biaya Tambahan ({detailInvoice.extra_charge_desc || 'Gojek/Grab'})</td>
-                        <td className="py-1.5 px-3 text-right font-mono text-slate-800 font-bold">{formatCurrency(Number(detailInvoice.extra_charge_amount))}</td>
+                    {parseAdjustments(detailInvoice.extra_charge_desc, detailInvoice.extra_charge_amount).map((adj, index) => (
+                      <tr key={`adj-${index}`} className="text-slate-655 font-semibold bg-slate-50/50">
+                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Biaya Tambahan ({adj.product_nama})</td>
+                        <td className={`py-1.5 px-3 text-right font-mono font-bold ${adj.total < 0 ? 'text-danger-600' : 'text-emerald-700'}`}>
+                          {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
+                        </td>
                       </tr>
-                    )}
+                    ))}
                     {Number(detailInvoice.biaya_pengiriman) !== 0 && (
                       <tr className="text-slate-600 font-semibold bg-slate-50/50">
                         <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Pengiriman</td>
@@ -990,8 +992,8 @@ export const PiutangAktif: React.FC = () => {
                                   {formatCurrency(Number(inv.extra_charge_amount || 0))}
                                 </span>
                                 {inv.extra_charge_desc && (
-                                  <span className={`text-[9px] block mt-0.5 truncate max-w-[120px] font-medium ${isInvSelected ? 'text-slate-650' : 'text-slate-450'}`} title={inv.extra_charge_desc}>
-                                    {inv.extra_charge_desc}
+                                  <span className={`text-[9px] block mt-0.5 truncate max-w-[120px] font-medium ${isInvSelected ? 'text-slate-650' : 'text-slate-450'}`} title={formatExtraChargeDesc(inv.extra_charge_desc)}>
+                                    {formatExtraChargeDesc(inv.extra_charge_desc)}
                                   </span>
                                 )}
                               </td>

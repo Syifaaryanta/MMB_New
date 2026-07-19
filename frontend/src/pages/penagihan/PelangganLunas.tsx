@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { formatExtraChargeDesc } from '@/lib/utils';
 import {
   Search,
   ChevronRight,
@@ -782,7 +783,7 @@ export const PelangganLunas: React.FC = () => {
                                   {invoice.extra_charge_desc && (
                                     <div className="flex gap-1.5">
                                       <span className="font-bold text-slate-500">Biaya Tambahan ({formatCurrency(invoice.extra_charge_amount)}):</span>
-                                      <span className="italic">{invoice.extra_charge_desc}</span>
+                                      <span className="italic">{formatExtraChargeDesc(invoice.extra_charge_desc)}</span>
                                     </div>
                                   )}
                                 </div>

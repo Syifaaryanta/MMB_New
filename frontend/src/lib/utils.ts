@@ -98,3 +98,50 @@ export function parseRupiahInput(val: string): number {
   return isNegative ? -parsed : parsed;
 }
 
+export function parseAdjustments(desc: string | null | undefined, amount: number | string) {
+  const amt = Number(amount);
+  if (!desc || amt === 0) return [];
+  try {
+    if (desc.trim().startsWith('[')) {
+      const parsed = JSON.parse(desc);
+      if (Array.isArray(parsed)) {
+        return parsed.map((adj, index) => ({
+          product_id: `ADJ-${index}-${Date.now()}`,
+          product_kode: 'ADJ',
+          product_nama: adj.desc || 'Penyesuaian',
+          qty: 1,
+          unit_price: Number(adj.amount),
+          total: Number(adj.amount),
+          is_adjustment: true,
+        }));
+      }
+    }
+  } catch (e) {
+    console.error("Failed to parse adjustments:", e);
+  }
+  return [{
+    product_id: 'ADJ-initial',
+    product_kode: 'ADJ',
+    product_nama: desc,
+    qty: 1,
+    unit_price: amt,
+    total: amt,
+    is_adjustment: true,
+  }];
+}
+
+export function formatExtraChargeDesc(desc: string | null | undefined): string {
+  if (!desc) return '';
+  if (desc.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(desc);
+      if (Array.isArray(parsed)) {
+        return parsed.map(adj => `${adj.desc} (${formatCurrency(adj.amount)})`).join(', ');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return desc;
+}
+

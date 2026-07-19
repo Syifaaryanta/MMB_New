@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Clock, Search, X, CheckSquare, Trash2, Calendar, User, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, Search, X, CheckSquare, Trash2, Calendar, User, CheckCircle, XCircle, AlertTriangle, FileText } from 'lucide-react';
 
 interface PurchaseItem {
   id: string;
@@ -48,6 +48,10 @@ export const DraftPO: React.FC = () => {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteCheckState, setDeleteCheckState] = useState<{
+    status: 'idle' | 'can_delete';
+    targetItem: Purchase | null;
+  }>({ status: 'idle', targetItem: null });
 
   // Real-time Clock State
   const [realtimeTime, setRealtimeTime] = useState('');
@@ -57,10 +61,10 @@ export const DraftPO: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const rowRefs = useRef<Map<number, HTMLTableRowElement | null>>(new Map());
 
-  // Detail Popup States
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  // Detail View States
   const [selectedDraftDetail, setSelectedDraftDetail] = useState<any | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [isInfoHidden, setIsInfoHidden] = useState(false);
   const [showCompleteConfirmModal, setShowCompleteConfirmModal] = useState(false);
 
   const fetchDrafts = async () => {
@@ -126,14 +130,12 @@ export const DraftPO: React.FC = () => {
 
   const handleOpenDetail = async (draft: Purchase) => {
     setIsDetailLoading(true);
-    setIsPopupOpen(true);
     try {
       const res = await api.get(`/purchases/${draft.id}`);
       setSelectedDraftDetail(res.data);
     } catch (err) {
       console.error(err);
       showToast('Gagal memuat detail draft PO', 'error');
-      setIsPopupOpen(false);
     } finally {
       setIsDetailLoading(false);
     }
@@ -144,7 +146,6 @@ export const DraftPO: React.FC = () => {
     try {
       await api.patch(`/purchases/${poId}/complete`);
       showToast('Draft PO berhasil diselesaikan', 'success');
-      setIsPopupOpen(false);
       setSelectedDraftDetail(null);
       setTimeout(() => {
         navigate('/pembelian');
@@ -157,17 +158,30 @@ export const DraftPO: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string, no: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus draft PO "${no}"?`)) {
-      try {
-        await api.delete(`/purchases/${id}`);
-        showToast(`Draft PO "${no}" berhasil dihapus`, 'success');
-        fetchDrafts();
-      } catch (err) {
-        console.error(err);
-        showToast('Gagal menghapus draft PO', 'error');
-      }
+  const confirmDeletePurchase = async () => {
+    const target = deleteCheckState.targetItem;
+    if (!target) return;
+    try {
+      setIsLoading(true);
+      await api.delete(`/purchases/${target.id}`);
+      showToast(`Draft PO "${target.no_order}" berhasil dihapus`, 'success');
+      fetchDrafts();
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Gagal menghapus draft PO', 'error');
+    } finally {
+      setIsLoading(false);
+      setDeleteCheckState({ status: 'idle', targetItem: null });
     }
+  };
+
+  const handleDelete = async (id: string, no: string) => {
+    const target = filteredDrafts.find(d => d.id === id);
+    if (!target) return;
+    setDeleteCheckState({
+      status: 'can_delete',
+      targetItem: target
+    });
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -183,26 +197,34 @@ export const DraftPO: React.FC = () => {
   };
 
   // Keyboard Shortcuts via useHotkeys
-  // F1 Key handling to focus search input
+  // F1 Key handling
   useHotkeys('f1', (e) => {
     e.preventDefault();
-    if (!isPopupOpen && !showCompleteConfirmModal) {
+    if (selectedDraftDetail) {
+      setIsInfoHidden((prev) => !prev);
+      return;
+    }
+    if (!showCompleteConfirmModal) {
       setIsTableFocused(false);
       searchInputRef.current?.focus();
       searchInputRef.current?.select();
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [selectedDraftDetail, showCompleteConfirmModal]);
 
   // Escape Key handling
   useHotkeys('esc', (e) => {
     e.preventDefault();
+    if (deleteCheckState.status === 'can_delete') {
+      setDeleteCheckState({ status: 'idle', targetItem: null });
+      return;
+    }
     if (showCompleteConfirmModal) {
       setShowCompleteConfirmModal(false);
       return;
     }
-    if (isPopupOpen) {
-      setIsPopupOpen(false);
+    if (selectedDraftDetail) {
       setSelectedDraftDetail(null);
+      setIsInfoHidden(false);
       setIsTableFocused(true);
       return;
     }
@@ -212,21 +234,25 @@ export const DraftPO: React.FC = () => {
       return;
     }
     navigate('/pembelian');
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [deleteCheckState, showCompleteConfirmModal, selectedDraftDetail, isTableFocused]);
 
   // Enter Key handling
   useHotkeys('enter', (e) => {
+    if (deleteCheckState.status === 'can_delete') {
+      e.preventDefault();
+      e.stopPropagation();
+      confirmDeletePurchase();
+      return;
+    }
     if (document.activeElement === searchInputRef.current) {
       return;
     }
     if (showCompleteConfirmModal) {
       return;
     }
-    if (isPopupOpen) {
-      if (selectedDraftDetail) {
-        e.preventDefault();
-        navigate(`/pembelian/edit-order?no_order=${selectedDraftDetail.no_order}`);
-      }
+    if (selectedDraftDetail) {
+      e.preventDefault();
+      navigate(`/pembelian/edit-order?no_order=${selectedDraftDetail.no_order}`);
       return;
     }
     if (isTableFocused) {
@@ -235,45 +261,46 @@ export const DraftPO: React.FC = () => {
         handleOpenDetail(filteredDrafts[selectedIdx]);
       }
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [deleteCheckState, filteredDrafts, selectedIdx, selectedDraftDetail, showCompleteConfirmModal]);
 
-  // P / F10 Key handling for Selesaikan PO inside popup detail
+  // P Key handling
   useHotkeys('p', (e) => {
-    if (isPopupOpen && selectedDraftDetail) {
+    if (selectedDraftDetail && !showCompleteConfirmModal) {
       e.preventDefault();
       setShowCompleteConfirmModal(true);
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [selectedDraftDetail, showCompleteConfirmModal]);
 
+  // F10 Key handling
   useHotkeys('f10', (e) => {
-    if (isPopupOpen && selectedDraftDetail) {
+    if (selectedDraftDetail && !showCompleteConfirmModal) {
       e.preventDefault();
       setShowCompleteConfirmModal(true);
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [selectedDraftDetail, showCompleteConfirmModal]);
 
   // Arrow Keys handling
   useHotkeys('up', (e) => {
-    if (isPopupOpen) return;
+    if (selectedDraftDetail) return;
     if (document.activeElement === searchInputRef.current) {
       return;
     }
     e.preventDefault();
     setSelectedIdx((prev) => Math.max(0, prev - 1));
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [selectedDraftDetail]);
 
   useHotkeys('down', (e) => {
-    if (isPopupOpen) return;
+    if (selectedDraftDetail) return;
     if (document.activeElement === searchInputRef.current) {
       return;
     }
     e.preventDefault();
     setSelectedIdx((prev) => Math.min(filteredDrafts.length - 1, prev + 1));
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [selectedDraftDetail, filteredDrafts]);
 
   // Delete draft PO
   useHotkeys('del', (e) => {
-    if (isPopupOpen || showCompleteConfirmModal) return;
+    if (selectedDraftDetail || showCompleteConfirmModal) return;
     if (document.activeElement === searchInputRef.current) {
       return;
     }
@@ -281,7 +308,7 @@ export const DraftPO: React.FC = () => {
     if (filteredDrafts.length > 0 && selectedIdx < filteredDrafts.length) {
       handleDelete(filteredDrafts[selectedIdx].id, filteredDrafts[selectedIdx].no_order);
     }
-  }, { enableOnFormTags: true });
+  }, { enableOnFormTags: true }, [selectedDraftDetail, showCompleteConfirmModal, filteredDrafts, selectedIdx]);
 
   const handleCompleteConfirmModalKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -306,257 +333,273 @@ export const DraftPO: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Bar & Realtime Clock */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full">
-        <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-            <Search size={16} />
-          </span>
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Cari berdasarkan nama pemasok atau nomor PO... (Tekan F1)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            className="input-field pl-9 w-full py-2 text-xs"
-            autoFocus
-          />
-        </div>
-        <div className="bg-surface-800 border border-surface-700 px-4 py-2 rounded-lg text-slate-300 font-mono text-xs flex items-center justify-center shrink-0 shadow-sm min-w-[220px]">
-          {realtimeTime}
-        </div>
-      </div>
+      {!selectedDraftDetail ? (
+        <>
+          {/* Search Bar & Realtime Clock */}
+          <div className="print:hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full">
+            <div className="relative flex-1">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <Search size={16} />
+              </span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Cari berdasarkan nama pemasok atau nomor PO... (Tekan F1)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="input-field pl-9 w-full py-2 text-xs"
+                autoFocus
+              />
+            </div>
+            <div className="bg-surface-800 border border-surface-700 px-4 py-2 rounded-lg text-slate-300 font-mono text-xs flex items-center justify-center shrink-0 shadow-sm min-w-[220px]">
+              {realtimeTime}
+            </div>
+          </div>
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-16 skeleton" />
-          ))}
-        </div>
-      ) : filteredDrafts.length > 0 ? (
-        <div className="card p-0 overflow-hidden border border-surface-700 shadow-sm">
-          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                  <th className="p-4 w-12 text-center">No</th>
-                  <th className="p-4">No Order</th>
-                  <th className="p-4">Tanggal</th>
-                  <th className="p-4">Supplier</th>
-                  <th className="p-4 text-center">Jumlah Barang</th>
-                  <th className="p-4 text-right">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDrafts.map((d, idx) => {
-                  const isFocused = idx === selectedIdx && isTableFocused;
-                  const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
-
-                  const getTdClass = (pos: 'first' | 'middle' | 'last') => {
-                    let base = "p-4 text-xs transition-all duration-150 border-b ";
-                    if (isFocused) {
-                      base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
-                      if (pos === 'first') base += "border-l-4 border-primary-600 ";
-                    } else {
-                      base += "text-slate-800 border-slate-200 ";
-                      if (pos === 'first') base += "border-l-4 border-transparent ";
-                    }
-                    return base;
-                  };
-
-                  return (
-                    <tr
-                      key={d.id}
-                      ref={(el) => {
-                        rowRefs.current.set(idx, el);
-                      }}
-                      onClick={() => {
-                        setSelectedIdx(idx);
-                        setIsTableFocused(true);
-                      }}
-                      onDoubleClick={() => handleOpenDetail(d)}
-                      className={`cursor-pointer transition-all ${rowBgClass}`}
-                    >
-                      <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
-                      <td className={getTdClass('middle') + " font-mono"}>
-                        <span className="px-2 py-0.5 rounded bg-blue-50/80 text-primary-700 border border-blue-100 font-mono font-bold text-xs inline-block">
-                          {d.no_order}
-                        </span>
-                      </td>
-                      <td className={getTdClass('middle') + " text-slate-700 font-medium"}>
-                        {formatDate(d.order_date)}
-                      </td>
-                      <td className={getTdClass('middle') + " font-bold text-slate-900"}>{d.supplier.nama}</td>
-                      <td className={getTdClass('middle') + " text-center"}>
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 border border-slate-200 text-slate-750">
-                          {d.purchase_items?.length || 0} Barang
-                        </span>
-                      </td>
-                      <td className={getTdClass('last') + " text-right font-bold text-slate-900 currency"}>
-                        {formatCurrency(Number(d.subtotal))}
-                      </td>
+          {/* Table */}
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-16 skeleton" />
+              ))}
+            </div>
+          ) : filteredDrafts.length > 0 ? (
+            <div className="card p-0 overflow-hidden border border-surface-700 shadow-sm">
+              <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
+                      <th className="p-4 w-12 text-center">No</th>
+                      <th className="p-4">No Order</th>
+                      <th className="p-4">Tanggal</th>
+                      <th className="p-4">Supplier</th>
+                      <th className="p-4 text-center">Jumlah Barang</th>
+                      <th className="p-4 text-right">Subtotal</th>
                     </tr>
-                  )})}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  </thead>
+                  <tbody>
+                    {filteredDrafts.map((d, idx) => {
+                      const isFocused = idx === selectedIdx && isTableFocused;
+                      const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
+
+                      const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                        let base = "p-4 text-xs transition-all duration-150 border-b ";
+                        if (isFocused) {
+                          base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                          if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                        } else {
+                          base += "text-slate-800 border-slate-200 ";
+                          if (pos === 'first') base += "border-l-4 border-transparent ";
+                        }
+                        return base;
+                      };
+
+                      return (
+                        <tr
+                          key={d.id}
+                          ref={(el) => {
+                            rowRefs.current.set(idx, el);
+                          }}
+                          onClick={() => {
+                            setSelectedIdx(idx);
+                            setIsTableFocused(true);
+                          }}
+                          onDoubleClick={() => handleOpenDetail(d)}
+                          className={`cursor-pointer transition-all ${rowBgClass}`}
+                        >
+                          <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
+                          <td className={getTdClass('middle') + " font-mono"}>
+                            <span className="px-2 py-0.5 rounded bg-blue-50/80 text-primary-700 border border-blue-100 font-mono font-bold text-xs inline-block">
+                              {d.no_order}
+                            </span>
+                          </td>
+                          <td className={getTdClass('middle') + " text-slate-700 font-medium"}>
+                            {formatDate(d.order_date)}
+                          </td>
+                          <td className={getTdClass('middle') + " font-bold text-slate-900"}>{d.supplier.nama}</td>
+                          <td className={getTdClass('middle') + " text-center"}>
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 border border-slate-200 text-slate-750">
+                              {d.purchase_items?.length || 0} Barang
+                            </span>
+                          </td>
+                          <td className={getTdClass('last') + " text-right font-bold text-slate-900 currency"}>
+                            {formatCurrency(Number(d.subtotal))}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20">
+              <Clock className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
+              <h3 className="text-lg font-bold text-slate-400">Tidak ada Draft Order</h3>
+              <p className="text-sm mt-1">Semua order pembelian aktif telah diselesaikan atau diterima.</p>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20">
-          <Clock className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-          <h3 className="text-lg font-bold text-slate-400">Tidak ada Draft Order</h3>
-          <p className="text-sm mt-1">Semua order pembelian aktif telah diselesaikan atau diterima.</p>
-        </div>
-      )}
-
-      {/* Detail Modal Popup */}
-      {isPopupOpen && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white border border-slate-200 rounded-xl max-w-4xl w-full mx-auto shadow-2xl animate-scale-in outline-none flex flex-col max-h-[90vh] text-slate-800">
-            {isDetailLoading && !selectedDraftDetail ? (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-xl">
-                <span className="text-slate-400 text-sm">Memuat detail draft...</span>
-              </div>
-            ) : selectedDraftDetail ? (
-              <>
-                {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 bg-primary-600 rounded-t-xl text-white">
-                  <div>
-                    <h3 className="text-lg font-bold">Detail Draft Order PO</h3>
-                    <p className="text-xs text-primary-200 font-mono mt-0.5">{selectedDraftDetail.no_order}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsPopupOpen(false);
-                      setSelectedDraftDetail(null);
-                    }}
-                    className="p-1 rounded-lg hover:bg-primary-700 text-primary-200 hover:text-white transition-colors"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                {/* Modal Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
-                  {/* Grid Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                    {/* Supplier Info */}
-                    <div className="space-y-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                      <h4 className="text-xs font-bold text-primary-600 uppercase tracking-wider">Informasi Pemasok</h4>
-                      <div className="grid grid-cols-3 gap-y-1.5 text-xs text-slate-700">
-                        <span className="text-slate-400 font-semibold">Kode:</span>
-                        <span className="col-span-2 text-slate-900 font-mono font-medium">{selectedDraftDetail.supplier?.kode}</span>
-                        <span className="text-slate-400 font-semibold">Nama:</span>
-                        <span className="col-span-2 text-slate-900 font-bold">{selectedDraftDetail.supplier?.nama}</span>
-                        <span className="text-slate-400 font-semibold">Telepon:</span>
-                        <span className="col-span-2 text-slate-900">{selectedDraftDetail.supplier?.no_telp || '-'}</span>
-                        <span className="text-slate-400 font-semibold">Alamat:</span>
-                        <span className="col-span-2 text-slate-900 leading-relaxed">{selectedDraftDetail.supplier?.alamat || 'Alamat tidak dicantumkan'}</span>
-                      </div>
-                    </div>
-
-                    {/* Order Meta Info */}
-                    <div className="space-y-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                      <h4 className="text-xs font-bold text-primary-600 uppercase tracking-wider">Informasi Transaksi</h4>
-                      <div className="grid grid-cols-3 gap-y-1.5 text-xs text-slate-700">
-                        <span className="text-slate-400 font-semibold">Tanggal:</span>
-                        <span className="col-span-2 text-slate-900">{formatDate(selectedDraftDetail.order_date)}</span>
-                        <span className="text-slate-400 font-semibold">Termin:</span>
-                        <span className="col-span-2 text-slate-900">
-                          {selectedDraftDetail.terms === 'tunai' ? 'Tunai' : `${selectedDraftDetail.terms} Bulan`}
-                        </span>
-                        <span className="text-slate-400 font-semibold">Catatan:</span>
-                        <span className="col-span-2 text-slate-900 italic">
-                          {selectedDraftDetail.note ? `"${selectedDraftDetail.note}"` : '-'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Items Table */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-750 uppercase tracking-wider">Item Barang</h4>
-                    <div className="overflow-x-auto border border-slate-200 rounded-lg max-h-[250px] overflow-y-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
-                            <th className="p-3 w-10 text-center">No</th>
-                            <th className="p-3">Kode</th>
-                            <th className="p-3">Nama Barang</th>
-                            <th className="p-3 text-right w-24">Kuantitas</th>
-                            <th className="p-3 text-right w-32">Harga Beli</th>
-                            <th className="p-3 text-right w-32">Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200">
-                          {selectedDraftDetail.purchase_items?.map((item: any, index: number) => (
-                            <tr key={item.id} className="bg-white hover:bg-slate-50 text-slate-800">
-                              <td className="p-3 text-center text-slate-400">{index + 1}</td>
-                              <td className="p-3 font-mono text-slate-650">{item.product?.kode}</td>
-                              <td className="p-3 font-semibold text-slate-900">{item.product?.nama}</td>
-                              <td className="p-3 text-right font-medium text-slate-755">
-                                {Number(item.qty)}
-                              </td>
-                              <td className="p-3 text-right font-mono text-slate-600">
-                                {formatCurrency(Number(item.harga_beli))}
-                              </td>
-                              <td className="p-3 text-right font-mono font-bold text-slate-900">
-                                {formatCurrency(Number(item.subtotal))}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Totals Summary */}
-                  <div className="flex flex-col items-end space-y-1.5 pt-4 border-t border-slate-100">
-                    <div className="flex gap-6 items-center">
-                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Grand Total:</span>
-                      <span className="text-xl font-extrabold text-emerald-600 font-mono">
-                        {formatCurrency(Number(selectedDraftDetail.subtotal))}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Modal Footer (Actions) */}
-                <div className="bg-slate-50 p-4 rounded-b-xl flex justify-end gap-3 border-t border-slate-200">
-                  <button
-                    onClick={() => {
-                      setIsPopupOpen(false);
-                      setSelectedDraftDetail(null);
-                    }}
-                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all bg-white shadow-sm"
-                  >
-                    Batal (Esc)
-                  </button>
-                  <button
-                    onClick={() => navigate(`/pembelian/edit-order?no_order=${selectedDraftDetail.no_order}`)}
-                    className="px-4 py-2 rounded-lg bg-primary-600 !text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
-                  >
-                    Edit Draft (Enter)
-                  </button>
-                  <button
-                    onClick={() => setShowCompleteConfirmModal(true)}
-                    className="px-4 py-2 rounded-lg bg-emerald-600 !text-white text-xs font-bold hover:bg-emerald-500 transition-all shadow-md shadow-emerald-500/10 flex items-center gap-1.5"
-                  >
-                    Selesaikan PO (F10)
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-xl">
-                <span className="text-slate-400 text-sm">Gagal memuat detail draft PO</span>
-              </div>
-            )}
+        /* PO Draft Detail View (In-place) */
+        <div className="space-y-4 animate-fade-in text-slate-800">
+          {/* Detail Page Title (Teks saja) */}
+          <div className="pb-1">
+            <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <FileText size={18} className="text-blue-600" />
+              <span>Detail Draft Order PO: {selectedDraftDetail.no_order}</span>
+            </h1>
+            <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-amber-600 uppercase">DRAFT</span></p>
           </div>
+
+          {isDetailLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-xl border border-slate-200">
+              <span className="text-slate-400 text-sm">Memuat detail draft...</span>
+            </div>
+          ) : (
+            <>
+              {/* 2 Separate Cards Layout */}
+              {!isInfoHidden && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Card 1: Informasi PO */}
+                  <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                    <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
+                      <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi PO</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-655">
+                      <div>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. PO</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{selectedDraftDetail.no_order}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Order</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(selectedDraftDetail.order_date)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Termin</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">{selectedDraftDetail.terms || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Status Cetak</span>
+                        <span className="text-xs font-bold mt-0.5 block text-amber-600">Belum Cetak (Draft)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Pemasok (Supplier) */}
+                  <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                    <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
+                      <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Pemasok (Supplier)</h3>
+                    </div>
+                    <div className="space-y-3.5 p-3.5 text-xs text-slate-655">
+                      <div>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Supplier</span>
+                        <span className="text-xs font-extrabold text-slate-855 mt-0.5 block">{selectedDraftDetail.supplier?.nama}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Alamat Pemasok</span>
+                        <span className="text-xs font-semibold text-slate-700 mt-0.5 block leading-normal">
+                          {selectedDraftDetail.supplier?.alamat || 'Alamat tidak dicantumkan'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Kode Supplier</span>
+                        <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{selectedDraftDetail.supplier?.kode || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Card 3: Daftar Barang */}
+              <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
+                <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
+                  <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang</h3>
+                </div>
+                <div className="p-4">
+                  <div className="overflow-hidden rounded-lg border border-slate-200">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
+                          <th className="p-3 w-12 text-center">#</th>
+                          <th className="p-3 w-32 text-center">Kode</th>
+                          <th className="p-3">Nama Barang</th>
+                          <th className="p-3 text-center w-24">Qty</th>
+                          <th className="p-3 text-right w-36">Harga Beli</th>
+                          <th className="p-3 text-right w-40">Total Harga</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {selectedDraftDetail.purchase_items?.map((item: any, idx: number) => (
+                          <tr key={item.id} className="hover:bg-slate-50 transition-colors text-slate-855">
+                            <td className="p-3 text-center font-semibold text-slate-550">{idx + 1}</td>
+                            <td className="p-3 text-center">
+                              <span className="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-slate-100 text-slate-700 border border-slate-200/60">
+                                {item.product?.kode || '-'}
+                              </span>
+                            </td>
+                            <td className="p-3 font-bold text-slate-800">{item.product?.nama || '-'}</td>
+                            <td className="p-3 text-center font-bold text-slate-700">{Number(item.qty)}</td>
+                            <td className="p-3 text-right font-semibold text-slate-600">{formatCurrency(Number(item.harga_beli))}</td>
+                            <td className="p-3 text-right font-bold text-slate-900">{formatCurrency(Number(item.subtotal))}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
+                      <div className="flex gap-6 items-center">
+                        <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Grand Total Draft</span>
+                        <span className="text-base font-extrabold text-emerald-600 font-mono">
+                          {formatCurrency(Number(selectedDraftDetail.subtotal))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Actions Buttons */}
+              <div className="flex justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsInfoHidden((prev) => !prev)}
+                  className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+                >
+                  <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+                  <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDraftDetail(null);
+                    setIsInfoHidden(false);
+                  }}
+                  className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+                >
+                  <span>Tutup</span>
+                  <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/pembelian/edit-order?no_order=${selectedDraftDetail.no_order}`)}
+                  className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
+                >
+                  <span>Edit Draft</span>
+                  <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Enter</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCompleteConfirmModal(true)}
+                  className="px-6 py-2.5 rounded-lg bg-emerald-600 text-white text-xs font-extrabold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/10 flex items-center gap-2 focus:outline-none"
+                >
+                  <span>Selesaikan Draft</span>
+                  <kbd className="text-[10px] text-emerald-200 font-bold font-mono uppercase bg-emerald-700 px-1.5 py-0.5 rounded ml-1">P / F10</kbd>
+                </button>
+              </div>
+            </>
+          )}
         </div>
-        </ModalPortal>
       )}
 
       {/* Complete PO Confirmation Modal */}
@@ -598,6 +641,55 @@ export const DraftPO: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteCheckState.status === 'can_delete' && deleteCheckState.targetItem && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteCheckState({ status: 'idle', targetItem: null })}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-slate-800 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              {/* Amber Header */}
+              <div className="flex flex-col items-center justify-center gap-2 bg-amber-500 border-b border-amber-600 px-5 py-4 text-center w-full">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <AlertTriangle size={20} className="text-white" />
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Konfirmasi Hapus Draft PO</h2>
+                  <p className="text-xs text-amber-50 mt-1 font-semibold text-white">Tindakan ini tidak memengaruhi stok barang karena status PO masih Draft</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-5 bg-white text-xs">
+                <p className="text-slate-700 font-semibold leading-relaxed">
+                  Apakah Anda yakin ingin menghapus draft PO <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>?
+                </p>
+                <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-650">
+                  <div><span className="font-bold">Tanggal PO:</span> {formatDate(deleteCheckState.targetItem.order_date)}</div>
+                  <div><span className="font-bold">Supplier:</span> {deleteCheckState.targetItem.supplier.nama}</div>
+                  <div><span className="font-bold">Total Nilai PO:</span> {formatCurrency(deleteCheckState.targetItem.subtotal)}</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2.5 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
+                <button
+                  onClick={() => setDeleteCheckState({ status: 'idle', targetItem: null })}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-250 text-slate-650 hover:bg-slate-100 transition-all bg-white"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  onClick={confirmDeletePurchase}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
+                >
+                  Ya, Hapus (Enter)
+                </button>
+              </div>
+            </div>
+          </div>
         </ModalPortal>
       )}
 

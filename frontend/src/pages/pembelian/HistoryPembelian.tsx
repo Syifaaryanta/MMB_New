@@ -116,6 +116,7 @@ export const HistoryPembelian: React.FC = () => {
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       if (filteredPurchases.length > 0) {
         setIsTableFocused(true);
         setSelectedIdx(0);
@@ -230,6 +231,9 @@ export const HistoryPembelian: React.FC = () => {
   // Keyboard Shortcuts
   // Enter: View PO detail or confirm delete
   useHotkeys('enter', (e) => {
+    if (document.activeElement === searchInputRef.current) {
+      return;
+    }
     if (deleteCheckState.status === 'can_delete') {
       e.preventDefault();
       confirmDeletePurchase();

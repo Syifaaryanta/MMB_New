@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { formatCurrency, formatDate, formatRupiahInput, parseRupiahInput } from '@/lib/utils';
+import { formatCurrency, formatDate, formatRupiahInput, parseRupiahInput, parseAdjustments } from '@/lib/utils';
 import { Search, Save, Printer, Plus, Trash2, X, AlertCircle, ShoppingCart, Truck, User, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 interface Customer {
@@ -35,6 +35,7 @@ interface SOItem {
   qty: number;
   unit_price: number;
   total: number;
+  is_adjustment?: boolean;
 }
 
 export const InputItemSO: React.FC = () => {
@@ -62,11 +63,7 @@ export const InputItemSO: React.FC = () => {
   const [focusedProdIdx, setFocusedProdIdx] = useState(0);
 
   // Adjustments & Notes
-  const [adjustmentDesc, setAdjustmentDesc] = useState(() => sessionStorage.getItem('so_adjustmentDesc') || '');
-  const [adjustmentAmount, setAdjustmentAmount] = useState<number>(() => {
-    const saved = sessionStorage.getItem('so_adjustmentAmount');
-    return saved ? Number(saved) : 0;
-  });
+  const [tempAdjustmentDesc, setTempAdjustmentDesc] = useState('');
   const [senderNote, setSenderNote] = useState(() => sessionStorage.getItem('so_senderNote') || '');
 
   // Custom states for pricing history, step tracking and panel visibility
@@ -108,24 +105,12 @@ export const InputItemSO: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const [adjustmentAmountInput, setAdjustmentAmountInput] = useState(() => sessionStorage.getItem('so_adjustmentAmountInput') || '');
+  const [tempAdjustmentAmountInput, setTempAdjustmentAmountInput] = useState('');
 
   // Sync to sessionStorage on change
   useEffect(() => {
     sessionStorage.setItem('so_items', JSON.stringify(items));
   }, [items]);
-
-  useEffect(() => {
-    sessionStorage.setItem('so_adjustmentDesc', adjustmentDesc);
-  }, [adjustmentDesc]);
-
-  useEffect(() => {
-    sessionStorage.setItem('so_adjustmentAmount', String(adjustmentAmount));
-  }, [adjustmentAmount]);
-
-  useEffect(() => {
-    sessionStorage.setItem('so_adjustmentAmountInput', adjustmentAmountInput);
-  }, [adjustmentAmountInput]);
 
   useEffect(() => {
     sessionStorage.setItem('so_senderNote', senderNote);
@@ -141,7 +126,7 @@ export const InputItemSO: React.FC = () => {
   const priceInputRef = useRef<HTMLInputElement>(null);
   const adjustmentDescRef = useRef<HTMLInputElement>(null);
   const adjustmentAmountRef = useRef<HTMLInputElement>(null);
-  const noteInputRef = useRef<HTMLTextAreaElement>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null);
   const productPopupRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const activeRowRef = useRef<HTMLTableRowElement | null>(null);
@@ -172,7 +157,9 @@ export const InputItemSO: React.FC = () => {
   // Focus modal popups when shown
   useEffect(() => {
     if (showProductPopup) {
-      productPopupRef.current?.focus();
+      setTimeout(() => {
+        productPopupRef.current?.focus();
+      }, 100);
     }
   }, [showProductPopup]);
 
@@ -410,18 +397,52 @@ export const InputItemSO: React.FC = () => {
     showToast('Item berhasil dihapus dari daftar', 'success');
   };
 
+  const addAdjustmentToTable = () => {
+    if (!tempAdjustmentDesc.trim()) {
+      showToast('Penjelasan penyesuaian tidak boleh kosong', 'error');
+      return;
+    }
+    const val = tempAdjustmentAmountInput;
+    const parsed = parseRupiahInput(val);
+    if (parsed === 0) {
+      showToast('Nilai penyesuaian tidak boleh 0', 'error');
+      return;
+    }
+
+    const newAdjItem = {
+      is_adjustment: true,
+      product_id: `ADJ-${Date.now()}`,
+      product_kode: 'ADJ',
+      product_nama: tempAdjustmentDesc,
+      qty: 1,
+      unit_price: parsed,
+      total: parsed,
+    };
+
+    setItems((prev) => [...prev, newAdjItem]);
+    setTempAdjustmentDesc('');
+    setTempAdjustmentAmountInput('');
+    adjustmentDescRef.current?.focus();
+    showToast('Penyesuaian berhasil dimasukkan', 'success');
+  };
+
   const handleSaveDraftAction = async (toDraftPage?: boolean) => {
-    if (!soMeta || items.length === 0) return;
+    const productItems = items.filter(item => !item.is_adjustment);
+    const adjustmentsList = items.filter(item => item.is_adjustment);
+    const serializedAdjustments = JSON.stringify(adjustmentsList.map(adj => ({ desc: adj.product_nama, amount: adj.total })));
+    const totalAdjAmount = adjustmentsList.reduce((sum, adj) => sum + adj.total, 0);
+
+    if (!soMeta || productItems.length === 0) return;
     try {
       const payload = {
         customer_id: soMeta.customer.id,
         order_date: soMeta.orderDate,
         diantar: soMeta.diantar,
         limit_bulan: soMeta.limitBulan,
-        extra_charge_desc: adjustmentDesc,
-        extra_charge_amount: adjustmentAmount,
+        extra_charge_desc: serializedAdjustments,
+        extra_charge_amount: totalAdjAmount,
         sender_note: senderNote,
-        items,
+        items: productItems,
       };
 
       // Simpan draft di DB
@@ -441,7 +462,12 @@ export const InputItemSO: React.FC = () => {
   };
 
   const handlePrintAction = async () => {
-    if (!soMeta || items.length === 0) return;
+    const productItems = items.filter(item => !item.is_adjustment);
+    const adjustmentsList = items.filter(item => item.is_adjustment);
+    const serializedAdjustments = JSON.stringify(adjustmentsList.map(adj => ({ desc: adj.product_nama, amount: adj.total })));
+    const totalAdjAmount = adjustmentsList.reduce((sum, adj) => sum + adj.total, 0);
+
+    if (!soMeta || productItems.length === 0) return;
     try {
       // Dapatkan data items yang telah diurutkan sesuai dengan pilihan user
       const sortedItems = getSortedItems(items);
@@ -451,8 +477,8 @@ export const InputItemSO: React.FC = () => {
         order_date: soMeta.orderDate,
         diantar: soMeta.diantar,
         limit_bulan: soMeta.limitBulan,
-        extra_charge_desc: adjustmentDesc,
-        extra_charge_amount: adjustmentAmount,
+        extra_charge_desc: serializedAdjustments,
+        extra_charge_amount: totalAdjAmount,
         sender_note: senderNote,
         items: sortedItems,
       };
@@ -527,16 +553,15 @@ export const InputItemSO: React.FC = () => {
     }
   }, { enableOnFormTags: true });
 
-  // F10: Save Order / Show Print Confirmation Modal
-  useHotkeys('f10', (e) => {
+  // F4: Focus Keterangan field
+  useHotkeys('f4', (e) => {
     e.preventDefault();
-    if (items.length > 0) {
-      setShowConfirmPrintModal(true);
-    }
+    noteInputRef.current?.focus();
+    noteInputRef.current?.select();
   }, { enableOnFormTags: true });
 
-  // Ctrl+S: Complete SO Transaction / Show Print Confirmation Modal
-  useHotkeys('ctrl+s', (e) => {
+  // F10: Save Order / Show Print Confirmation Modal
+  useHotkeys('f10', (e) => {
     e.preventDefault();
     if (items.length > 0) {
       setShowConfirmPrintModal(true);
@@ -642,8 +667,8 @@ export const InputItemSO: React.FC = () => {
     }
   };
 
-  const getSortedItems = (itemList: SOItem[]) => {
-    const list = [...itemList];
+  const getSortedItems = (itemList: any[]) => {
+    const list = itemList.filter(item => !item.is_adjustment);
     if (sortOption === 'abjad') {
       return list.sort((a, b) => a.product_nama.localeCompare(b.product_nama));
     } else if (sortOption === 'qty') {
@@ -717,8 +742,10 @@ export const InputItemSO: React.FC = () => {
     }
   };
 
-  const itemsSubtotal = items.reduce((sum, i) => sum + i.total, 0);
+  const itemsSubtotal = items.filter(item => !item.is_adjustment).reduce((sum, i) => sum + i.total, 0);
+  const adjustmentAmount = items.filter(item => item.is_adjustment).reduce((sum, i) => sum + i.total, 0);
   const grandTotal = itemsSubtotal + adjustmentAmount;
+  const adjustmentDesc = items.filter(item => item.is_adjustment).map(item => item.product_nama).join(', ');
 
   return (
     <div className="space-y-6" onKeyDown={handleGlobalKeyDown}>
@@ -871,51 +898,98 @@ export const InputItemSO: React.FC = () => {
                     <th className="p-4 text-right">Subtotal</th>
                   </tr>
                 </thead>
-                  <tbody>
-                    {items.length > 0 ? (
-                      items.map((item, idx) => {
-                        const isFocused = idx === selectedRowIdx && activeStep === 'table';
-                        const rowBgClass = isFocused ? 'bg-blue-100' : idx === selectedRowIdx ? 'bg-slate-50' : 'hover:bg-slate-50';
- 
-                        const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                <tbody>
+                  {items.length > 0 ? (
+                    items.map((item, idx) => {
+                      const isFocused = idx === selectedRowIdx && activeStep === 'table';
+                      const rowBgClass = isFocused ? 'bg-blue-100' : idx === selectedRowIdx ? 'bg-slate-50' : 'hover:bg-slate-50';
+
+                      const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                        let base = "p-4 transition-all duration-150 border-b ";
+                        if (isFocused) {
+                          base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                          if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                        } else if (idx === selectedRowIdx) {
+                          base += "bg-slate-50 text-slate-800 border-slate-200 ";
+                          if (pos === 'first') base += "border-l-4 border-slate-350 ";
+                        } else {
+                          base += "text-slate-800 border-slate-200 ";
+                          if (pos === 'first') base += "border-l-4 border-transparent ";
+                        }
+                        return base;
+                      };
+
+                      if (item.is_adjustment) {
+                        const adjBgClass = isFocused
+                          ? 'bg-blue-100'
+                          : idx === selectedRowIdx
+                            ? 'bg-amber-500/10'
+                            : 'bg-amber-500/5 hover:bg-amber-500/10';
+
+                        const getAdjTdClass = (pos: 'first' | 'middle' | 'last') => {
                           let base = "p-4 transition-all duration-150 border-b ";
                           if (isFocused) {
                             base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
                             if (pos === 'first') base += "border-l-4 border-primary-600 ";
                           } else if (idx === selectedRowIdx) {
-                            base += "bg-slate-50 text-slate-800 border-slate-200 ";
-                            if (pos === 'first') base += "border-l-4 border-slate-350 ";
+                            base += "bg-amber-500/10 text-amber-900 border-amber-250 ";
+                            if (pos === 'first') base += "border-l-4 border-amber-500 ";
                           } else {
-                            base += "text-slate-800 border-slate-200 ";
+                            base += "bg-amber-500/5 text-slate-800 border-slate-200/60 ";
                             if (pos === 'first') base += "border-l-4 border-transparent ";
                           }
                           return base;
                         };
- 
+
                         return (
                           <tr
                             key={item.product_id}
                             ref={idx === selectedRowIdx ? activeRowRef : null}
+                            onClick={() => {
+                              (document.activeElement as HTMLElement)?.blur();
+                              setSelectedRowIdx(idx);
+                              setActiveStep('table');
+                            }}
+                            className={`cursor-pointer transition-all ${adjBgClass}`}
+                          >
+                            <td className={getAdjTdClass('first') + " text-center text-amber-600 font-bold text-xs"}>-</td>
+                            <td className={getAdjTdClass('middle') + " font-mono text-amber-700 font-bold"}>ADJ</td>
+                            <td className={getAdjTdClass('middle') + " font-bold text-amber-800 italic"}>{item.product_nama}</td>
+                            <td className={getAdjTdClass('middle') + " text-right text-slate-500"}>-</td>
+                            <td className={getAdjTdClass('middle') + ` text-right font-mono font-bold ${item.total < 0 ? 'text-danger-600' : 'text-emerald-600'}`}>
+                              {item.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(item.total))}
+                            </td>
+                            <td className={getAdjTdClass('last') + ` text-right font-mono font-extrabold ${item.total < 0 ? 'text-danger-600' : 'text-emerald-600'}`}>
+                              {item.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(item.total))}
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return (
+                        <tr
+                          key={item.product_id}
+                          ref={idx === selectedRowIdx ? activeRowRef : null}
                           onClick={() => {
                             (document.activeElement as HTMLElement)?.blur();
                             setSelectedRowIdx(idx);
                             setActiveStep('table');
                           }}
-                            className={`cursor-pointer transition-all ${rowBgClass}`}
-                          >
-                            <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
-                            <td className={getTdClass('middle') + " font-mono text-slate-700 font-semibold"}>{item.product_kode}</td>
-                            <td className={getTdClass('middle') + " font-bold text-slate-900"}>{item.product_nama}</td>
-                            <td className={getTdClass('middle') + " text-right text-slate-800 font-semibold"}>{item.qty}</td>
-                            <td className={getTdClass('middle') + " text-right font-mono text-slate-700"}>
-                              {formatCurrency(item.unit_price)}
-                            </td>
-                            <td className={getTdClass('last') + " text-right font-mono text-slate-900 font-bold"}>
-                              {formatCurrency(item.total)}
-                            </td>
-                          </tr>
-                        );
-                      })
+                          className={`cursor-pointer transition-all ${rowBgClass}`}
+                        >
+                          <td className={getTdClass('first') + " text-center text-slate-500 font-mono text-xs"}>{idx + 1}</td>
+                          <td className={getTdClass('middle') + " font-mono text-slate-700 font-semibold"}>{item.product_kode}</td>
+                          <td className={getTdClass('middle') + " font-bold text-slate-900"}>{item.product_nama}</td>
+                          <td className={getTdClass('middle') + " text-right text-slate-800 font-semibold"}>{item.qty}</td>
+                          <td className={getTdClass('middle') + " text-right font-mono text-slate-700"}>
+                            {formatCurrency(item.unit_price)}
+                          </td>
+                          <td className={getTdClass('last') + " text-right font-mono text-slate-900 font-bold"}>
+                            {formatCurrency(item.total)}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan={6} className="p-8 text-center text-slate-500 text-xs italic">
@@ -927,24 +1001,41 @@ export const InputItemSO: React.FC = () => {
               </table>
             </div>
 
-            {/* Grand Totals (Bawah Kanan Tabel) */}
-            <div className="flex justify-end mt-2 animate-fade-in pr-4">
-              <div className="flex flex-col text-right space-y-1.5 min-w-[280px]">
-                <div className="flex justify-between items-center text-xs gap-4">
-                  <span className="text-slate-400 font-medium">Subtotal Belanja:</span>
-                  <span className="font-semibold text-slate-200 currency">{formatCurrency(itemsSubtotal)}</span>
-                </div>
-                {adjustmentAmount !== 0 && (
+            {/* Grid for Keterangan (Left) and Grand Totals (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pr-4">
+              {/* Bottom Left: Note / Keterangan */}
+              <div className="flex flex-col space-y-1.5">
+                <label className="text-xs text-slate-400 font-semibold">Keterangan (F4)</label>
+                <input
+                  ref={noteInputRef}
+                  type="text"
+                  placeholder="Input Keterangan..."
+                  value={senderNote}
+                  onChange={(e) => setSenderNote(e.target.value)}
+                  onFocus={() => setActiveStep('adjust')}
+                  className="input-field w-full py-1.5 px-3 text-xs h-8"
+                />
+              </div>
+
+              {/* Bottom Right: Grand Totals */}
+              <div className="flex justify-end items-start">
+                <div className="flex flex-col text-right space-y-1.5 min-w-[280px]">
                   <div className="flex justify-between items-center text-xs gap-4">
-                    <span className="text-slate-400 font-medium">Penyesuaian ({adjustmentDesc || 'F2'}):</span>
-                    <span className={`font-semibold currency ${adjustmentAmount < 0 ? 'text-danger-400' : 'text-emerald-400'}`}>
-                      {adjustmentAmount < 0 ? '-' : '+'}{formatCurrency(Math.abs(adjustmentAmount))}
-                    </span>
+                    <span className="text-slate-400 font-medium">Subtotal Belanja:</span>
+                    <span className="font-semibold text-slate-200 currency">{formatCurrency(itemsSubtotal)}</span>
                   </div>
-                )}
-                <div className="pt-1.5 border-t border-surface-700/50 flex justify-between items-center gap-4">
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">Grand Total:</span>
-                  <span className="text-xl font-black text-emerald-400 currency">{formatCurrency(grandTotal)}</span>
+                  {adjustmentAmount !== 0 && (
+                    <div className="flex justify-between items-center text-xs gap-4">
+                      <span className="text-slate-400 font-medium">Penyesuaian ({adjustmentDesc || 'F2'}):</span>
+                      <span className={`font-semibold currency ${adjustmentAmount < 0 ? 'text-danger-400' : 'text-emerald-400'}`}>
+                        {adjustmentAmount < 0 ? '-' : '+'}{formatCurrency(Math.abs(adjustmentAmount))}
+                      </span>
+                    </div>
+                  )}
+                  <div className="pt-1.5 border-t border-surface-700/50 flex justify-between items-center gap-4">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">Grand Total:</span>
+                    <span className="text-xl font-black text-emerald-400 currency">{formatCurrency(grandTotal)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1054,8 +1145,8 @@ export const InputItemSO: React.FC = () => {
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk mulai cari barang</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk menuju kolom Penyesuaian & Notes</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">F3</kbd> untuk masuk/navigasi tabel belanjaan</li>
+                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk menuju kolom Keterangan</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> pada kolom Qty / Harga untuk lanjut</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Ctrl+S</kbd> untuk simpan</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk simpan order</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal / keluar kasir</li>
@@ -1063,9 +1154,9 @@ export const InputItemSO: React.FC = () => {
               </div>
             )}
 
-            {/* Adjustment & Notes Panel (Always Shown) */}
+            {/* Adjustment Panel (Always Shown) */}
             <div className="card card-hovered p-6 space-y-6 border border-surface-700 animate-scale-in">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Adjustment & Notes</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Penyesuaian (Adjustment)</h3>
 
               {/* Adjustments */}
               <div className="space-y-4">
@@ -1074,9 +1165,9 @@ export const InputItemSO: React.FC = () => {
                   <input
                     ref={adjustmentDescRef}
                     type="text"
-                    placeholder="Potongan / Ongkos kirim..."
-                    value={adjustmentDesc}
-                    onChange={(e) => setAdjustmentDesc(e.target.value)}
+                    placeholder="Potongan / Pengiriman..."
+                    value={tempAdjustmentDesc}
+                    onChange={(e) => setTempAdjustmentDesc(e.target.value)}
                     onFocus={() => setActiveStep('adjust')}
                     onKeyDown={(e) => e.key === 'Enter' && adjustmentAmountRef.current?.focus()}
                     className="input-field w-full py-2 text-xs"
@@ -1088,37 +1179,21 @@ export const InputItemSO: React.FC = () => {
                     ref={adjustmentAmountRef}
                     type="text"
                     placeholder="0"
-                    value={adjustmentAmountInput}
+                    value={tempAdjustmentAmountInput}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === '' || val === '-') {
-                        setAdjustmentAmountInput(val);
-                        setAdjustmentAmount(0);
+                        setTempAdjustmentAmountInput(val);
                       } else {
                         const parsed = parseRupiahInput(val);
-                        setAdjustmentAmount(parsed);
-                        setAdjustmentAmountInput(formatRupiahInput(parsed));
+                        setTempAdjustmentAmountInput(formatRupiahInput(parsed));
                       }
                     }}
                     onFocus={() => setActiveStep('adjust')}
-                    onKeyDown={(e) => e.key === 'Enter' && noteInputRef.current?.focus()}
+                    onKeyDown={(e) => e.key === 'Enter' && addAdjustmentToTable()}
                     className="input-field w-full py-2 text-xs font-mono text-right"
                   />
                 </div>
-              </div>
-
-              {/* Sender Note */}
-              <div>
-                <label className="block text-xs text-slate-400 mb-1.5 font-semibold">Catatan Pengiriman (F10)</label>
-                <textarea
-                  ref={noteInputRef}
-                  rows={3}
-                  placeholder="Input Keterangan"
-                  value={senderNote}
-                  onChange={(e) => setSenderNote(e.target.value)}
-                  onFocus={() => setActiveStep('adjust')}
-                  className="input-field w-full py-2 text-xs resize-none"
-                />
               </div>
             </div>
           </div>
@@ -1129,128 +1204,128 @@ export const InputItemSO: React.FC = () => {
       {showConfirmPrintModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            onKeyDown={handleConfirmPrintModalKeyDown}
-            className="bg-white border border-slate-200 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Printer size={18} className="text-primary-600" />
-                <span>Konfirmasi Cetak Nota</span>
-              </h3>
-              <button
-                onClick={() => setShowConfirmPrintModal(false)}
-                className="text-slate-450 hover:text-slate-650 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            <div
+              tabIndex={0}
+              onKeyDown={handleConfirmPrintModalKeyDown}
+              className="bg-white border border-slate-200 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Printer size={18} className="text-primary-600" />
+                  <span>Konfirmasi Cetak Nota</span>
+                </h3>
+                <button
+                  onClick={() => setShowConfirmPrintModal(false)}
+                  className="text-slate-450 hover:text-slate-650 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-            {/* Subtitle */}
-            <p className="text-xs text-slate-500 mt-4 font-medium">
-              Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
-            </p>
+              {/* Subtitle */}
+              <p className="text-xs text-slate-500 mt-4 font-medium">
+                Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
+              </p>
 
-            {/* Sorting Pills */}
-            <div className="flex gap-2.5 mt-4">
-              <button
-                ref={btnAsliRef}
-                type="button"
-                onClick={() => setSortOption('asli')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'asli'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Urutan Asli
-              </button>
-              <button
-                ref={btnAbjadRef}
-                type="button"
-                onClick={() => setSortOption('abjad')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'abjad'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Abjad (A-Z)
-              </button>
-              <button
-                ref={btnQtyRef}
-                type="button"
-                onClick={() => setSortOption('qty')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'qty'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Qty Terbanyak
-              </button>
-              <button
-                ref={btnHargaRef}
-                type="button"
-                onClick={() => setSortOption('harga')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'harga'
-                  ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                Harga Tertinggi
-              </button>
-            </div>
+              {/* Sorting Pills */}
+              <div className="flex gap-2.5 mt-4">
+                <button
+                  ref={btnAsliRef}
+                  type="button"
+                  onClick={() => setSortOption('asli')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'asli'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Urutan Asli
+                </button>
+                <button
+                  ref={btnAbjadRef}
+                  type="button"
+                  onClick={() => setSortOption('abjad')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'abjad'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Abjad (A-Z)
+                </button>
+                <button
+                  ref={btnQtyRef}
+                  type="button"
+                  onClick={() => setSortOption('qty')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'qty'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Qty Terbanyak
+                </button>
+                <button
+                  ref={btnHargaRef}
+                  type="button"
+                  onClick={() => setSortOption('harga')}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'harga'
+                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  Harga Tertinggi
+                </button>
+              </div>
 
-            {/* Items Preview Table */}
-            <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto bg-slate-50">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-250 text-slate-700 font-bold">
-                    <th className="p-3">Nama Barang</th>
-                    <th className="p-3 text-right w-20">Qty</th>
-                    <th className="p-3 text-right w-32">Harga</th>
-                    <th className="p-3 text-right w-32">Jumlah</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-150">
-                  {getSortedItems(items).map((item, idx) => (
-                    <tr key={idx} className="bg-white hover:bg-slate-50 text-slate-800">
-                      <td className="p-3 font-semibold text-slate-900">{item.product_nama}</td>
-                      <td className="p-3 text-right font-medium text-slate-700">{item.qty}</td>
-                      <td className="p-3 text-right font-mono font-medium text-slate-600">{formatCurrency(item.unit_price)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">{formatCurrency(item.total)}</td>
+              {/* Items Preview Table */}
+              <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto bg-slate-50">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-250 text-slate-700 font-bold">
+                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3 text-right w-20">Qty</th>
+                      <th className="p-3 text-right w-32">Harga</th>
+                      <th className="p-3 text-right w-32">Jumlah</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-150">
+                    {getSortedItems(items).map((item, idx) => (
+                      <tr key={idx} className="bg-white hover:bg-slate-50 text-slate-800">
+                        <td className="p-3 font-semibold text-slate-900">{item.product_nama}</td>
+                        <td className="p-3 text-right font-medium text-slate-700">{item.qty}</td>
+                        <td className="p-3 text-right font-mono font-medium text-slate-600">{formatCurrency(item.unit_price)}</td>
+                        <td className="p-3 text-right font-mono font-bold text-slate-900">{formatCurrency(item.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            {/* Footer Buttons */}
-            <div className="flex justify-end gap-3 mt-6 border-t border-slate-100 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowConfirmPrintModal(false)}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
-              >
-                Batal (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSaveDraftAction()}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
-              >
-                Simpan Draft (Enter)
-              </button>
-              <button
-                type="button"
-                onClick={handlePrintAction}
-                className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
-              >
-                Print (P)
-              </button>
+              {/* Footer Buttons */}
+              <div className="flex justify-end gap-3 mt-6 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPrintModal(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveDraftAction()}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  Simpan Draft (Enter)
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrintAction}
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
+                >
+                  Print (P)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1258,44 +1333,44 @@ export const InputItemSO: React.FC = () => {
       {showCancelConfirmModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            ref={(el) => el?.focus()}
-            onKeyDown={handleCancelConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
-          >
-            <div className="flex flex-col items-center justify-center gap-2 text-danger-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <AlertTriangle size={28} />
-              <h3 className="text-lg font-bold text-white">Konfirmasi Batal Order</h3>
-            </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              Order belum di-input. Jika Anda membatalkan, seluruh data order penjualan ini akan terhapus sepenuhnya.
-            </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCancelConfirmModal(false);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
-              >
-                Kembali (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  sessionStorage.removeItem('so_step1');
-                  setShowCancelConfirmModal(false);
-                  navigate('/penjualan');
-                }}
-                className="btn-primary py-2 px-4 text-xs bg-danger-600 hover:bg-danger-500 font-bold"
-              >
-                Konfirmasi & Keluar (Enter)
-              </button>
+            <div
+              tabIndex={0}
+              ref={(el) => el?.focus()}
+              onKeyDown={handleCancelConfirmModalKeyDown}
+              className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
+            >
+              <div className="flex flex-col items-center justify-center gap-2 text-danger-600 border-b border-slate-100 pb-3 mb-4 text-center">
+                <AlertTriangle size={28} />
+                <h3 className="text-lg font-bold text-slate-900">Konfirmasi Batal Order</h3>
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
+                Order belum di-input. Jika Anda membatalkan, seluruh data order penjualan ini akan terhapus sepenuhnya.
+              </p>
+              <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelConfirmModal(false);
+                    setTimeout(() => searchInputRef.current?.focus(), 50);
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                >
+                  Kembali (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sessionStorage.removeItem('so_step1');
+                    setShowCancelConfirmModal(false);
+                    navigate('/penjualan');
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-danger-600 hover:bg-danger-700 text-white transition-all shadow-md shadow-danger-500/10"
+                >
+                  Konfirmasi & Keluar (Enter)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1303,71 +1378,78 @@ export const InputItemSO: React.FC = () => {
       {showDraftConfirmModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            ref={(el) => el?.focus()}
-            onKeyDown={handleDraftConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
-          >
-            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <Save size={28} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-white">Simpan sebagai Draft</h3>
-            </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              Order penjualan ini akan disimpan sebagai <strong className="text-white">Draft</strong>.
-              Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
-            </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDraftConfirmModal(false);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
-              >
-                Batal (Esc)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDraftConfirmModal(false);
-                  handleSaveDraftAction(true);
-                }}
-                className="btn-primary py-2 px-4 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
-              >
-                Simpan & Ke Draft (Enter)
-              </button>
+            <div
+              tabIndex={0}
+              ref={(el) => el?.focus()}
+              onKeyDown={handleDraftConfirmModalKeyDown}
+              className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
+            >
+              <div className="flex flex-col items-center justify-center gap-2 text-amber-600 border-b border-slate-100 pb-3 mb-4 text-center">
+                <Save size={28} className="text-amber-600" />
+                <h3 className="text-lg font-bold text-slate-900">Simpan sebagai Draft</h3>
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
+                Order penjualan ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>.
+                Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
+              </p>
+              <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDraftConfirmModal(false);
+                    setTimeout(() => searchInputRef.current?.focus(), 50);
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                >
+                  Batal (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDraftConfirmModal(false);
+                    handleSaveDraftAction(true);
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/10"
+                >
+                  Simpan & Ke Draft (Enter)
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
       {/* Stock warning modal */}
       {showStockAlert && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in">
-            <div className="flex items-center gap-2.5 text-danger-400 border-b border-surface-700 pb-3 mb-4">
-              <AlertCircle size={20} />
-              <h3 className="text-lg font-bold text-white">Stok Tidak Mencukupi</h3>
-            </div>
-            <p className="text-xs text-slate-400 mb-6">{stockAlertMsg}</p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  setShowStockAlert(false);
-                  qtyInputRef.current?.focus();
-                  qtyInputRef.current?.select();
-                }}
-                className="btn-primary py-2 px-4 text-xs bg-danger-600 hover:bg-danger-550 !text-white font-bold"
-              >
-                Tutup (Enter)
-              </button>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+              <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertCircle size={24} className="shrink-0 text-white" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Tidak Mencukupi</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                  {stockAlertMsg}
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowStockAlert(false);
+                      setTimeout(() => {
+                        qtyInputRef.current?.focus();
+                        qtyInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
+                  >
+                    Tutup (Enter)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1375,33 +1457,33 @@ export const InputItemSO: React.FC = () => {
       {showEmptyQtyAlert && (
         <ModalPortal>
           <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
-              <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Kuantitas Kosong!</h3>
-            </div>
-            <div className="p-6 text-center">
-              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.
-              </p>
-              <div className="flex justify-center pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEmptyQtyAlert(false);
-                    setTimeout(() => {
-                      qtyInputRef.current?.focus();
-                      qtyInputRef.current?.select();
-                    }, 50);
-                  }}
-                  className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
-                >
-                  Tutup (Enter)
-                </button>
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+              <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Kuantitas Kosong!</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                  Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEmptyQtyAlert(false);
+                      setTimeout(() => {
+                        qtyInputRef.current?.focus();
+                        qtyInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
+                  >
+                    Tutup (Enter)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1409,42 +1491,42 @@ export const InputItemSO: React.FC = () => {
       {showDuplicateModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            ref={(el) => el?.focus()}
-            onKeyDown={handleDuplicateModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
-          >
-            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <AlertTriangle size={28} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-white">Barang Sudah Diinput</h3>
-            </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              {duplicateMsg}
-            </p>
-            <div className="flex justify-center border-t border-surface-700/50 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDuplicateModal(false);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className="btn-primary py-2 px-6 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
-                autoFocus
-              >
-                OK (Enter)
-              </button>
+            <div
+              tabIndex={0}
+              ref={(el) => el?.focus()}
+              onKeyDown={handleDuplicateModalKeyDown}
+              className="bg-white border border-slate-200 rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden outline-none"
+            >
+              <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertTriangle size={24} className="shrink-0 text-white" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Barang Sudah Diinput</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold">
+                  {duplicateMsg}
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDuplicateModal(false);
+                      setTimeout(() => searchInputRef.current?.focus(), 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-primary-600 !text-white text-xs font-bold hover:bg-primary-750 transition-all shadow-md"
+                  >
+                    OK (Enter)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
       {/* Toast Alert */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${
-          toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg font-semibold text-xs flex items-center gap-2 animate-slide-in text-white ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+          }`}>
           {toast.type === 'success' ? (
             <CheckCircle className="w-4 h-4 shrink-0 text-white" />
           ) : (
@@ -1458,34 +1540,34 @@ export const InputItemSO: React.FC = () => {
       {showZeroStockPopup && zeroStockProduct && (
         <ModalPortal>
           <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
-              <AlertTriangle size={24} className="shrink-0 text-white" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Kosong!</h3>
-            </div>
-            <div className="p-6 text-center">
-              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
-              </p>
-              <div className="flex justify-center pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowZeroStockPopup(false);
-                    setZeroStockProduct(null);
-                    setTimeout(() => {
-                      searchInputRef.current?.focus();
-                      searchInputRef.current?.select();
-                    }, 50);
-                  }}
-                  className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
-                >
-                  Tutup (Enter)
-                </button>
+            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
+              <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+                <AlertTriangle size={24} className="shrink-0 text-white" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Kosong!</h3>
+              </div>
+              <div className="p-6 text-center">
+                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                  Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
+                </p>
+                <div className="flex justify-center pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowZeroStockPopup(false);
+                      setZeroStockProduct(null);
+                      setTimeout(() => {
+                        searchInputRef.current?.focus();
+                        searchInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
+                  >
+                    Tutup (Enter)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1493,56 +1575,56 @@ export const InputItemSO: React.FC = () => {
       {showProductPopup && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            ref={productPopupRef}
-            tabIndex={0}
-            onKeyDown={handleProductPopupKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
-          >
-            <div className="flex justify-between items-center w-full">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Search size={18} />
-                <span>Pilih Produk</span>
-              </h3>
-              <button onClick={() => setShowProductPopup(false)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
-              {products.length > 0 ? (
-                products.map((p, idx) => (
-                  <button
-                    key={p.id}
-                    ref={(el) => {
-                      itemRefs.current[idx] = el;
-                    }}
-                    onClick={() => selectProduct(p)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedProdIdx
-                      ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
-                      : 'border-surface-700 hover:bg-surface-750 text-slate-350 bg-surface-900'
-                      }`}
-                  >
-                    <div>
-                      <p className="font-semibold text-black">{p.nama}</p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">{p.kode}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-slate-400">Stok: {p.stok} {p.satuan}</span>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  Tidak ada produk yang cocok dengan "{prodQuery}".
-                </div>
-              )}
-            </div>
-            <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+            <div
+              ref={productPopupRef}
+              tabIndex={0}
+              onKeyDown={handleProductPopupKeyDown}
+              className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center w-full">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Search size={18} />
+                  <span>Pilih Produk</span>
+                </h3>
+                <button onClick={() => setShowProductPopup(false)} className="text-slate-400 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
+                {products.length > 0 ? (
+                  products.map((p, idx) => (
+                    <button
+                      key={p.id}
+                      ref={(el) => {
+                        itemRefs.current[idx] = el;
+                      }}
+                      onClick={() => selectProduct(p)}
+                      className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedProdIdx
+                        ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                        : 'border-surface-700 hover:bg-surface-750 text-slate-350 bg-surface-900'
+                        }`}
+                    >
+                      <div>
+                        <p className="font-semibold text-black">{p.nama}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">{p.kode}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-slate-400">Stok: {p.stok} {p.satuan}</span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    Tidak ada produk yang cocok dengan "{prodQuery}".
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
+                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
+                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1550,70 +1632,70 @@ export const InputItemSO: React.FC = () => {
       {showPrintModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            tabIndex={0}
-            onKeyDown={handlePrintModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in outline-none"
-            ref={(el) => el?.focus()}
-          >
-            <div className="text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
-                <Printer size={24} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Transaksi Berhasil Disimpan</h3>
-                <p className="text-xs text-slate-400 mt-1">Pilih format cetak nota belanja (Gunakan Panah Kiri/Kanan):</p>
-              </div>
+            <div
+              tabIndex={0}
+              onKeyDown={handlePrintModalKeyDown}
+              className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-scale-in outline-none"
+              ref={(el) => el?.focus()}
+            >
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
+                  <Printer size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Transaksi Berhasil Disimpan</h3>
+                  <p className="text-xs text-slate-400 mt-1">Pilih format cetak nota belanja (Gunakan Panah Kiri/Kanan):</p>
+                </div>
 
-              {/* Selector */}
-              <div className="flex gap-2 p-1.5 bg-surface-900 border border-surface-750 rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setPrintFormat('thermal')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${printFormat === 'thermal' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                >
-                  Kasir Thermal (58mm)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPrintFormat('a4')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${printFormat === 'a4' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                >
-                  Nota A4 / Kertas
-                </button>
-              </div>
+                {/* Selector */}
+                <div className="flex gap-2 p-1.5 bg-surface-900 border border-surface-750 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setPrintFormat('thermal')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${printFormat === 'thermal' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                  >
+                    Kasir Thermal (58mm)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrintFormat('a4')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${printFormat === 'a4' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                  >
+                    Nota A4 / Kertas
+                  </button>
+                </div>
 
-              {/* Actions */}
-              <div className="flex flex-col gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="btn-primary w-full py-2 flex items-center justify-center gap-1.5 text-xs"
-                >
-                  <Printer size={14} />
-                  <span>Cetak Nota Belanja (Enter)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPrintModal(false);
-                    navigate('/penjualan');
-                  }}
-                  className="btn-secondary w-full py-2 text-xs"
-                >
-                  Selesai Tanpa Cetak (Esc)
-                </button>
-              </div>
+                {/* Actions */}
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="btn-primary w-full py-2 flex items-center justify-center gap-1.5 text-xs"
+                  >
+                    <Printer size={14} />
+                    <span>Cetak Nota Belanja (Enter)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPrintModal(false);
+                      navigate('/penjualan');
+                    }}
+                    className="btn-secondary w-full py-2 text-xs"
+                  >
+                    Selesai Tanpa Cetak (Esc)
+                  </button>
+                </div>
 
-              <div className="pt-4 border-t border-surface-700 flex justify-between text-[10px] text-slate-500">
-                <span>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> untuk Cetak</span>
-                <span>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk Selesai</span>
+                <div className="pt-4 border-t border-surface-700 flex justify-between text-[10px] text-slate-500">
+                  <span>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> untuk Cetak</span>
+                  <span>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk Selesai</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
@@ -1661,9 +1743,9 @@ export const InputItemSO: React.FC = () => {
                   <p className="border-t border-dashed border-black my-1.5"></p>
                 </div>
                 <div className="space-y-0.5 text-right font-semibold">
-                  {Number(completedSo.extra_charge_amount) !== 0 && (
-                    <p>Adj ({completedSo.extra_charge_desc}): {formatCurrency(Number(completedSo.extra_charge_amount))}</p>
-                  )}
+                  {parseAdjustments(completedSo.extra_charge_desc, completedSo.extra_charge_amount).map((adj, index) => (
+                    <p key={index}>{adj.product_nama}: {adj.total < 0 ? '' : '+'}{formatCurrency(adj.total)}</p>
+                  ))}
                   <p className="font-bold text-xs">Total: {formatCurrency(Number(completedSo.subtotal))}</p>
                 </div>
                 <div className="text-center text-[9px] pt-3 space-y-0.5">
@@ -1727,16 +1809,20 @@ export const InputItemSO: React.FC = () => {
                         <td className="p-1.5 text-right">{formatCurrency(Number(item.total))}</td>
                       </tr>
                     ))}
-                    {Number(completedSo.extra_charge_amount) !== 0 && (
-                      <tr>
-                        <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
-                          Penyesuaian ({completedSo.extra_charge_desc})
+                    {parseAdjustments(completedSo.extra_charge_desc, completedSo.extra_charge_amount).map((adj, index) => (
+                      <tr key={`adj-${index}`} className="align-top">
+                        <td className="p-1.5 border-r border-black text-center">-</td>
+                        <td className="p-1.5 border-r border-black font-mono">ADJ</td>
+                        <td className="p-1.5 border-r border-black font-bold italic">{adj.product_nama}</td>
+                        <td className="p-1.5 border-r border-black text-right">-</td>
+                        <td className="p-1.5 border-r border-black text-right font-mono font-bold">
+                          {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
                         </td>
-                        <td className="p-1.5 text-right font-bold">
-                          {formatCurrency(Number(completedSo.extra_charge_amount))}
+                        <td className="p-1.5 text-right font-bold font-mono">
+                          {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
                         </td>
                       </tr>
-                    )}
+                    ))}
                     <tr className="bg-slate-50 border-t border-black">
                       <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
                         Grand Total Penjualan

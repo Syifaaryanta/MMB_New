@@ -338,7 +338,9 @@ export const KelolaProduk: React.FC = () => {
   // Focus search popup when opened
   useEffect(() => {
     if (showSearchPopup) {
-      searchPopupRef.current?.focus();
+      setTimeout(() => {
+        searchPopupRef.current?.focus();
+      }, 100);
     }
   }, [showSearchPopup]);
 

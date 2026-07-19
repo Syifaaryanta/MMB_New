@@ -180,7 +180,9 @@ export const InputItemPO: React.FC = () => {
   // Focus product popup modal when shown
   useEffect(() => {
     if (showProductPopup) {
-      productPopupRef.current?.focus();
+      setTimeout(() => {
+        productPopupRef.current?.focus();
+      }, 100);
     }
   }, [showProductPopup]);
 
@@ -847,23 +849,23 @@ export const InputItemPO: React.FC = () => {
             tabIndex={0}
             ref={(el) => el?.focus()}
             onKeyDown={handleCancelConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+            className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
           >
-            <div className="flex flex-col items-center justify-center gap-2 text-danger-400 border-b border-surface-700 pb-3 mb-4 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 text-danger-600 border-b border-slate-100 pb-3 mb-4 text-center">
               <AlertTriangle size={28} />
-              <h3 className="text-lg font-bold text-white">Konfirmasi Batal PO</h3>
+              <h3 className="text-lg font-bold text-slate-900">Konfirmasi Batal PO</h3>
             </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
+            <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
               PO belum di-input. Jika Anda membatalkan, seluruh data order pembelian ini akan terhapus sepenuhnya.
             </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
+            <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setShowCancelConfirmModal(false);
                   setTimeout(() => searchInputRef.current?.focus(), 50);
                 }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
+                className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
               >
                 Kembali (Esc)
               </button>
@@ -874,7 +876,7 @@ export const InputItemPO: React.FC = () => {
                   setShowCancelConfirmModal(false);
                   navigate('/pembelian');
                 }}
-                className="btn-primary py-2 px-4 text-xs bg-danger-600 hover:bg-danger-550 font-bold"
+                className="px-4 py-2 text-xs font-bold rounded-lg bg-danger-600 hover:bg-danger-700 text-white transition-all shadow-md shadow-danger-500/10"
               >
                 Konfirmasi & Keluar (Enter)
               </button>
@@ -892,24 +894,24 @@ export const InputItemPO: React.FC = () => {
             tabIndex={0}
             ref={(el) => el?.focus()}
             onKeyDown={handleDraftConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+            className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
           >
-            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <Save size={28} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-white">Simpan sebagai Draft</h3>
+            <div className="flex flex-col items-center justify-center gap-2 text-amber-600 border-b border-slate-100 pb-3 mb-4 text-center">
+              <Save size={28} className="text-amber-600" />
+              <h3 className="text-lg font-bold text-slate-900">Simpan sebagai Draft</h3>
             </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              PO ini akan disimpan sebagai <strong className="text-white">Draft</strong>.
+            <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
+              PO ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>.
               Stok di gudang tidak akan berubah sampai barang ini secara resmi diterima (Receiving).
             </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
+            <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setShowDraftConfirmModal(false);
                   setTimeout(() => searchInputRef.current?.focus(), 50);
                 }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
+                className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
               >
                 Batal (Esc)
               </button>
@@ -919,7 +921,7 @@ export const InputItemPO: React.FC = () => {
                   setShowDraftConfirmModal(false);
                   submitPO(false); // Save as draft
                 }}
-                className="btn-primary py-2 px-4 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
+                className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/10"
               >
                 Simpan & Ke Draft (Enter)
               </button>
@@ -982,27 +984,28 @@ export const InputItemPO: React.FC = () => {
             tabIndex={0}
             ref={(el) => el?.focus()}
             onKeyDown={handleDuplicateModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+            className="bg-white border border-slate-200 rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden outline-none"
           >
-            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <AlertTriangle size={28} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-white">Barang Sudah Diinput</h3>
+            <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
+              <AlertTriangle size={24} className="shrink-0 text-white" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Barang Sudah Diinput</h3>
             </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              {duplicateMsg}
-            </p>
-            <div className="flex justify-center border-t border-surface-700/50 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDuplicateModal(false);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className="btn-primary py-2 px-6 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
-                autoFocus
-              >
-                OK (Enter)
-              </button>
+            <div className="p-6 text-center">
+              <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold">
+                {duplicateMsg}
+              </p>
+              <div className="flex justify-center pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDuplicateModal(false);
+                    setTimeout(() => searchInputRef.current?.focus(), 50);
+                  }}
+                  className="px-6 py-2 rounded-lg bg-primary-600 !text-white text-xs font-bold hover:bg-primary-750 transition-all shadow-md"
+                >
+                  OK (Enter)
+                </button>
+              </div>
             </div>
           </div>
         </div>

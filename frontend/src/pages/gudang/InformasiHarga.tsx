@@ -254,13 +254,17 @@ export const InformasiHarga: React.FC = () => {
   // Focus modal popups when shown
   useEffect(() => {
     if (showProductPopup) {
-      productPopupRef.current?.focus();
+      setTimeout(() => {
+        productPopupRef.current?.focus();
+      }, 100);
     }
   }, [showProductPopup]);
 
   useEffect(() => {
     if (showCustomerPopup) {
-      customerPopupRef.current?.focus();
+      setTimeout(() => {
+        customerPopupRef.current?.focus();
+      }, 100);
     }
   }, [showCustomerPopup]);
 

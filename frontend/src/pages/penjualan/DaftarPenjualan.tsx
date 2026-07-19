@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, parseAdjustments, formatExtraChargeDesc } from '@/lib/utils';
 import { Search, Calendar, User, FileText, X, Eye, Trash2, Printer, AlertTriangle, Info } from 'lucide-react';
 
 interface Sale {
@@ -177,7 +177,7 @@ export const DaftarPenjualan: React.FC = () => {
       const returns = saleDetail.sale_returns || [];
 
       const totalPaid = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0) +
-                        allocations.reduce((sum: number, a: any) => sum + Number(a.allocated_amount), 0);
+        allocations.reduce((sum: number, a: any) => sum + Number(a.allocated_amount), 0);
       const totalReturned = returns.reduce((sum: number, r: any) => sum + Number(r.total), 0);
 
       if (totalPaid > 0 || totalReturned > 0) {
@@ -202,6 +202,7 @@ export const DaftarPenjualan: React.FC = () => {
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       if (filteredSales.length > 0) {
         setIsTableFocused(true);
         setSelectedIdx(0);
@@ -234,7 +235,7 @@ export const DaftarPenjualan: React.FC = () => {
 
       if (noOrderFilter.trim()) {
         const query = noOrderFilter.trim().toLowerCase();
-        list = list.filter((s: Sale) => 
+        list = list.filter((s: Sale) =>
           (s.no_order && s.no_order.toLowerCase().includes(query)) ||
           (s.no_faktur && s.no_faktur.toLowerCase().includes(query))
         );
@@ -278,6 +279,9 @@ export const DaftarPenjualan: React.FC = () => {
   // Keyboard Shortcuts
   // Enter: View SO detail
   useHotkeys('enter', (e) => {
+    if (document.activeElement === searchInputRef.current) {
+      return;
+    }
     if (deleteCheckState.status === 'can_delete') {
       e.preventDefault();
       confirmDeleteSale();
@@ -557,71 +561,71 @@ export const DaftarPenjualan: React.FC = () => {
               </div>
             ) : filteredSales.length > 0 ? (
               <div className="card p-0 overflow-hidden border border-surface-700">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                      <th className="p-4">No Order</th>
-                      <th className="p-4">No Faktur</th>
-                      <th className="p-4">Pelanggan</th>
-                      <th className="p-4">Tanggal Order</th>
-                      <th className="p-4">Jatuh Tempo</th>
-                      <th className="p-4 text-right">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredSales.map((s, idx) => {
-                      const isFocused = idx === selectedIdx && isTableFocused;
-                      const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
-                      
-                      const getTdClass = (pos: 'first' | 'middle' | 'last') => {
-                        let base = "p-4 text-xs transition-all duration-150 border-b ";
-                        if (isFocused) {
-                          base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
-                          if (pos === 'first') base += "border-l-4 border-primary-600 ";
-                        } else {
-                          base += "text-slate-800 border-slate-200 ";
-                        }
-                        return base;
-                      };
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
+                        <th className="p-4">No Order</th>
+                        <th className="p-4">No Faktur</th>
+                        <th className="p-4">Pelanggan</th>
+                        <th className="p-4">Tanggal Order</th>
+                        <th className="p-4">Jatuh Tempo</th>
+                        <th className="p-4 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSales.map((s, idx) => {
+                        const isFocused = idx === selectedIdx && isTableFocused;
+                        const rowBgClass = isFocused ? 'bg-blue-100' : 'hover:bg-slate-50';
 
-                      return (
-                        <tr
-                          key={s.id}
-                          ref={(el) => {
-                            rowRefs.current[idx] = el;
-                          }}
-                          onClick={() => {
-                            setSelectedIdx(idx);
-                            setIsTableFocused(true);
-                          }}
-                          onDoubleClick={() => handleOpenDetail(s)}
-                          className={`cursor-pointer ${rowBgClass}`}
-                        >
-                          <td className={getTdClass('first')}>
-                            <span className="px-2 py-0.5 rounded bg-blue-50/80 text-primary-700 border border-blue-100 font-mono font-bold text-xs inline-block">
-                              {s.no_order}
-                            </span>
-                          </td>
-                          <td className={getTdClass('middle') + " font-mono"}>
-                            {s.no_faktur || '-'}
-                          </td>
-                          <td className={getTdClass('middle') + " font-semibold"}>
-                            {s.customer_nama}
-                          </td>
-                          <td className={getTdClass('middle')}>
-                            {formatDate(s.order_date)}
-                          </td>
-                          <td className={getTdClass('middle')}>
-                            {s.due_date ? formatDate(s.due_date) : '-'}
-                          </td>
-                          <td className={getTdClass('last') + " text-right font-black text-slate-900"}>
-                            {formatCurrency(Number(s.subtotal))}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
+                        const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                          let base = "p-4 text-xs transition-all duration-150 border-b ";
+                          if (isFocused) {
+                            base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                            if (pos === 'first') base += "border-l-4 border-primary-600 ";
+                          } else {
+                            base += "text-slate-800 border-slate-200 ";
+                          }
+                          return base;
+                        };
+
+                        return (
+                          <tr
+                            key={s.id}
+                            ref={(el) => {
+                              rowRefs.current[idx] = el;
+                            }}
+                            onClick={() => {
+                              setSelectedIdx(idx);
+                              setIsTableFocused(true);
+                            }}
+                            onDoubleClick={() => handleOpenDetail(s)}
+                            className={`cursor-pointer ${rowBgClass}`}
+                          >
+                            <td className={getTdClass('first')}>
+                              <span className="px-2 py-0.5 rounded bg-blue-50/80 text-primary-700 border border-blue-100 font-mono font-bold text-xs inline-block">
+                                {s.no_order}
+                              </span>
+                            </td>
+                            <td className={getTdClass('middle') + " font-mono"}>
+                              {s.no_faktur || '-'}
+                            </td>
+                            <td className={getTdClass('middle') + " font-semibold"}>
+                              {s.customer_nama}
+                            </td>
+                            <td className={getTdClass('middle')}>
+                              {formatDate(s.order_date)}
+                            </td>
+                            <td className={getTdClass('middle')}>
+                              {s.due_date ? formatDate(s.due_date) : '-'}
+                            </td>
+                            <td className={getTdClass('last') + " text-right font-black text-slate-900"}>
+                              {formatCurrency(Number(s.subtotal))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
                   </table>
                 </div>
               </div>
@@ -764,15 +768,27 @@ export const DaftarPenjualan: React.FC = () => {
                           </tr>
                         );
                       })}
+                      {parseAdjustments(activeSo.extra_charge_desc, activeSo.extra_charge_amount).map((adj, index) => (
+                        <tr key={`adj-${index}`} className="hover:bg-slate-50 transition-colors text-slate-855">
+                          <td className="p-3 text-center font-semibold text-slate-400">-</td>
+                          <td className="p-3 text-center">
+                            <span className="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-slate-100 text-slate-500 border border-slate-200/60">
+                              ADJ
+                            </span>
+                          </td>
+                          <td className="p-3 font-bold italic text-slate-600">{adj.product_nama}</td>
+                          <td className="p-3 text-center font-semibold text-slate-400">-</td>
+                          <td className={`p-3 text-right font-mono font-bold ${adj.total < 0 ? 'text-danger-600' : 'text-emerald-600'}`}>
+                            {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
+                          </td>
+                          <td className={`p-3 text-right font-mono font-bold ${adj.total < 0 ? 'text-danger-600' : 'text-emerald-600'}`}>
+                            {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                   <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
-                    {Number(activeSo.extra_charge_amount) !== 0 && (
-                      <div className="flex gap-4 text-xs font-semibold text-slate-650">
-                        <span>Penyesuaian ({activeSo.extra_charge_desc}):</span>
-                        <span className="font-mono text-slate-800">{formatCurrency(Number(activeSo.extra_charge_amount))}</span>
-                      </div>
-                    )}
                     <div className="flex gap-6 items-center">
                       <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Subtotal Keseluruhan</span>
                       <span className="text-base font-extrabold text-blue-600 font-mono">
@@ -821,156 +837,156 @@ export const DaftarPenjualan: React.FC = () => {
         {/* Simple Reissue Confirmation Modal (Modal A) */}
         {showConfirmReissue && activeSo && (
           <ModalPortal>
-          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-            <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden border border-blue-200">
-              <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2 border-b border-primary-700/80">
-                <Printer size={24} className="shrink-0 text-white animate-pulse" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Cetak Ulang Nota</h3>
-              </div>
-              <div className="p-6 text-center">
-                <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
-                  Apakah Anda yakin ingin mencetak ulang nota ini?
-                </p>
-                <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmReissue(false)}
-                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-500/20"
-                  >
-                    Batal (Esc)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowConfirmReissue(false);
-                      setShowPrintConfirm(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md focus:ring-2 focus:ring-primary-500/20"
-                  >
-                    Ya, Lanjut (Enter/Y)
-                  </button>
+            <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+              <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden border border-blue-200">
+                <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2 border-b border-primary-700/80">
+                  <Printer size={24} className="shrink-0 text-white animate-pulse" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Cetak Ulang Nota</h3>
+                </div>
+                <div className="p-6 text-center">
+                  <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
+                    Apakah Anda yakin ingin mencetak ulang nota ini?
+                  </p>
+                  <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmReissue(false)}
+                      className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-500/20"
+                    >
+                      Batal (Esc)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowConfirmReissue(false);
+                        setShowPrintConfirm(true);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md focus:ring-2 focus:ring-primary-500/20"
+                    >
+                      Ya, Lanjut (Enter/Y)
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </ModalPortal>
+          </ModalPortal>
         )}
 
         {/* Print Confirmation Dialog (Modal B) */}
         {showPrintConfirm && activeSo && (
           <ModalPortal>
-          <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
-            <div className="bg-white border border-blue-200 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800">
-              
-              {/* Header */}
-              <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Printer size={18} className="text-primary-600" />
-                  <span>Konfirmasi Cetak Nota</span>
-                </h3>
-                <button
-                  onClick={() => setShowPrintConfirm(false)}
-                  className="text-slate-450 hover:text-slate-650 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+            <div className="fixed inset-0 z-[70] flex items-center justify-center modal-overlay p-4">
+              <div className="bg-white border border-blue-200 rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800">
 
-              {/* Subtitle */}
-              <p className="text-xs text-slate-500 mt-4 font-medium">
-                Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
-              </p>
-
-              {/* Sorting Pills */}
-              <div className="flex gap-2.5 mt-4">
-                {(['asli', 'abjad', 'qty', 'harga'] as const).map((opt) => {
-                  const labelMap = {
-                    asli: 'Urutan Asli',
-                    abjad: 'Abjad (A-Z)',
-                    qty: 'Qty Terbanyak',
-                    harga: 'Harga Tertinggi',
-                  };
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setSortOption(opt)}
-                      className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        sortOption === opt
-                          ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {labelMap[opt]}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Items Preview Table */}
-              <div className="mt-4 border border-blue-200 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto bg-slate-50">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100 border-b border-blue-250 text-slate-700 font-bold">
-                      <th className="p-3">Nama Barang</th>
-                      <th className="p-3 text-right w-20">Qty</th>
-                      <th className="p-3 text-right w-32">Harga</th>
-                      <th className="p-3 text-right w-32">Jumlah</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-150 bg-white">
-                    {getSortedItems(activeSo.sale_items).map((item: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-slate-50 text-slate-800">
-                        <td className="p-3 font-semibold text-slate-900">{item.product_nama}</td>
-                        <td className="p-3 text-right font-medium text-slate-700">{Number(item.qty)}</td>
-                        <td className="p-3 text-right font-mono font-medium text-slate-600">{formatCurrency(Number(item.unit_price))}</td>
-                        <td className="p-3 text-right font-mono font-bold text-slate-900">{formatCurrency(Number(item.total))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Format Cetak Indicator & Selector (Panah Atas/Bawah) */}
-              <div className="mt-3 flex justify-between items-center bg-blue-50/40 border border-blue-100 rounded-lg px-4 py-2.5 text-xs">
-                <span className="font-semibold text-slate-600">Format Cetak terpilih:</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-primary-700 capitalize">{printFormat} Invoice</span>
-                  <span className="text-[10px] text-slate-400 font-medium">(Panah Atas/Bawah untuk mengubah)</span>
+                {/* Header */}
+                <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Printer size={18} className="text-primary-600" />
+                    <span>Konfirmasi Cetak Nota</span>
+                  </h3>
+                  <button
+                    onClick={() => setShowPrintConfirm(false)}
+                    className="text-slate-450 hover:text-slate-650 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
                 </div>
-              </div>
 
-              {/* Footer Buttons */}
-              <div className="flex justify-end gap-3 mt-4 border-t border-slate-100 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowPrintConfirm(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all"
-                >
-                  Batal (Esc)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPrintConfirm(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
-                >
-                  Simpan Draft (Enter)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPrintConfirm(false);
-                    handlePrint(printFormat);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
-                >
-                  Print (P)
-                </button>
-              </div>
+                {/* Subtitle */}
+                <p className="text-xs text-slate-500 mt-4 font-medium">
+                  Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
+                </p>
 
+                {/* Sorting Pills */}
+                <div className="flex gap-2.5 mt-4">
+                  {(['asli', 'abjad', 'qty', 'harga'] as const).map((opt) => {
+                    const labelMap = {
+                      asli: 'Urutan Asli',
+                      abjad: 'Abjad (A-Z)',
+                      qty: 'Qty Terbanyak',
+                      harga: 'Harga Tertinggi',
+                    };
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setSortOption(opt)}
+                        className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === opt
+                            ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                      >
+                        {labelMap[opt]}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Items Preview Table */}
+                <div className="mt-4 border border-blue-200 rounded-lg overflow-hidden max-h-[250px] overflow-y-auto bg-slate-50">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 border-b border-blue-250 text-slate-700 font-bold">
+                        <th className="p-3">Nama Barang</th>
+                        <th className="p-3 text-right w-20">Qty</th>
+                        <th className="p-3 text-right w-32">Harga</th>
+                        <th className="p-3 text-right w-32">Jumlah</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-150 bg-white">
+                      {[
+                        ...getSortedItems(activeSo.sale_items),
+                        ...parseAdjustments(activeSo.extra_charge_desc, activeSo.extra_charge_amount)
+                      ].map((item: any, idx: number) => {
+                        const isAdj = item.is_adjustment;
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50 text-slate-800">
+                            <td className={`p-3 font-semibold ${isAdj ? 'text-amber-800 italic' : 'text-slate-900'}`}>{item.product_nama}</td>
+                            <td className="p-3 text-right font-medium text-slate-700">{item.qty}</td>
+                            <td className={`p-3 text-right font-mono font-medium ${isAdj ? (item.total < 0 ? 'text-danger-600' : 'text-emerald-600') : 'text-slate-650'}`}>
+                              {isAdj ? (item.total < 0 ? '-' : '+') : ''}{formatCurrency(Math.abs(Number(item.unit_price)))}
+                            </td>
+                            <td className={`p-3 text-right font-mono font-bold ${isAdj ? (item.total < 0 ? 'text-danger-600' : 'text-emerald-600') : 'text-slate-900'}`}>
+                              {isAdj ? (item.total < 0 ? '-' : '+') : ''}{formatCurrency(Math.abs(Number(item.total)))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex justify-end gap-3 mt-4 border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintConfirm(false)}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all"
+                  >
+                    Batal (Esc)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintConfirm(false)}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
+                  >
+                    Simpan Draft (Enter)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPrintConfirm(false);
+                      handlePrint(printFormat);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-all shadow-md shadow-primary-500/10"
+                  >
+                    Print (P)
+                  </button>
+                </div>
+
+              </div>
             </div>
-          </div>
-        </ModalPortal>
+          </ModalPortal>
         )}
 
       </div>
@@ -1008,9 +1024,9 @@ export const DaftarPenjualan: React.FC = () => {
                 <p className="border-t border-dashed border-black my-1.5"></p>
               </div>
               <div className="space-y-0.5 text-right font-semibold">
-                {Number(activeSo.extra_charge_amount) !== 0 && (
-                  <p>Adj ({activeSo.extra_charge_desc}): {formatCurrency(Number(activeSo.extra_charge_amount))}</p>
-                )}
+                {parseAdjustments(activeSo.extra_charge_desc, activeSo.extra_charge_amount).map((adj, index) => (
+                   <p key={index}>{adj.product_nama}: {adj.total < 0 ? '' : '+'}{formatCurrency(adj.total)}</p>
+                 ))}
                 <p className="font-bold text-xs">Total: {formatCurrency(Number(activeSo.subtotal))}</p>
               </div>
               <div className="text-center text-[9px] pt-3 space-y-0.5">
@@ -1074,16 +1090,20 @@ export const DaftarPenjualan: React.FC = () => {
                       <td className="p-1.5 text-right">{formatCurrency(Number(item.total))}</td>
                     </tr>
                   ))}
-                  {Number(activeSo.extra_charge_amount) !== 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
-                        Penyesuaian ({activeSo.extra_charge_desc})
+                  {parseAdjustments(activeSo.extra_charge_desc, activeSo.extra_charge_amount).map((adj, index) => (
+                    <tr key={`adj-${index}`} className="align-top">
+                      <td className="p-1.5 border-r border-black text-center">-</td>
+                      <td className="p-1.5 border-r border-black font-mono">ADJ</td>
+                      <td className="p-1.5 border-r border-black font-bold italic">{adj.product_nama}</td>
+                      <td className="p-1.5 border-r border-black text-right">-</td>
+                      <td className="p-1.5 border-r border-black text-right font-mono font-bold">
+                        {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
                       </td>
-                      <td className="p-1.5 text-right font-bold">
-                        {formatCurrency(Number(activeSo.extra_charge_amount))}
+                      <td className="p-1.5 text-right font-bold font-mono">
+                        {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
                       </td>
                     </tr>
-                  )}
+                  ))}
                   <tr className="bg-slate-50 border-t border-black">
                     <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
                       Grand Total Penjualan
@@ -1226,9 +1246,8 @@ export const DaftarPenjualan: React.FC = () => {
 
       {toast && (
         <div className="fixed top-4 right-4 z-[100] animate-slide-in-right">
-          <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${
-            toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
-          }`}>
+          <div className={`px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs flex items-center gap-2 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-danger-600'
+            }`}>
             <span className="!text-white">{toast.message}</span>
           </div>
         </div>

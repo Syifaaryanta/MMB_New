@@ -96,6 +96,7 @@ export const EditOrderPO: React.FC = () => {
   const [showCompleteConfirmModal, setShowCompleteConfirmModal] = useState(false);
   const [showEmptyQtyAlert, setShowEmptyQtyAlert] = useState(false);
   const [showPoNotFoundPopup, setShowPoNotFoundPopup] = useState(false);
+  const [catatan, setCatatan] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -119,6 +120,8 @@ export const EditOrderPO: React.FC = () => {
   const supplierItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const productItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const activeRowRef = useRef<HTMLTableRowElement | null>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (showSupplierPopup) {
@@ -140,10 +143,19 @@ export const EditOrderPO: React.FC = () => {
 
   useEffect(() => {
     if (activeStep === 'table' && selectedRowIdx !== null && activeRowRef.current) {
-      activeRowRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
+      const container = tableContainerRef.current;
+      const row = activeRowRef.current;
+      if (container && row) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+        const rowTop = row.offsetTop;
+        const rowBottom = rowTop + row.offsetHeight;
+        if (rowTop < containerTop) {
+          container.scrollTo({ top: rowTop - 8, behavior: 'smooth' });
+        } else if (rowBottom > containerBottom) {
+          container.scrollTo({ top: rowBottom - container.clientHeight + 8, behavior: 'smooth' });
+        }
+      }
     }
   }, [selectedRowIdx, activeStep]);
 
@@ -159,14 +171,18 @@ export const EditOrderPO: React.FC = () => {
   // Focus product popup modal when shown
   useEffect(() => {
     if (showProductPopup) {
-      productPopupRef.current?.focus();
+      setTimeout(() => {
+        productPopupRef.current?.focus();
+      }, 100);
     }
   }, [showProductPopup]);
 
   // Focus supplier popup modal when shown
   useEffect(() => {
     if (showSupplierPopup) {
-      supplierPopupRef.current?.focus();
+      setTimeout(() => {
+        supplierPopupRef.current?.focus();
+      }, 100);
     }
   }, [showSupplierPopup]);
 
@@ -520,13 +536,31 @@ export const EditOrderPO: React.FC = () => {
     }
   }, { enableOnFormTags: true });
 
-  // F3: Blur input and focus on table row selection
+  // F3: Pindah fokus ke cari produk (F2 alias)
   useHotkeys('f3', (e) => {
     e.preventDefault();
+    if (activePo) {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }
+  }, { enableOnFormTags: true });
+
+  // F4: Blur input and focus on table row selection
+  useHotkeys('f4', (e) => {
+    e.preventDefault();
     if (activePo && items.length > 0) {
-      (document.activeElement as HTMLElement)?.blur();
       setSelectedRowIdx(0);
       setActiveStep('table');
+      setTimeout(() => tableContainerRef.current?.focus(), 30);
+    }
+  }, { enableOnFormTags: true });
+
+  // F6: Focus Keterangan/Catatan field
+  useHotkeys('f6', (e) => {
+    e.preventDefault();
+    if (activePo) {
+      noteInputRef.current?.focus();
+      noteInputRef.current?.select();
     }
   }, { enableOnFormTags: true });
 
@@ -548,18 +582,18 @@ export const EditOrderPO: React.FC = () => {
 
   // Table row navigation arrows
   useHotkeys('up', (e) => {
-    e.preventDefault();
-    if (activePo && items.length > 0) {
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
       setSelectedRowIdx((prev) => (prev === null ? 0 : Math.max(0, prev - 1)));
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [activeStep, selectedRowIdx]);
 
   useHotkeys('down', (e) => {
-    e.preventDefault();
-    if (activePo && items.length > 0) {
+    if (activeStep === 'table' && selectedRowIdx !== null) {
+      e.preventDefault();
       setSelectedRowIdx((prev) => (prev === null ? 0 : Math.min(items.length - 1, prev + 1)));
     }
-  }, { enableOnFormTags: false });
+  }, { enableOnFormTags: false }, [activeStep, selectedRowIdx, items]);
 
   const handleCancelConfirmModalKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -860,7 +894,11 @@ export const EditOrderPO: React.FC = () => {
 
             {/* Table Belanjaan PO */}
             <div className="card p-0 overflow-hidden border border-surface-700">
-              <div className="overflow-x-auto">
+              <div
+                ref={tableContainerRef}
+                tabIndex={0}
+                className="overflow-x-auto max-h-[360px] overflow-y-auto outline-none"
+              >
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
@@ -930,12 +968,26 @@ export const EditOrderPO: React.FC = () => {
               {/* Total Footer */}
               <div className="flex justify-between items-center p-4 bg-surface-800/50 border-t border-surface-700">
                 <div className="text-xs text-slate-500">
-                  {items.length} items. Tekan <kbd className="shortcut-badge text-[10px]">F3</kbd> ke tabel, <kbd className="shortcut-badge text-[10px]">Delete</kbd> untuk hapus baris.
+                  {items.length} items. Tekan <kbd className="shortcut-badge text-[10px]">F4</kbd> ke tabel, <kbd className="shortcut-badge text-[10px]">Delete</kbd> untuk hapus baris.
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-400 uppercase tracking-wider block">Grand Total PO</span>
                   <span className="text-xl font-black text-emerald-400 currency">{formatCurrency(grandTotal)}</span>
                 </div>
+              </div>
+
+              {/* Keterangan Field */}
+              <div className="px-4 pb-4 pt-2 bg-surface-800/30 border-t border-surface-700/50">
+                <label className="block text-[11px] text-slate-400 mb-1 font-semibold">Keterangan / Catatan (F6)</label>
+                <input
+                  ref={noteInputRef}
+                  type="text"
+                  placeholder="Input keterangan atau catatan PO..."
+                  value={catatan}
+                  onChange={(e) => setCatatan(e.target.value)}
+                  onFocus={() => setActiveStep('search')}
+                  className="input-field py-2 text-xs w-full"
+                />
               </div>
             </div>
           </div>
@@ -1025,11 +1077,12 @@ export const EditOrderPO: React.FC = () => {
                 <ul className="space-y-2 text-xs text-slate-300">
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk cari supplier</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk cari produk</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F3</kbd> untuk ke baris tabel</li>
+                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk fokus ke baris tabel</li>
+                  <li>Tekan <kbd className="shortcut-badge text-[9px]">↑ ↓</kbd> untuk navigasi baris tabel</li>
+                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
+                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F6</kbd> untuk menuju kolom Keterangan</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk menyelesaikan PO</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> untuk konfirmasi field / tambah item</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Arrow keys</kbd> untuk berpindah kolom/baris</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
                   <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal / simpan draft</li>
                 </ul>
               </div>
@@ -1167,23 +1220,23 @@ export const EditOrderPO: React.FC = () => {
             tabIndex={0}
             ref={(el) => el?.focus()}
             onKeyDown={handleCancelConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+            className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
           >
-            <div className="flex flex-col items-center justify-center gap-2 text-danger-400 border-b border-surface-700 pb-3 mb-4 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 text-danger-600 border-b border-slate-100 pb-3 mb-4 text-center">
               <AlertTriangle size={28} />
-              <h3 className="text-lg font-bold text-white">Konfirmasi Batal PO</h3>
+              <h3 className="text-lg font-bold text-slate-900">Konfirmasi Batal PO</h3>
             </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
+            <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
               PO belum di-input. Jika Anda membatalkan, seluruh data order pembelian ini akan terhapus sepenuhnya.
             </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
+            <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setShowCancelConfirmModal(false);
                   setTimeout(() => searchInputRef.current?.focus(), 50);
                 }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
+                className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
               >
                 Kembali (Esc)
               </button>
@@ -1193,7 +1246,7 @@ export const EditOrderPO: React.FC = () => {
                   setShowCancelConfirmModal(false);
                   navigate('/pembelian');
                 }}
-                className="btn-primary py-2 px-4 text-xs bg-danger-600 hover:bg-danger-550 font-bold"
+                className="px-4 py-2 text-xs font-bold rounded-lg bg-danger-600 hover:bg-danger-700 text-white transition-all shadow-md shadow-danger-500/10"
               >
                 Konfirmasi & Keluar (Enter)
               </button>
@@ -1211,24 +1264,24 @@ export const EditOrderPO: React.FC = () => {
             tabIndex={0}
             ref={(el) => el?.focus()}
             onKeyDown={handleDraftConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+            className="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
           >
-            <div className="flex flex-col items-center justify-center gap-2 text-amber-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <Save size={28} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-white">Simpan sebagai Draft</h3>
+            <div className="flex flex-col items-center justify-center gap-2 text-amber-600 border-b border-slate-100 pb-3 mb-4 text-center">
+              <Save size={28} className="text-amber-600" />
+              <h3 className="text-lg font-bold text-slate-900">Simpan sebagai Draft</h3>
             </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              PO ini akan disimpan sebagai <strong className="text-white">Draft</strong>.
+            <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
+              PO ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>.
               Stok di gudang tidak akan berubah sampai barang ini secara resmi diterima (Receiving).
             </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
+            <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setShowDraftConfirmModal(false);
                   setTimeout(() => searchInputRef.current?.focus(), 50);
                 }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
+                className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
               >
                 Batal (Esc)
               </button>
@@ -1238,7 +1291,7 @@ export const EditOrderPO: React.FC = () => {
                   setShowDraftConfirmModal(false);
                   handleUpdatePO(false); // Save as draft
                 }}
-                className="btn-primary py-2 px-4 text-xs bg-amber-500 hover:bg-amber-600 font-bold text-black"
+                className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/10"
               >
                 Simpan & Ke Draft (Enter)
               </button>
@@ -1256,24 +1309,24 @@ export const EditOrderPO: React.FC = () => {
             tabIndex={0}
             ref={(el) => el?.focus()}
             onKeyDown={handleCompleteConfirmModalKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-200"
+            className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
           >
-            <div className="flex flex-col items-center justify-center gap-2 text-emerald-400 border-b border-surface-700 pb-3 mb-4 text-center">
-              <CheckSquare size={28} className="text-emerald-400" />
-              <h3 className="text-lg font-bold text-white">Selesaikan Purchase Order</h3>
+            <div className="flex flex-col items-center justify-center gap-2 text-emerald-600 border-b border-slate-200 pb-3 mb-4 text-center">
+              <CheckSquare size={28} className="text-emerald-500" />
+              <h3 className="text-lg font-bold text-slate-900">Selesaikan Purchase Order</h3>
             </div>
-            <p className="text-xs text-slate-350 leading-relaxed mb-6 font-medium text-center">
-              PO ini akan diselesaikan dan datanya akan masuk ke antrean <strong className="text-white">Menu Receiving</strong>.
+            <p className="text-xs text-slate-700 leading-relaxed mb-6 font-medium text-center">
+              PO ini akan diselesaikan dan datanya akan masuk ke antrean <strong className="text-slate-900">Menu Receiving</strong>.
               Stok di gudang tidak akan bertambah sebelum barang fisik secara resmi diterima.
             </p>
-            <div className="flex justify-center gap-3 border-t border-surface-700/50 pt-4">
+            <div className="flex justify-center gap-3 border-t border-slate-200 pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setShowCompleteConfirmModal(false);
                   setTimeout(() => searchInputRef.current?.focus(), 50);
                 }}
-                className="btn-secondary py-2 px-4 text-xs font-bold"
+                className="py-2 px-4 text-xs font-bold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all"
               >
                 Batal (Esc)
               </button>
