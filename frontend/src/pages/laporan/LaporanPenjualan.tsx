@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import * as XLSX from 'xlsx';
+import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   TrendingUp, 
   Search, 
@@ -47,8 +47,10 @@ interface Sale {
 export const LaporanPenjualan: React.FC = () => {
   const navigate = useNavigate();
   const [sales, setSales] = useState<Sale[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Filter popup page visibility
+  const [showFilterPage, setShowFilterPage] = useState(true);
 
   // Filters
   const [fromDate, setFromDate] = useState(() => {
@@ -57,39 +59,32 @@ export const LaporanPenjualan: React.FC = () => {
     return d.toISOString().slice(0, 10);
   });
   const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
 
   // Expandable invoice details
   const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<Record<string, boolean>>({});
 
-  // Summary state
-  const [totalSalesVal, setTotalSalesVal] = useState(0);
-  const [totalTransCount, setTotalTransCount] = useState(0);
+  // Keyboard navigation & table focus
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [isTableFocused, setIsTableFocused] = useState(false);
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
 
-  const fromRef = useRef<HTMLInputElement>(null);
-
-  const fetchCustomers = async () => {
-    try {
-      const res = await api.get('/customers?limit=100');
-      setCustomers(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const fromDateMainRef = useRef<HTMLInputElement>(null);
+  const toDateMainRef = useRef<HTMLInputElement>(null);
+  const customerMainSearchRef = useRef<HTMLInputElement>(null);
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
+  const customerSearchRef = useRef<HTMLInputElement>(null);
 
   const fetchSalesData = async () => {
     setIsLoading(true);
     try {
-      let url = `/laporan/penjualan-detail?from=${fromDate}&to=${toDate}`;
-      if (selectedCustomerId) url += `&customer_id=${selectedCustomerId}`;
-      
+      const url = `/laporan/penjualan-detail?from=${fromDate}&to=${toDate}`;
       const res = await api.get(url);
       const data = res.data || [];
       setSales(data);
-
-      const sum = data.reduce((acc: number, s: Sale) => acc + Number(s.subtotal), 0);
-      setTotalSalesVal(sum);
-      setTotalTransCount(data.length);
+      setIsTableFocused(true);
+      setSelectedIdx(0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -98,22 +93,55 @@ export const LaporanPenjualan: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    if (!showFilterPage) {
+      fetchSalesData();
+    }
+  }, [fromDate, toDate, showFilterPage]);
 
   useEffect(() => {
-    fetchSalesData();
-  }, [fromDate, toDate, selectedCustomerId]);
+    if (showFilterPage) {
+      setTimeout(() => {
+        fromDateRef.current?.focus();
+        fromDateRef.current?.select();
+      }, 150);
+    }
+  }, [showFilterPage]);
+
+  const filteredSales = sales.filter((sale) => {
+    const q = customerSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      sale.customer_nama.toLowerCase().includes(q) ||
+      (sale.customer?.kode && sale.customer.kode.toLowerCase().includes(q))
+    );
+  });
+
+  const totalSalesVal = filteredSales.reduce((acc, s) => acc + Number(s.subtotal), 0);
+  const totalTransCount = filteredSales.length;
+
+  useEffect(() => {
+    setSelectedIdx(0);
+  }, [sales, customerSearch]);
 
   // Shortcuts
   // F1: Focus Date Filter
   useHotkeys('f1', (e) => {
     e.preventDefault();
-    fromRef.current?.focus();
+    fromDateMainRef.current?.focus();
+    fromDateMainRef.current?.select();
+    setIsTableFocused(false);
   }, { enableOnFormTags: true });
 
-  // F2: Export Excel
+  // F2: Focus Customer Search
   useHotkeys('f2', (e) => {
+    e.preventDefault();
+    customerMainSearchRef.current?.focus();
+    customerMainSearchRef.current?.select();
+    setIsTableFocused(false);
+  }, { enableOnFormTags: true });
+
+  // F10: Export Excel
+  useHotkeys('f10', (e) => {
     e.preventDefault();
     exportToExcel();
   }, { enableOnFormTags: false });
@@ -124,9 +152,39 @@ export const LaporanPenjualan: React.FC = () => {
     navigate('/laporan');
   }, { enableOnFormTags: true });
 
+  // Keyboard Table Navigation
+  useHotkeys('down', (e) => {
+    if (!isTableFocused || filteredSales.length === 0) return;
+    e.preventDefault();
+    setSelectedIdx((prev) => Math.min(prev + 1, filteredSales.length - 1));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredSales]);
+
+  useHotkeys('up', (e) => {
+    if (!isTableFocused || filteredSales.length === 0) return;
+    e.preventDefault();
+    setSelectedIdx((prev) => Math.max(prev - 1, 0));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredSales]);
+
+  useHotkeys('enter', (e) => {
+    if (!isTableFocused || filteredSales.length === 0) return;
+    e.preventDefault();
+    const activeSale = filteredSales[selectedIdx];
+    if (activeSale) {
+      setExpandedInvoiceIds(prev => (prev[activeSale.id] ? {} : { [activeSale.id]: true }));
+    }
+  }, { enableOnFormTags: false }, [isTableFocused, filteredSales, selectedIdx]);
+
+  // Scroll focused row into view
+  useEffect(() => {
+    const target = rowRefs.current[selectedIdx];
+    if (target && isTableFocused) {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIdx, isTableFocused]);
+
   const exportToExcel = () => {
-    if (sales.length === 0) return;
-    const excelRows = sales.map((sale) => {
+    if (filteredSales.length === 0) return;
+    const excelRows = filteredSales.map((sale) => {
       const totalPaid = sale.sales_payments.reduce((acc, p) => acc + Number(p.amount), 0);
       const sisaPiutang = Number(sale.subtotal) - totalPaid;
       return {
@@ -140,10 +198,14 @@ export const LaporanPenjualan: React.FC = () => {
       };
     });
 
-    const ws = XLSX.utils.json_to_sheet(excelRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Detail Penjualan');
-    XLSX.writeFile(wb, `Laporan_Penjualan_Detail_${fromDate}_to_${toDate}.xlsx`);
+    exportStyledExcel(
+      excelRows,
+      `Laporan_Penjualan_Detail_${fromDate}_to_${toDate}.xlsx`,
+      'Laporan Detail Penjualan',
+      [],
+      ['No. Faktur', 'Tanggal Jual', 'Jenis Pembayaran'],
+      ['Total Invoice', 'Total Terbayar', 'Sisa Piutang']
+    );
   };
 
   const formatCurrency = (val: number) => {
@@ -162,29 +224,133 @@ export const LaporanPenjualan: React.FC = () => {
     });
   };
 
+  const handleFilterEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (sales.length > 0) {
+        setIsTableFocused(true);
+        setSelectedIdx(0);
+        // blur current target if possible
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.blur();
+        }
+      }
+    }
+  };
+
+  const handleFilterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowFilterPage(false);
+  };
+
+  if (showFilterPage) {
+    return (
+      <div className="space-y-6 text-slate-800 animate-fade-in">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <button 
+              onClick={() => navigate('/laporan')}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
+            >
+              <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            </button>
+            <h1 className="text-2xl font-extrabold text-slate-950">Laporan Penjualan Detail</h1>
+            <p className="text-slate-550 text-xs mt-1">Log transaksi barang terjual, nominal omzet, dan sisa penagihan.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-850 overflow-hidden">
+            <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Laporan Penjualan</h3>
+            </div>
+
+            <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <input
+                    ref={fromDateRef}
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), toDateRef.current?.focus())}
+                    className="input-field w-full py-2 text-xs text-slate-800 border border-slate-350 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <input
+                    ref={toDateRef}
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), customerSelectRef.current?.focus())}
+                    className="input-field w-full py-2 text-xs text-slate-800 border border-slate-350 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nama / Kode Pelanggan</label>
+                <input
+                  ref={customerSearchRef}
+                  type="text"
+                  placeholder="Semua / Ketik Nama atau Kode"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
+                  className="input-field w-full py-2 text-xs text-slate-800 border border-slate-350 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => navigate('/laporan')}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
+                >
+                  Kembali
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
+                >
+                  Tampilkan Laporan (Enter)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-800 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <button 
             onClick={() => navigate('/laporan')}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white mb-2 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
             <ArrowLeft size={12} /> Kembali ke Menu (Esc)
           </button>
-          <h1 className="text-2xl font-extrabold text-white">Laporan Penjualan Detail</h1>
-          <p className="text-slate-400 text-sm">Log transaksi barang terjual, nominal omzet, dan sisa penagihan.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Penjualan Detail</h1>
+          <p className="text-slate-550 text-xs mt-1">Log transaksi barang terjual, nominal omzet, dan sisa penagihan.</p>
         </div>
 
         <div className="flex gap-2 text-xs">
           <button 
             onClick={exportToExcel}
-            disabled={sales.length === 0}
-            className="card bg-surface-800 hover:bg-surface-750 px-3.5 py-2 text-slate-350 font-bold border border-surface-700/60 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+            disabled={filteredSales.length === 0}
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Download size={14} />
-            <span>Ekspor Excel (F2)</span>
+            <Download size={14} className="text-slate-500" />
+            <span>Ekspor Excel (F10)</span>
           </button>
         </div>
       </div>
@@ -192,164 +358,205 @@ export const LaporanPenjualan: React.FC = () => {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Metric 1 */}
-        <div className="card p-4 flex items-center justify-between border border-surface-700 bg-surface-800/80">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Omzet Terjual</span>
-            <span className="text-2xl font-black text-white block mt-0.5">{formatCurrency(totalSalesVal)}</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total Omzet Terjual</span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(totalSalesVal)}</span>
           </div>
-          <div className="p-3 bg-emerald-950 text-emerald-400 rounded-xl">
+          <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
             <DollarSign size={20} />
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="card p-4 flex items-center justify-between border border-surface-700 bg-surface-800/80">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Banyak Transaksi Sukses</span>
-            <span className="text-2xl font-black text-white block mt-0.5">{totalTransCount} Nota</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Banyak Transaksi Sukses</span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{totalTransCount} Nota</span>
           </div>
-          <div className="p-3 bg-indigo-950 text-indigo-400 rounded-xl">
+          <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
             <TrendingUp size={20} />
           </div>
         </div>
       </div>
 
       {/* Filter Board */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Date From */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Tanggal Awal (F1)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F1)</label>
           <div className="relative">
-            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-500" />
+            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
-              ref={fromRef}
+              ref={fromDateMainRef}
               type="date"
               value={fromDate}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), toDateMainRef.current?.focus())}
               onChange={(e) => setFromDate(e.target.value)}
-              className="input-field w-full pl-9 py-1.5 text-xs"
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
             />
           </div>
         </div>
 
         {/* Date To */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
           <div className="relative">
-            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-500" />
+            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
+              ref={toDateMainRef}
               type="date"
               value={toDate}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), customerMainSearchRef.current?.focus())}
               onChange={(e) => setToDate(e.target.value)}
-              className="input-field w-full pl-9 py-1.5 text-xs"
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
             />
           </div>
         </div>
 
-        {/* Customer Select */}
+        {/* Customer Search Bar */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Filter Pelanggan</label>
-          <select
-            value={selectedCustomerId}
-            onChange={(e) => setSelectedCustomerId(e.target.value)}
-            className="input-field w-full py-1.5 text-xs"
-          >
-            <option value="">Semua Pelanggan</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nama} ({c.kode})
-              </option>
-            ))}
-          </select>
+          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">Cari Pelanggan (F2)</label>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+            <input
+              ref={customerMainSearchRef}
+              type="text"
+              placeholder="Ketik nama / kode..."
+              value={customerSearch}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (filteredSales.length > 0) {
+                    setIsTableFocused(true);
+                    setSelectedIdx(0);
+                    customerMainSearchRef.current?.blur();
+                  }
+                }
+              }}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-855"
+            />
+          </div>
         </div>
 
         {/* Info */}
-        <div className="text-right flex flex-col justify-end text-[10px] text-slate-500">
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed">
           <p>Pilih range tanggal atau pelanggan tertentu untuk menyaring log.</p>
-          <p className="mt-1">Pintasan: <kbd className="shortcut-badge">F1</kbd> filter tanggal, <kbd className="shortcut-badge">F2</kbd> ekspor Excel.</p>
+          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge">F1</kbd> filter tanggal, <kbd className="shortcut-badge">F2</kbd> cari pelanggan, <kbd className="shortcut-badge">F10</kbd> ekspor Excel.</p>
         </div>
       </div>
 
       {/* Main Data Table */}
-      <div className="card p-0 overflow-hidden border border-surface-700/65 shadow-2xl">
+      <div 
+        className={`bg-white rounded-xl border shadow-xs overflow-hidden transition-all ${
+          isTableFocused ? 'ring-2 ring-primary-500/20 border-primary-300' : 'border-slate-200'
+        }`}
+        onClick={() => setIsTableFocused(true)}
+      >
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-4 w-12 text-center">Detail</th>
-              <th className="p-4">No. Faktur</th>
-              <th className="p-4">Tanggal Jual</th>
-              <th className="p-4">Nama Pelanggan</th>
-              <th className="p-4 text-center">Jenis Bayar</th>
-              <th className="p-4 text-right">Terbayar</th>
-              <th className="p-4 text-right">Sisa Piutang</th>
-              <th className="p-4 text-right">Nilai Belanja</th>
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+              <th className="p-3 w-12 text-center">Detail</th>
+              <th className="p-3">No. Faktur</th>
+              <th className="p-3">Tanggal Jual</th>
+              <th className="p-3">Nama Pelanggan</th>
+              <th className="p-3 text-center">Jenis Bayar</th>
+              <th className="p-3 text-right">Terbayar</th>
+              <th className="p-3 text-right">Sisa Piutang</th>
+              <th className="p-3 text-right">Nilai Belanja</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-750">
+          <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
+                <td colSpan={8} className="p-8 text-center text-slate-500 italic">
                   Sedang mengambil log penjualan detail...
                 </td>
               </tr>
-            ) : sales.length === 0 ? (
+            ) : filteredSales.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-slate-500 italic">
+                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
                   Tidak ada transaksi penjualan terdeteksi pada periode filter ini.
                 </td>
               </tr>
             ) : (
-              sales.map((sale) => {
+              filteredSales.map((sale, idx) => {
                 const isExpanded = !!expandedInvoiceIds[sale.id];
                 const totalPaid = sale.sales_payments.reduce((acc, p) => acc + Number(p.amount), 0);
                 const sisaPiutang = Number(sale.subtotal) - totalPaid;
+                const isSelected = isTableFocused && selectedIdx === idx;
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                  let base = 'p-3 text-xs align-middle transition-colors ';
+                  if (isSelected) {
+                    base += 'bg-blue-100 text-primary-950 font-bold ';
+                    if (pos === 'first') {
+                      base += 'border-l-4 border-primary-600 ';
+                    }
+                  } else {
+                    base += 'text-slate-700 border-b border-slate-100 ';
+                  }
+                  return base;
+                };
 
                 return (
                   <React.Fragment key={sale.id}>
                     {/* Header Row */}
                     <tr 
-                      onClick={() => setExpandedInvoiceIds(prev => ({ ...prev, [sale.id]: !isExpanded }))}
-                      className="hover:bg-surface-750/30 cursor-pointer text-slate-300"
+                      ref={(el) => { rowRefs.current[idx] = el; }}
+                      onClick={() => {
+                        setIsTableFocused(true);
+                        setSelectedIdx(idx);
+                        setExpandedInvoiceIds(prev => (prev[sale.id] ? {} : { [sale.id]: true }));
+                      }}
+                      className="hover:bg-slate-50/50 cursor-pointer"
                     >
-                      <td className="p-4 text-center text-slate-500">
-                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      <td className={getTdClass('first') + " text-center text-slate-400"}>
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </td>
-                      <td className="p-4 font-mono font-bold text-slate-200">
+                      <td className={getTdClass('middle') + " font-mono font-bold"}>
                         {sale.no_faktur || sale.no_order}
                       </td>
-                      <td className="p-4">{formatDate(sale.order_date)}</td>
-                      <td className="p-4 font-bold text-slate-250">{sale.customer_nama}</td>
-                      <td className="p-4 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      <td className={getTdClass('middle')}>{formatDate(sale.order_date)}</td>
+                      <td className={getTdClass('middle')}>
+                        <div className="font-bold">{sale.customer_nama}</div>
+                        <div className="text-[10px] text-slate-500 font-normal mt-0.5 max-w-xs truncate">
+                          {sale.customer?.alamat || sale.customer_alamat || '-'}
+                        </div>
+                      </td>
+                      <td className={getTdClass('middle') + " text-center"}>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
                           sale.limit_bulan > 0 
-                            ? 'bg-rose-950/30 text-rose-400 border border-rose-800/20' 
-                            : 'bg-emerald-950/30 text-emerald-400 border border-emerald-800/20'
+                            ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                         }`}>
                           {sale.limit_bulan > 0 ? `Kredit (${sale.limit_bulan + 1} Bln)` : 'Tunai'}
                         </span>
                       </td>
-                      <td className="p-4 text-right font-mono text-emerald-400">{formatCurrency(totalPaid)}</td>
-                      <td className={`p-4 text-right font-mono ${sisaPiutang > 0 ? 'text-rose-450 font-semibold' : 'text-slate-400'}`}>
+                      <td className={getTdClass('middle') + " text-right font-mono text-emerald-600 font-semibold"}>{formatCurrency(totalPaid)}</td>
+                      <td className={getTdClass('middle') + ` text-right font-mono ${sisaPiutang > 0 ? 'text-rose-600 font-semibold' : 'text-slate-400'}`}>
                         {formatCurrency(sisaPiutang)}
                       </td>
-                      <td className="p-4 text-right font-mono font-bold text-white text-sm">
+                      <td className={getTdClass('last') + " text-right font-mono font-bold text-slate-900"}>
                         {formatCurrency(Number(sale.subtotal))}
                       </td>
                     </tr>
 
                     {/* Expanded Detail Rows */}
                     {isExpanded && (
-                      <tr className="bg-surface-850/40">
-                        <td colSpan={8} className="p-4 border-t border-b border-surface-700/60">
-                          <div className="space-y-3 pl-8">
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
-                              <FileText size={12} className="text-primary-400" />
+                      <tr className="bg-slate-50/40">
+                        <td colSpan={8} className="py-3 px-3 border-t border-b border-slate-200">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2">
+                              <FileText size={12} className="text-primary-600" />
                               <span>Rincian Barang & Kuantitas Belanja</span>
                             </div>
 
-                            <div className="border border-surface-750 rounded-lg overflow-hidden max-w-4xl">
+                            <div className="border border-slate-200 rounded-lg overflow-hidden max-w-4xl bg-white shadow-xs">
                               <table className="w-full text-left text-[11px] border-collapse">
                                 <thead>
-                                  <tr className="bg-surface-800 text-slate-400 font-semibold border-b border-surface-750">
+                                  <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[9px]">
                                     <th className="p-2 w-8 text-center">No</th>
                                     <th className="p-2">Kode SKU</th>
                                     <th className="p-2">Nama Produk</th>
@@ -358,15 +565,15 @@ export const LaporanPenjualan: React.FC = () => {
                                     <th className="p-2 text-right w-28">Subtotal</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-surface-750">
-                                  {sale.sale_items?.map((item, idx) => (
-                                    <tr key={item.id} className="text-slate-350 hover:bg-surface-800/10">
-                                      <td className="p-2 text-center text-slate-500">{idx + 1}</td>
-                                      <td className="p-2 font-mono text-slate-400">{item.product_kode}</td>
-                                      <td className="p-2 font-bold text-slate-200">{item.product_nama}</td>
-                                      <td className="p-2 text-right font-semibold text-white">{Number(item.qty)}</td>
-                                      <td className="p-2 text-right font-mono">{formatCurrency(Number(item.unit_price))}</td>
-                                      <td className="p-2 text-right font-mono text-white font-bold">{formatCurrency(Number(item.total))}</td>
+                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                  {sale.sale_items?.map((item, itemIdx) => (
+                                    <tr key={item.id} className="hover:bg-slate-50/40">
+                                      <td className="p-2 text-center text-slate-400">{itemIdx + 1}</td>
+                                      <td className="p-2 font-mono text-slate-555">{item.product_kode}</td>
+                                      <td className="p-2 font-bold text-slate-900">{item.product_nama}</td>
+                                      <td className="p-2 text-right font-semibold text-slate-800">{Number(item.qty)}</td>
+                                      <td className="p-2 text-right font-mono text-slate-600">{formatCurrency(Number(item.unit_price))}</td>
+                                      <td className="p-2 text-right font-mono text-slate-900 font-bold">{formatCurrency(Number(item.total))}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -382,6 +589,9 @@ export const LaporanPenjualan: React.FC = () => {
             )}
           </tbody>
         </table>
+      </div>
+      <div className="flex justify-end text-[10px] text-slate-400 mt-2">
+        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> detail item.</span>
       </div>
     </div>
   );

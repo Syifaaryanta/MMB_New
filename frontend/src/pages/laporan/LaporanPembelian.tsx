@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import * as XLSX from 'xlsx';
+import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   ShoppingBag, 
   Calendar, 
@@ -11,7 +11,8 @@ import {
   ChevronRight,
   ChevronDown,
   DollarSign,
-  FileText
+  FileText,
+  Search
 } from 'lucide-react';
 
 interface Supplier {
@@ -46,8 +47,10 @@ interface Purchase {
 export const LaporanPembelian: React.FC = () => {
   const navigate = useNavigate();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Filter popup page visibility
+  const [showFilterPage, setShowFilterPage] = useState(true);
 
   // Filters
   const [fromDate, setFromDate] = useState(() => {
@@ -56,39 +59,32 @@ export const LaporanPembelian: React.FC = () => {
     return d.toISOString().slice(0, 10);
   });
   const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [supplierSearch, setSupplierSearch] = useState('');
 
   // Expandable invoice details
   const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<Record<string, boolean>>({});
 
-  // Summary state
-  const [totalPurchasesVal, setTotalPurchasesVal] = useState(0);
-  const [totalTransCount, setTotalTransCount] = useState(0);
+  // Keyboard navigation & table focus
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [isTableFocused, setIsTableFocused] = useState(false);
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
 
-  const fromRef = useRef<HTMLInputElement>(null);
-
-  const fetchSuppliers = async () => {
-    try {
-      const res = await api.get('/suppliers?limit=100');
-      setSuppliers(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const fromDateMainRef = useRef<HTMLInputElement>(null);
+  const toDateMainRef = useRef<HTMLInputElement>(null);
+  const supplierMainSearchRef = useRef<HTMLInputElement>(null);
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
+  const supplierSearchRef = useRef<HTMLInputElement>(null);
 
   const fetchPurchasesData = async () => {
     setIsLoading(true);
     try {
-      let url = `/laporan/pembelian-detail?from=${fromDate}&to=${toDate}`;
-      if (selectedSupplierId) url += `&supplier_id=${selectedSupplierId}`;
-      
+      const url = `/laporan/pembelian-detail?from=${fromDate}&to=${toDate}`;
       const res = await api.get(url);
       const data = res.data || [];
       setPurchases(data);
-
-      const sum = data.reduce((acc: number, p: Purchase) => acc + Number(p.subtotal), 0);
-      setTotalPurchasesVal(sum);
-      setTotalTransCount(data.length);
+      setIsTableFocused(true);
+      setSelectedIdx(0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -97,22 +93,55 @@ export const LaporanPembelian: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchSuppliers();
-  }, []);
+    if (!showFilterPage) {
+      fetchPurchasesData();
+    }
+  }, [fromDate, toDate, showFilterPage]);
 
   useEffect(() => {
-    fetchPurchasesData();
-  }, [fromDate, toDate, selectedSupplierId]);
+    if (showFilterPage) {
+      setTimeout(() => {
+        fromDateRef.current?.focus();
+        fromDateRef.current?.select();
+      }, 150);
+    }
+  }, [showFilterPage]);
+
+  const filteredPurchases = purchases.filter((purchase) => {
+    const q = supplierSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (purchase.supplier?.nama && purchase.supplier.nama.toLowerCase().includes(q)) ||
+      (purchase.supplier?.kode && purchase.supplier.kode.toLowerCase().includes(q))
+    );
+  });
+
+  const totalPurchasesVal = filteredPurchases.reduce((acc, p) => acc + Number(p.subtotal), 0);
+  const totalTransCount = filteredPurchases.length;
+
+  useEffect(() => {
+    setSelectedIdx(0);
+  }, [purchases, supplierSearch]);
 
   // Shortcuts
   // F1: Focus Date Filter
   useHotkeys('f1', (e) => {
     e.preventDefault();
-    fromRef.current?.focus();
+    fromDateMainRef.current?.focus();
+    fromDateMainRef.current?.select();
+    setIsTableFocused(false);
   }, { enableOnFormTags: true });
 
-  // F2: Export Excel
+  // F2: Focus Supplier Search
   useHotkeys('f2', (e) => {
+    e.preventDefault();
+    supplierMainSearchRef.current?.focus();
+    supplierMainSearchRef.current?.select();
+    setIsTableFocused(false);
+  }, { enableOnFormTags: true });
+
+  // F10: Export Excel
+  useHotkeys('f10', (e) => {
     e.preventDefault();
     exportToExcel();
   }, { enableOnFormTags: false });
@@ -123,9 +152,39 @@ export const LaporanPembelian: React.FC = () => {
     navigate('/laporan');
   }, { enableOnFormTags: true });
 
+  // Keyboard Table Navigation
+  useHotkeys('down', (e) => {
+    if (!isTableFocused || filteredPurchases.length === 0) return;
+    e.preventDefault();
+    setSelectedIdx((prev) => Math.min(prev + 1, filteredPurchases.length - 1));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredPurchases]);
+
+  useHotkeys('up', (e) => {
+    if (!isTableFocused || filteredPurchases.length === 0) return;
+    e.preventDefault();
+    setSelectedIdx((prev) => Math.max(prev - 1, 0));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredPurchases]);
+
+  useHotkeys('enter', (e) => {
+    if (!isTableFocused || filteredPurchases.length === 0) return;
+    e.preventDefault();
+    const activePurchase = filteredPurchases[selectedIdx];
+    if (activePurchase) {
+      setExpandedInvoiceIds(prev => (prev[activePurchase.id] ? {} : { [activePurchase.id]: true }));
+    }
+  }, { enableOnFormTags: false }, [isTableFocused, filteredPurchases, selectedIdx]);
+
+  // Scroll focused row into view
+  useEffect(() => {
+    const target = rowRefs.current[selectedIdx];
+    if (target && isTableFocused) {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIdx, isTableFocused]);
+
   const exportToExcel = () => {
-    if (purchases.length === 0) return;
-    const excelRows = purchases.map((p) => {
+    if (filteredPurchases.length === 0) return;
+    const excelRows = filteredPurchases.map((p) => {
       return {
         'No. Order PO': p.no_order,
         'Tanggal Order': formatDate(p.order_date),
@@ -137,10 +196,14 @@ export const LaporanPembelian: React.FC = () => {
       };
     });
 
-    const ws = XLSX.utils.json_to_sheet(excelRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Detail Pembelian');
-    XLSX.writeFile(wb, `Laporan_Pembelian_Detail_${fromDate}_to_${toDate}.xlsx`);
+    exportStyledExcel(
+      excelRows,
+      `Laporan_Pembelian_Detail_${fromDate}_to_${toDate}.xlsx`,
+      'Laporan Detail Pembelian',
+      [],
+      ['No. Order PO', 'Tanggal Order', 'Termin', 'Status', 'Tanggal Diterima'],
+      ['Nilai Transaksi']
+    );
   };
 
   const formatCurrency = (val: number) => {
@@ -159,29 +222,132 @@ export const LaporanPembelian: React.FC = () => {
     });
   };
 
+  const handleFilterEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (purchases.length > 0) {
+        setIsTableFocused(true);
+        setSelectedIdx(0);
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.blur();
+        }
+      }
+    }
+  };
+
+  const handleFilterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowFilterPage(false);
+  };
+
+  if (showFilterPage) {
+    return (
+      <div className="space-y-6 text-slate-800 animate-fade-in">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <button 
+              onClick={() => navigate('/laporan')}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
+            >
+              <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            </button>
+            <h1 className="text-2xl font-extrabold text-slate-950">Laporan Pembelian Detail</h1>
+            <p className="text-slate-550 text-xs mt-1">Rekapitulasi transaksi pembelian barang masuk dari supplier.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-850 overflow-hidden">
+            <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Laporan Pembelian</h3>
+            </div>
+
+            <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <input
+                    ref={fromDateRef}
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), toDateRef.current?.focus())}
+                    className="input-field w-full py-2 text-xs text-slate-800 border border-slate-350 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <input
+                    ref={toDateRef}
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), supplierSearchRef.current?.focus())}
+                    className="input-field w-full py-2 text-xs text-slate-800 border border-slate-350 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nama / Kode Supplier</label>
+                <input
+                  ref={supplierSearchRef}
+                  type="text"
+                  placeholder="Semua / Ketik Nama atau Kode"
+                  value={supplierSearch}
+                  onChange={(e) => setSupplierSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
+                  className="input-field w-full py-2 text-xs text-slate-800 border border-slate-350 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => navigate('/laporan')}
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
+                >
+                  Kembali
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
+                >
+                  Tampilkan Laporan (Enter)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-800 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <button 
             onClick={() => navigate('/laporan')}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white mb-2 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
             <ArrowLeft size={12} /> Kembali ke Menu (Esc)
           </button>
-          <h1 className="text-2xl font-extrabold text-white">Laporan Pembelian Detail</h1>
-          <p className="text-slate-400 text-sm">Rekapitulasi transaksi pembelian barang masuk dari supplier.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Pembelian Detail</h1>
+          <p className="text-slate-550 text-xs mt-1">Rekapitulasi transaksi pembelian barang masuk dari supplier.</p>
         </div>
 
         <div className="flex gap-2 text-xs">
           <button 
             onClick={exportToExcel}
-            disabled={purchases.length === 0}
-            className="card bg-surface-800 hover:bg-surface-750 px-3.5 py-2 text-slate-350 font-bold border border-surface-700/60 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+            disabled={filteredPurchases.length === 0}
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Download size={14} />
-            <span>Ekspor Excel (F2)</span>
+            <Download size={14} className="text-slate-500" />
+            <span>Ekspor Excel (F10)</span>
           </button>
         </div>
       </div>
@@ -189,162 +355,203 @@ export const LaporanPembelian: React.FC = () => {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Metric 1 */}
-        <div className="card p-4 flex items-center justify-between border border-surface-700 bg-surface-800/80">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Pengeluaran Beli</span>
-            <span className="text-2xl font-black text-white block mt-0.5">{formatCurrency(totalPurchasesVal)}</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total Pengeluaran Beli</span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(totalPurchasesVal)}</span>
           </div>
-          <div className="p-3 bg-indigo-950 text-indigo-400 rounded-xl">
+          <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
             <DollarSign size={20} />
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="card p-4 flex items-center justify-between border border-surface-700 bg-surface-800/80">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Banyak Transaksi PO</span>
-            <span className="text-2xl font-black text-white block mt-0.5">{totalTransCount} Nota</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Banyak Transaksi PO</span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{totalTransCount} Nota</span>
           </div>
-          <div className="p-3 bg-indigo-950 text-indigo-400 rounded-xl">
+          <div className="p-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
             <ShoppingBag size={20} />
           </div>
         </div>
       </div>
 
       {/* Filter Board */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Date From */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Tanggal Awal (F1)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F1)</label>
           <div className="relative">
-            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-500" />
+            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
-              ref={fromRef}
+              ref={fromDateMainRef}
               type="date"
               value={fromDate}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), toDateMainRef.current?.focus())}
               onChange={(e) => setFromDate(e.target.value)}
-              className="input-field w-full pl-9 py-1.5 text-xs"
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
             />
           </div>
         </div>
 
         {/* Date To */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
           <div className="relative">
-            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-500" />
+            <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
+              ref={toDateMainRef}
               type="date"
               value={toDate}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), supplierMainSearchRef.current?.focus())}
               onChange={(e) => setToDate(e.target.value)}
-              className="input-field w-full pl-9 py-1.5 text-xs"
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
             />
           </div>
         </div>
 
-        {/* Supplier Select */}
+        {/* Supplier Search Bar */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Filter Supplier</label>
-          <select
-            value={selectedSupplierId}
-            onChange={(e) => setSelectedSupplierId(e.target.value)}
-            className="input-field w-full py-1.5 text-xs"
-          >
-            <option value="">Semua Supplier</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nama} ({s.kode})
-              </option>
-            ))}
-          </select>
+          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">Cari Supplier (F2)</label>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+            <input
+              ref={supplierMainSearchRef}
+              type="text"
+              placeholder="Ketik nama / kode..."
+              value={supplierSearch}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (filteredPurchases.length > 0) {
+                    setIsTableFocused(true);
+                    setSelectedIdx(0);
+                    supplierMainSearchRef.current?.blur();
+                  }
+                }
+              }}
+              onChange={(e) => setSupplierSearch(e.target.value)}
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-855"
+            />
+          </div>
         </div>
 
         {/* Info */}
-        <div className="text-right flex flex-col justify-end text-[10px] text-slate-500">
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed">
           <p>Saring riwayat PO berdasarkan pemasok dan filter tanggal.</p>
-          <p className="mt-1">Pintasan: <kbd className="shortcut-badge">F1</kbd> filter tanggal, <kbd className="shortcut-badge">F2</kbd> ekspor Excel.</p>
+          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge">F1</kbd> filter tanggal, <kbd className="shortcut-badge">F2</kbd> cari supplier, <kbd className="shortcut-badge">F10</kbd> ekspor Excel.</p>
         </div>
       </div>
 
       {/* Main Data Table */}
-      <div className="card p-0 overflow-hidden border border-surface-700/65 shadow-2xl">
+      <div 
+        className={`bg-white rounded-xl border shadow-xs overflow-hidden transition-all ${
+          isTableFocused ? 'ring-2 ring-primary-500/20 border-primary-300' : 'border-slate-200'
+        }`}
+        onClick={() => setIsTableFocused(true)}
+      >
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-4 w-12 text-center">Detail</th>
-              <th className="p-4">No. Order PO</th>
-              <th className="p-4">Tanggal Order</th>
-              <th className="p-4">Nama Supplier</th>
-              <th className="p-4 text-center">Termin</th>
-              <th className="p-4 text-center">Status</th>
-              <th className="p-4">Tgl Terima</th>
-              <th className="p-4 text-right">Nilai Pembelian</th>
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+              <th className="p-3 w-12 text-center">Detail</th>
+              <th className="p-3">No. Order PO</th>
+              <th className="p-3">Tanggal Order</th>
+              <th className="p-3">Nama Supplier</th>
+              <th className="p-3 text-center">Termin</th>
+              <th className="p-3 text-center">Status</th>
+              <th className="p-3">Tgl Terima</th>
+              <th className="p-3 text-right">Nilai Pembelian</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-750">
+          <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
+                <td colSpan={8} className="p-8 text-center text-slate-500 italic">
                   Sedang mengambil log pembelian detail...
                 </td>
               </tr>
-            ) : purchases.length === 0 ? (
+            ) : filteredPurchases.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-slate-500 italic">
+                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
                   Tidak ada transaksi pembelian terdeteksi pada periode filter ini.
                 </td>
               </tr>
             ) : (
-              purchases.map((purchase) => {
+              filteredPurchases.map((purchase, idx) => {
                 const isExpanded = !!expandedInvoiceIds[purchase.id];
+                const isSelected = isTableFocused && selectedIdx === idx;
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                  let base = 'p-3 text-xs align-middle transition-colors ';
+                  if (isSelected) {
+                    base += 'bg-blue-100 text-primary-950 font-bold ';
+                    if (pos === 'first') {
+                      base += 'border-l-4 border-primary-600 ';
+                    }
+                  } else {
+                    base += 'text-slate-700 border-b border-slate-100 ';
+                  }
+                  return base;
+                };
 
                 return (
                   <React.Fragment key={purchase.id}>
                     {/* Header Row */}
                     <tr 
-                      onClick={() => setExpandedInvoiceIds(prev => ({ ...prev, [purchase.id]: !isExpanded }))}
-                      className="hover:bg-surface-750/30 cursor-pointer text-slate-350"
+                      ref={(el) => { rowRefs.current[idx] = el; }}
+                      onClick={() => {
+                        setIsTableFocused(true);
+                        setSelectedIdx(idx);
+                        setExpandedInvoiceIds(prev => (prev[purchase.id] ? {} : { [purchase.id]: true }));
+                      }}
+                      className="hover:bg-slate-50/50 cursor-pointer"
                     >
-                      <td className="p-4 text-center text-slate-500">
-                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      <td className={getTdClass('first') + " text-center text-slate-400"}>
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </td>
-                      <td className="p-4 font-mono font-bold text-slate-200">
+                      <td className={getTdClass('middle') + " font-mono font-bold"}>
                         {purchase.no_order}
                       </td>
-                      <td className="p-4">{formatDate(purchase.order_date)}</td>
-                      <td className="p-4 font-bold text-slate-250">{purchase.supplier?.nama || '-'}</td>
-                      <td className="p-4 text-center font-semibold capitalize text-slate-400">
+                      <td className={getTdClass('middle')}>{formatDate(purchase.order_date)}</td>
+                      <td className={getTdClass('middle')}>
+                        <div className="font-bold">{purchase.supplier?.nama || '-'}</div>
+                        <div className="text-[10px] text-slate-500 font-normal mt-0.5 max-w-xs truncate">
+                          {purchase.supplier?.alamat || '-'}
+                        </div>
+                      </td>
+                      <td className={getTdClass('middle') + " text-center font-semibold capitalize text-slate-500"}>
                         {purchase.terms}
                       </td>
-                      <td className="p-4 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      <td className={getTdClass('middle') + " text-center"}>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
                           purchase.status === 'received' 
-                            ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-800/20' 
-                            : 'bg-yellow-950/30 text-yellow-400 border border-yellow-800/20'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                            : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
                         }`}>
                           {purchase.status}
                         </span>
                       </td>
-                      <td className="p-4 text-slate-400">{purchase.received_at ? formatDate(purchase.received_at) : '-'}</td>
-                      <td className="p-4 text-right font-mono font-bold text-white text-sm">
+                      <td className={getTdClass('middle') + " text-slate-500"}>{purchase.received_at ? formatDate(purchase.received_at) : '-'}</td>
+                      <td className={getTdClass('last') + " text-right font-mono font-bold text-slate-900"}>
                         {formatCurrency(Number(purchase.subtotal))}
                       </td>
                     </tr>
 
                     {/* Expanded Detail Rows */}
                     {isExpanded && (
-                      <tr className="bg-surface-850/40">
-                        <td colSpan={8} className="p-4 border-t border-b border-surface-700/60">
-                          <div className="space-y-3 pl-8">
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
-                              <FileText size={12} className="text-indigo-400" />
+                      <tr className="bg-slate-50/40">
+                        <td colSpan={8} className="py-3 px-3 border-t border-b border-slate-200">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2">
+                              <FileText size={12} className="text-primary-600" />
                               <span>Rincian Barang & Kuantitas PO</span>
                             </div>
 
-                            <div className="border border-surface-750 rounded-lg overflow-hidden max-w-4xl">
+                            <div className="border border-slate-200 rounded-lg overflow-hidden max-w-4xl bg-white shadow-xs">
                               <table className="w-full text-left text-[11px] border-collapse">
                                 <thead>
-                                  <tr className="bg-surface-800 text-slate-400 font-semibold border-b border-surface-750">
+                                  <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[9px]">
                                     <th className="p-2 w-8 text-center">No</th>
                                     <th className="p-2">Kode SKU</th>
                                     <th className="p-2">Nama Produk</th>
@@ -353,15 +560,15 @@ export const LaporanPembelian: React.FC = () => {
                                     <th className="p-2 text-right w-28">Subtotal</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-surface-750">
-                                  {purchase.purchase_items?.map((item, idx) => (
-                                    <tr key={item.id} className="text-slate-350 hover:bg-surface-800/10">
-                                      <td className="p-2 text-center text-slate-500">{idx + 1}</td>
-                                      <td className="p-2 font-mono text-slate-400">{item.product?.kode || '-'}</td>
-                                      <td className="p-2 font-bold text-slate-200">{item.product?.nama || '-'}</td>
-                                      <td className="p-2 text-right font-semibold text-white">{Number(item.qty)}</td>
-                                      <td className="p-2 text-right font-mono">{formatCurrency(Number(item.harga_beli))}</td>
-                                      <td className="p-2 text-right font-mono text-white font-bold">{formatCurrency(Number(item.subtotal))}</td>
+                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                  {purchase.purchase_items?.map((item, itemIdx) => (
+                                    <tr key={item.id} className="hover:bg-slate-50/40">
+                                      <td className="p-2 text-center text-slate-400">{itemIdx + 1}</td>
+                                      <td className="p-2 font-mono text-slate-555">{item.product?.kode || '-'}</td>
+                                      <td className="p-2 font-bold text-slate-900">{item.product?.nama || '-'}</td>
+                                      <td className="p-2 text-right font-semibold text-slate-800">{Number(item.qty)}</td>
+                                      <td className="p-2 text-right font-mono text-slate-600">{formatCurrency(Number(item.harga_beli))}</td>
+                                      <td className="p-2 text-right font-mono text-slate-900 font-bold">{formatCurrency(Number(item.subtotal))}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -377,6 +584,9 @@ export const LaporanPembelian: React.FC = () => {
             )}
           </tbody>
         </table>
+      </div>
+      <div className="flex justify-end text-[10px] text-slate-400 mt-2">
+        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> detail item.</span>
       </div>
     </div>
   );

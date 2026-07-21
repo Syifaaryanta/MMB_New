@@ -134,7 +134,11 @@ laporanRouter.get('/audit-aktivitas', authenticate, authorize(ROLES.ADMIN), asyn
     const { from, to } = req.query;
     const dateFilter: any = {};
     if (from) dateFilter.gte = new Date(from as string);
-    if (to) dateFilter.lte = new Date(to as string);
+    if (to) {
+      const toDate = new Date(to as string);
+      toDate.setUTCHours(23, 59, 59, 999);
+      dateFilter.lte = toDate;
+    }
 
     const adjustments = await prisma.stockAdjustment.findMany({
       where: Object.keys(dateFilter).length ? { created_at: dateFilter } : {},

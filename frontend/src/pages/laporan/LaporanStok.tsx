@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import * as XLSX from 'xlsx';
+import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   Package, 
   Search, 
@@ -48,11 +48,22 @@ export const LaporanStok: React.FC = () => {
   // Selection & expand
   const [expandedProductIds, setExpandedProductIds] = useState<Record<string, boolean>>({});
 
+  // Keyboard navigation & table focus
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [isTableFocused, setIsTableFocused] = useState(false);
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
+
   // Summary Metrics
   const [totalAsetVal, setTotalAsetVal] = useState(0);
   const [criticalCount, setCriticalCount] = useState(0);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const statusFilterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Focus search bar on initial mount
+    searchInputRef.current?.focus();
+  }, []);
 
   const fetchStockData = async () => {
     setIsLoading(true);
@@ -80,7 +91,7 @@ export const LaporanStok: React.FC = () => {
 
     const filtered = products.filter((p) => {
       const matchesSearch = p.nama.toLowerCase().includes(q) || p.kode.toLowerCase().includes(q);
-      const isCritical = Number(p.stok) <= 10;
+      const isCritical = Number(p.stok) < 2;
 
       if (isCritical) criticals++;
 
@@ -101,16 +112,28 @@ export const LaporanStok: React.FC = () => {
     setCriticalCount(criticals);
   }, [products, searchQuery, stockStatus]);
 
+  useEffect(() => {
+    setSelectedIdx(0);
+  }, [filteredProducts]);
+
   // Shortcuts
   // F1: Focus Search Input
   useHotkeys('f1', (e) => {
     e.preventDefault();
     searchInputRef.current?.focus();
     searchInputRef.current?.select();
+    setIsTableFocused(false);
   }, { enableOnFormTags: true });
 
-  // F2: Export Excel
+  // F2: Focus Status Filter
   useHotkeys('f2', (e) => {
+    e.preventDefault();
+    statusFilterRef.current?.focus();
+    setIsTableFocused(false);
+  }, { enableOnFormTags: true });
+
+  // F10: Export Excel
+  useHotkeys('f10', (e) => {
     e.preventDefault();
     exportToExcel();
   }, { enableOnFormTags: false });
@@ -120,6 +143,36 @@ export const LaporanStok: React.FC = () => {
     e.preventDefault();
     navigate('/laporan');
   }, { enableOnFormTags: true });
+
+  // Keyboard Table Navigation
+  useHotkeys('down', (e) => {
+    if (!isTableFocused || filteredProducts.length === 0) return;
+    e.preventDefault();
+    setSelectedIdx((prev) => Math.min(prev + 1, filteredProducts.length - 1));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredProducts]);
+
+  useHotkeys('up', (e) => {
+    if (!isTableFocused || filteredProducts.length === 0) return;
+    e.preventDefault();
+    setSelectedIdx((prev) => Math.max(prev - 1, 0));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredProducts]);
+
+  useHotkeys('enter', (e) => {
+    if (!isTableFocused || filteredProducts.length === 0) return;
+    e.preventDefault();
+    const activeProd = filteredProducts[selectedIdx];
+    if (activeProd) {
+      setExpandedProductIds(prev => (prev[activeProd.id] ? {} : { [activeProd.id]: true }));
+    }
+  }, { enableOnFormTags: false }, [isTableFocused, filteredProducts, selectedIdx]);
+
+  // Scroll focused row into view
+  useEffect(() => {
+    const target = rowRefs.current[selectedIdx];
+    if (target && isTableFocused) {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIdx, isTableFocused]);
 
   const exportToExcel = () => {
     if (products.length === 0) return;
@@ -133,16 +186,19 @@ export const LaporanStok: React.FC = () => {
         'Nama Barang': p.nama,
         'Deskripsi': p.deskripsi || '-',
         'Stok Akhir': Number(p.stok),
-        'Satuan': p.satuan,
         'Estimasi Harga Beli Terendah': lowestPrice,
         'Estimasi Nilai Aset': assetVal,
       };
     });
 
-    const ws = XLSX.utils.json_to_sheet(excelRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Stok Persediaan');
-    XLSX.writeFile(wb, `Laporan_Stok_Persediaan_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    exportStyledExcel(
+      excelRows,
+      `Laporan_Stok_Persediaan_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      'Laporan Stok Persediaan',
+      ['Stok Akhir'],
+      ['Kode Barang'],
+      ['Estimasi Harga Beli Terendah', 'Estimasi Nilai Aset']
+    );
   };
 
   const formatCurrency = (val: number) => {
@@ -153,29 +209,42 @@ export const LaporanStok: React.FC = () => {
     }).format(val);
   };
 
+  const handleFilterEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredProducts.length > 0) {
+        setIsTableFocused(true);
+        setSelectedIdx(0);
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.blur();
+        }
+      }
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-800 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <button 
             onClick={() => navigate('/laporan')}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white mb-2 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
             <ArrowLeft size={12} /> Kembali ke Menu (Esc)
           </button>
-          <h1 className="text-2xl font-extrabold text-white">Laporan Stok Persediaan</h1>
-          <p className="text-slate-400 text-sm">Monitoring kuantitas inventori gudang, stok kritis, dan total estimasi aset.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Stok Persediaan</h1>
+          <p className="text-slate-550 text-xs mt-1">Monitoring kuantitas inventori gudang, stok kritis, dan total estimasi aset.</p>
         </div>
 
-        <div className="flex gap-2 text-xs text-slate-300">
+        <div className="flex gap-2 text-xs">
           <button 
             onClick={exportToExcel}
             disabled={filteredProducts.length === 0}
-            className="card bg-surface-800 hover:bg-surface-750 px-3.5 py-2 text-slate-350 font-bold border border-surface-700/60 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Download size={14} />
-            <span>Ekspor Excel (F2)</span>
+            <Download size={14} className="text-slate-500" />
+            <span>Ekspor Excel (F10)</span>
           </button>
         </div>
       </div>
@@ -183,76 +252,109 @@ export const LaporanStok: React.FC = () => {
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Metric 1 */}
-        <div className="card p-4 flex items-center justify-between border border-surface-700 bg-surface-800/80">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estimasi Nilai Aset</span>
-            <span className="text-xl font-black text-emerald-400 block mt-0.5">{formatCurrency(totalAsetVal)}</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Estimasi Nilai Aset</span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(totalAsetVal)}</span>
           </div>
-          <div className="p-3 bg-emerald-950 text-emerald-400 rounded-xl">
+          <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
             <DollarSign size={20} />
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="card p-4 flex items-center justify-between border border-surface-700 bg-surface-800/80">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-rose-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Stok Kritis (&le; 10)</span>
-            <span className="text-xl font-black text-rose-400 block mt-0.5">{criticalCount} SKU</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Stok Kritis (&lt; 2)</span>
+            <span className="text-xl font-extrabold text-rose-600 block mt-0.5 font-mono">{criticalCount} SKU</span>
           </div>
-          <div className="p-3 bg-rose-950 text-rose-400 rounded-xl">
+          <div className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl">
             <AlertTriangle size={20} />
           </div>
         </div>
 
         {/* Metric 3 */}
-        <div className="card p-4 flex items-center justify-between border border-surface-700 bg-surface-800/80">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total SKU Terdaftar</span>
-            <span className="text-xl font-black text-white block mt-0.5">{products.length} Barang</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total SKU Terdaftar</span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{products.length} Barang</span>
           </div>
-          <div className="p-3 bg-indigo-950 text-indigo-400 rounded-xl">
+          <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
             <Layers size={20} />
           </div>
         </div>
       </div>
 
       {/* Control Board */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search */}
-        <div className="relative">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Barang / Kode SKU (F1)</label>
+        <div>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Cari Barang / Kode SKU (F1)</label>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
+            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Ketik nama atau SKU produk..."
               value={searchQuery}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), statusFilterRef.current?.focus())}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field w-full pl-9 py-2 text-xs"
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
             />
           </div>
         </div>
 
         {/* Filter Stock */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Filter Status Stok</label>
-          <div className="flex gap-1.5 p-1 bg-surface-900 border border-surface-750 rounded-lg text-xs">
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Filter Status Stok (F2)</label>
+          <div
+            ref={statusFilterRef}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (filteredProducts.length > 0) {
+                  setIsTableFocused(true);
+                  setSelectedIdx(0);
+                  statusFilterRef.current?.blur();
+                }
+              } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setStockStatus((prev) => (prev === 'all' ? 'safe' : prev === 'critical' ? 'all' : 'critical'));
+              } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                setStockStatus((prev) => (prev === 'all' ? 'critical' : prev === 'critical' ? 'safe' : 'all'));
+              }
+            }}
+            className="flex gap-1.5 p-1 bg-slate-50 border border-slate-205 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all cursor-pointer select-none"
+          >
             <button
+              type="button"
+              tabIndex={-1}
               onClick={() => setStockStatus('all')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${stockStatus === 'all' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`flex-1 py-1 rounded font-bold transition-all ${
+                stockStatus === 'all' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
             >
               Semua
             </button>
             <button
+              type="button"
+              tabIndex={-1}
               onClick={() => setStockStatus('critical')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${stockStatus === 'critical' ? 'bg-danger-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`flex-1 py-1 rounded font-bold transition-all ${
+                stockStatus === 'critical' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-855'
+              }`}
             >
               Kritis
             </button>
             <button
+              type="button"
+              tabIndex={-1}
               onClick={() => setStockStatus('safe')}
-              className={`flex-1 py-1.5 rounded font-bold transition-all ${stockStatus === 'safe' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`flex-1 py-1 rounded font-bold transition-all ${
+                stockStatus === 'safe' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-855'
+              }`}
             >
               Aman
             </button>
@@ -260,91 +362,115 @@ export const LaporanStok: React.FC = () => {
         </div>
 
         {/* Hints */}
-        <div className="text-right flex flex-col justify-end text-[10px] text-slate-500">
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-550 leading-relaxed">
           <p>Estimasi aset didasarkan pada harga beli terendah dari supplier.</p>
-          <p className="mt-1">Pintasan: <kbd className="shortcut-badge">F1</kbd> cari produk, <kbd className="shortcut-badge">F2</kbd> ekspor Excel.</p>
+          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge text-[9px]">F1</kbd> cari produk, <kbd className="shortcut-badge text-[9px]">F2</kbd> filter status, <kbd className="shortcut-badge text-[9px]">F10</kbd> ekspor Excel.</p>
         </div>
       </div>
 
       {/* Main Stock Table */}
-      <div className="card p-0 overflow-hidden border border-surface-700/65 shadow-2xl">
+      <div 
+        className={`bg-white rounded-xl border shadow-xs overflow-hidden transition-all ${
+          isTableFocused ? 'ring-2 ring-primary-500/20 border-primary-300' : 'border-slate-200'
+        }`}
+        onClick={() => setIsTableFocused(true)}
+      >
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-4 w-12 text-center">Detail</th>
-              <th className="p-4 w-44">Kode SKU</th>
-              <th className="p-4">Nama Produk</th>
-              <th className="p-4">Keterangan / Deskripsi</th>
-              <th className="p-4 text-center">Satuan</th>
-              <th className="p-4 text-right">Kuantitas Stok</th>
-              <th className="p-4 text-right">Nilai Aset Estimasi</th>
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+              <th className="p-3 w-12 text-center">Detail</th>
+              <th className="p-3 w-44">Kode SKU</th>
+              <th className="p-3">Nama Produk</th>
+              <th className="p-3">Keterangan / Deskripsi</th>
+              <th className="p-3 text-right">Kuantitas Stok</th>
+              <th className="p-3 text-right">Nilai Aset Estimasi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-750">
+          <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-slate-400 italic">
+                <td colSpan={6} className="p-8 text-center text-slate-500 italic">
                   Sedang menghitung persediaan barang...
                 </td>
               </tr>
             ) : filteredProducts.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-slate-500 italic">
+                <td colSpan={6} className="p-8 text-center text-slate-400 italic">
                   Tidak ada barang persediaan terdeteksi untuk filter ini.
                 </td>
               </tr>
             ) : (
-              filteredProducts.map((p) => {
+              filteredProducts.map((p, idx) => {
                 const isExpanded = !!expandedProductIds[p.id];
                 const prices = p.product_prices || [];
                 const lowestPrice = prices.length > 0 ? Math.min(...prices.map(pr => Number(pr.harga_beli))) : 0;
                 const assetVal = Number(p.stok) * lowestPrice;
-                const isCritical = Number(p.stok) <= 10;
+                const isCritical = Number(p.stok) < 2;
+                const isSelected = isTableFocused && selectedIdx === idx;
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                  let base = 'p-3 text-xs align-middle transition-colors ';
+                  if (isSelected) {
+                    base += 'bg-blue-100 text-primary-950 font-bold ';
+                    if (pos === 'first') {
+                      base += 'border-l-4 border-primary-600 ';
+                    }
+                  } else {
+                    base += 'text-slate-700 border-b border-slate-100 ';
+                  }
+                  return base;
+                };
 
                 return (
                   <React.Fragment key={p.id}>
                     {/* Header row */}
                     <tr 
-                      onClick={() => setExpandedProductIds(prev => ({ ...prev, [p.id]: !isExpanded }))}
-                      className="hover:bg-surface-750/30 cursor-pointer text-slate-350"
+                      ref={(el) => { rowRefs.current[idx] = el; }}
+                      onClick={() => {
+                        setIsTableFocused(true);
+                        setSelectedIdx(idx);
+                        setExpandedProductIds(prev => (prev[p.id] ? {} : { [p.id]: true }));
+                      }}
+                      className="hover:bg-slate-50/50 cursor-pointer"
                     >
-                      <td className="p-4 text-center text-slate-500">
-                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      <td className={getTdClass('first') + " text-center text-slate-400"}>
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </td>
-                      <td className="p-4 font-mono font-bold text-slate-200">{p.kode}</td>
-                      <td className="p-4 font-bold text-slate-200 flex items-center gap-1.5">
-                        <span>{p.nama}</span>
-                        {isCritical && (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-danger-950 text-danger-400 border border-danger-700/30 inline-flex items-center gap-0.5">
-                            <AlertTriangle size={8} /> Restock
-                          </span>
-                        )}
+                      <td className={getTdClass('middle') + " font-mono font-bold text-slate-700"}>{p.kode}</td>
+                      <td className={getTdClass('middle') + " font-bold"}>
+                        <div className="flex items-center gap-1.5">
+                          <span>{p.nama}</span>
+                          {isCritical && (
+                            <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-0.5">
+                              <AlertTriangle size={8} /> RESTOCK
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="p-4 text-slate-400 truncate max-w-xs">{p.deskripsi || '-'}</td>
-                      <td className="p-4 text-center font-semibold text-slate-400 uppercase">{p.satuan}</td>
-                      <td className={`p-4 text-right font-black font-mono text-sm ${isCritical ? 'text-rose-450' : 'text-white'}`}>
+                      <td className={getTdClass('middle') + " text-slate-550 truncate max-w-xs"}>{p.deskripsi || '-'}</td>
+                      <td className={getTdClass('middle') + ` text-right font-black font-mono text-sm ${isCritical ? 'text-rose-600' : 'text-slate-800'}`}>
                         {Number(p.stok)}
                       </td>
-                      <td className="p-4 text-right font-mono font-bold text-emerald-400 text-sm">
+                      <td className={getTdClass('last') + " text-right font-mono font-bold text-emerald-600"}>
                         {formatCurrency(assetVal)}
                       </td>
                     </tr>
 
                     {/* Collapsible supplier-stock breakdown */}
                     {isExpanded && (
-                      <tr className="bg-surface-850/40">
-                        <td colSpan={7} className="p-4 border-t border-b border-surface-700/60">
-                          <div className="space-y-3 pl-8">
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
-                              <Package size={12} className="text-primary-400" />
+                      <tr className="bg-slate-50/40">
+                        <td colSpan={6} className="py-3 px-3 border-t border-b border-slate-200">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2">
+                              <Package size={12} className="text-primary-600" />
                               <span>Distribusi Stok Dan Harga Per Supplier</span>
                             </div>
 
                             {prices.length > 0 ? (
-                              <div className="border border-surface-750 rounded-lg overflow-hidden max-w-3xl">
+                              <div className="border border-slate-200 rounded-lg overflow-hidden max-w-3xl bg-white shadow-xs">
                                 <table className="w-full text-left text-[11px] border-collapse">
                                   <thead>
-                                    <tr className="bg-surface-800 text-slate-400 font-semibold border-b border-surface-750">
+                                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[9px]">
                                       <th className="p-2 w-8 text-center">No</th>
                                       <th className="p-2">Kode Supplier</th>
                                       <th className="p-2">Nama Supplier</th>
@@ -352,14 +478,14 @@ export const LaporanStok: React.FC = () => {
                                       <th className="p-2 text-right w-36">Harga Beli Supplier</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-surface-750">
-                                    {prices.map((pr, idx) => (
-                                      <tr key={pr.id} className="text-slate-350">
-                                        <td className="p-2 text-center text-slate-500">{idx + 1}</td>
-                                        <td className="p-2 font-mono text-slate-400">{pr.supplier?.kode}</td>
-                                        <td className="p-2 font-bold text-slate-200">{pr.supplier?.nama}</td>
-                                        <td className="p-2 text-right font-semibold text-white">{Number(pr.stok)}</td>
-                                        <td className="p-2 text-right font-mono text-emerald-400">{formatCurrency(Number(pr.harga_beli))}</td>
+                                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                                    {prices.map((pr, priceIdx) => (
+                                      <tr key={pr.id} className="hover:bg-slate-50/40">
+                                        <td className="p-2 text-center text-slate-400">{priceIdx + 1}</td>
+                                        <td className="p-2 font-mono text-slate-555">{pr.supplier?.kode}</td>
+                                        <td className="p-2 font-bold text-slate-900">{pr.supplier?.nama}</td>
+                                        <td className="p-2 text-right font-semibold text-slate-800">{Number(pr.stok)}</td>
+                                        <td className="p-2 text-right font-mono text-emerald-650 font-bold">{formatCurrency(Number(pr.harga_beli))}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -378,6 +504,9 @@ export const LaporanStok: React.FC = () => {
             )}
           </tbody>
         </table>
+      </div>
+      <div className="flex justify-end text-[10px] text-slate-400 mt-2">
+        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> detail item.</span>
       </div>
     </div>
   );

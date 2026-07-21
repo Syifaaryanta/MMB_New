@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import * as XLSX from 'xlsx';
+import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   ShieldAlert, 
   Calendar, 
@@ -49,15 +49,25 @@ export const LaporanAudit: React.FC = () => {
   const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   // Selection & keyboard nav
-  const [selectedRowIdx, setSelectedRowIdx] = useState<number>(0);
+  const [selectedIdx, setSelectedIdx] = useState<number>(0);
+  const [isTableFocused, setIsTableFocused] = useState(false);
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   const fetchAuditData = async () => {
     setIsLoading(true);
     try {
       const res = await api.get(`/laporan/audit-aktivitas?from=${fromDate}&to=${toDate}`);
       setLogs(res.data || []);
+      setIsTableFocused(true);
+      setSelectedIdx(0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -72,7 +82,7 @@ export const LaporanAudit: React.FC = () => {
   useEffect(() => {
     const q = searchQuery.toLowerCase();
     const filtered = logs.filter((log) => {
-      const staff = (log.staff_nama || log.creator?.nama || '').toLowerCase();
+      const staff = (log.staff_nama || '').toLowerCase();
       const reason = log.alasan.toLowerCase();
       const prodName = (log.product?.nama || '').toLowerCase();
       const prodSku = (log.product?.kode || '').toLowerCase();
@@ -81,7 +91,7 @@ export const LaporanAudit: React.FC = () => {
     });
 
     setFilteredLogs(filtered);
-    setSelectedRowIdx(0);
+    setSelectedIdx(0);
   }, [logs, searchQuery]);
 
   // Shortcuts
@@ -90,10 +100,19 @@ export const LaporanAudit: React.FC = () => {
     e.preventDefault();
     searchInputRef.current?.focus();
     searchInputRef.current?.select();
+    setIsTableFocused(false);
   }, { enableOnFormTags: true });
 
-  // F2: Export Excel
+  // F2: Focus Date Filter
   useHotkeys('f2', (e) => {
+    e.preventDefault();
+    fromDateRef.current?.focus();
+    fromDateRef.current?.select();
+    setIsTableFocused(false);
+  }, { enableOnFormTags: true });
+
+  // F10: Export Excel
+  useHotkeys('f10', (e) => {
     e.preventDefault();
     exportToExcel();
   }, { enableOnFormTags: false });
@@ -106,14 +125,24 @@ export const LaporanAudit: React.FC = () => {
 
   // ArrowUp / ArrowDown
   useHotkeys('up', (e) => {
+    if (!isTableFocused || filteredLogs.length === 0) return;
     e.preventDefault();
-    if (selectedRowIdx > 0) setSelectedRowIdx(selectedRowIdx - 1);
-  }, { enableOnFormTags: false });
+    setSelectedIdx((prev) => Math.max(prev - 1, 0));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredLogs]);
 
   useHotkeys('down', (e) => {
+    if (!isTableFocused || filteredLogs.length === 0) return;
     e.preventDefault();
-    if (selectedRowIdx < filteredLogs.length - 1) setSelectedRowIdx(selectedRowIdx + 1);
-  }, { enableOnFormTags: false });
+    setSelectedIdx((prev) => Math.min(prev + 1, filteredLogs.length - 1));
+  }, { enableOnFormTags: false }, [isTableFocused, filteredLogs]);
+
+  // Scroll focused row into view
+  useEffect(() => {
+    const target = rowRefs.current[selectedIdx];
+    if (target && isTableFocused) {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIdx, isTableFocused]);
 
   const exportToExcel = () => {
     if (logs.length === 0) return;
@@ -125,16 +154,20 @@ export const LaporanAudit: React.FC = () => {
         'Stok Awal': Number(log.stock_before),
         'Stok Akhir': Number(log.stock_after),
         'Selisih Stok (Delta)': Number(log.qty_delta),
-        'Staff Auditor': log.staff_nama || log.creator?.nama || 'System',
+        'Staff Auditor': log.staff_nama || 'System',
         'Alasan Penyesuaian': log.alasan,
         'Waktu Audit': new Date(log.created_at).toLocaleString('id-ID'),
       };
     });
 
-    const ws = XLSX.utils.json_to_sheet(excelRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Audit Log Gudang');
-    XLSX.writeFile(wb, `Laporan_Audit_Aktivitas_${fromDate}_to_${toDate}.xlsx`);
+    exportStyledExcel(
+      excelRows,
+      `Laporan_Audit_Aktivitas_${fromDate}_to_${toDate}.xlsx`,
+      'Laporan Audit Aktivitas Gudang',
+      ['Stok Awal', 'Stok Akhir', 'Selisih Stok (Delta)'],
+      ['Tanggal Penyesuaian', 'SKU', 'Waktu Audit'],
+      []
+    );
   };
 
   const formatDate = (dateStr: string) => {
@@ -145,118 +178,165 @@ export const LaporanAudit: React.FC = () => {
     });
   };
 
+  const handleFilterEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredLogs.length > 0) {
+        setIsTableFocused(true);
+        setSelectedIdx(0);
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.blur();
+        }
+      }
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-800 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <button 
             onClick={() => navigate('/laporan')}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white mb-2 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
             <ArrowLeft size={12} /> Kembali ke Menu (Esc)
           </button>
-          <h1 className="text-2xl font-extrabold text-white">Laporan Audit Aktivitas</h1>
-          <p className="text-slate-400 text-sm">Lacak rekam jejak histori perubahan stok manual gudang dan audit operasional logistik.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Audit Aktivitas</h1>
+          <p className="text-slate-550 text-xs mt-1">Lacak rekam jejak histori perubahan stok manual gudang dan audit operasional logistik.</p>
         </div>
 
         <div className="flex gap-2 text-xs">
           <button 
             onClick={exportToExcel}
             disabled={filteredLogs.length === 0}
-            className="card bg-surface-800 hover:bg-surface-750 px-3.5 py-2 text-slate-350 font-bold border border-surface-700/60 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Download size={14} />
-            <span>Ekspor Excel (F2)</span>
+            <Download size={14} className="text-slate-500" />
+            <span>Ekspor Excel (F10)</span>
           </button>
         </div>
       </div>
 
       {/* Filter Board */}
-      <div className="card p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Search */}
-        <div className="relative col-span-1 md:col-span-2">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Staff / Barang / Alasan (F1)</label>
+        <div className="col-span-1 md:col-span-2">
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Cari Staff / Barang / Alasan (F1)</label>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
+            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Nama staff, SKU, nama barang, alasan audit..."
               value={searchQuery}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), fromDateRef.current?.focus())}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field w-full pl-9 py-2 text-xs"
+              className="input-field w-full pl-9 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
             />
           </div>
         </div>
 
         {/* Date From */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Tanggal Awal</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F2)</label>
           <input
+            ref={fromDateRef}
             type="date"
             value={fromDate}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), toDateRef.current?.focus())}
             onChange={(e) => setFromDate(e.target.value)}
-            className="input-field w-full py-1.5 text-xs"
+            className="input-field w-full py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
           />
         </div>
 
         {/* Date To */}
         <div>
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
           <input
+            ref={toDateRef}
             type="date"
             value={toDate}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (filteredLogs.length > 0) {
+                  setIsTableFocused(true);
+                  setSelectedIdx(0);
+                  toDateRef.current?.blur();
+                }
+              }
+            }}
             onChange={(e) => setToDate(e.target.value)}
-            className="input-field w-full py-1.5 text-xs"
+            className="input-field w-full py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
           />
         </div>
       </div>
 
       {/* Main Log Table */}
-      <div className="card p-0 overflow-hidden border border-surface-700/65 shadow-2xl">
+      <div 
+        className={`bg-white rounded-xl border shadow-xs overflow-hidden transition-all ${
+          isTableFocused ? 'ring-2 ring-primary-500/20 border-primary-300' : 'border-slate-200'
+        }`}
+        onClick={() => setIsTableFocused(true)}
+      >
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-4 w-12 text-center">No</th>
-              <th className="p-4 w-32">Waktu Audit</th>
-              <th className="p-4">SKU / Nama Produk</th>
-              <th className="p-4 text-center">Stok Awal</th>
-              <th className="p-4 text-center">Stok Akhir</th>
-              <th className="p-4 text-center">Selisih</th>
-              <th className="p-4">Staff Auditor</th>
-              <th className="p-4">Alasan Penyesuaian</th>
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+              <th className="p-3 w-12 text-center">No</th>
+              <th className="p-3 w-32">Waktu Audit</th>
+              <th className="p-3">SKU / Nama Produk</th>
+              <th className="p-3 text-center">Stok Awal</th>
+              <th className="p-3 text-center">Stok Akhir</th>
+              <th className="p-3 text-center">Selisih</th>
+              <th className="p-3">Staff Auditor</th>
+              <th className="p-3">Alasan Penyesuaian</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-750">
+          <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
+                <td colSpan={8} className="p-8 text-center text-slate-500 italic">
                   Sedang mengambil log aktivitas audit...
                 </td>
               </tr>
             ) : filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-slate-500 italic">
+                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
                   Tidak ada data aktivitas audit dalam periode filter ini.
                 </td>
               </tr>
             ) : (
               filteredLogs.map((log, idx) => {
-                const isSelected = selectedRowIdx === idx;
+                const isSelected = isTableFocused && selectedIdx === idx;
                 const delta = Number(log.qty_delta);
                 const isNegative = delta < 0;
+
+                const getTdClass = (pos: 'first' | 'middle' | 'last') => {
+                  let base = 'p-3 text-xs align-middle transition-colors ';
+                  if (isSelected) {
+                    base += 'bg-blue-100 text-primary-955 font-bold ';
+                    if (pos === 'first') {
+                      base += 'border-l-4 border-primary-600 ';
+                    }
+                  } else {
+                    base += 'text-slate-700 border-b border-slate-100 ';
+                  }
+                  return base;
+                };
 
                 return (
                   <tr
                     key={log.id}
-                    onClick={() => setSelectedRowIdx(idx)}
-                    className={`hover:bg-surface-750/30 cursor-pointer ${
-                      isSelected ? 'bg-surface-750/50 text-white font-semibold' : 'text-slate-350'
-                    }`}
+                    ref={(el) => { rowRefs.current[idx] = el; }}
+                    onClick={() => {
+                      setIsTableFocused(true);
+                      setSelectedIdx(idx);
+                    }}
+                    className="hover:bg-slate-50/50 cursor-pointer"
                   >
-                    <td className="p-4 text-center text-slate-500">{idx + 1}</td>
-                    <td className="p-4 font-mono text-slate-400 text-[10px]">
+                    <td className={getTdClass('first') + " text-center text-slate-400"}>{idx + 1}</td>
+                    <td className={getTdClass('middle') + " font-mono text-[10px]"}>
                       {new Date(log.created_at).toLocaleString('id-ID', {
                         day: 'numeric',
                         month: 'short',
@@ -264,37 +344,42 @@ export const LaporanAudit: React.FC = () => {
                         minute: '2-digit'
                       })}
                     </td>
-                    <td className="p-4">
+                    <td className={getTdClass('middle')}>
                       {log.product ? (
                         <>
-                          <div className="font-bold text-slate-200">{log.product.nama}</div>
-                          <div className="text-[10px] font-mono text-slate-500">{log.product.kode}</div>
+                          <div className="font-bold">{log.product.nama}</div>
+                          <div className="text-[10px] font-mono text-slate-500 font-normal">{log.product.kode}</div>
                         </>
                       ) : (
-                        <span className="italic text-slate-500">Barang Terhapus</span>
+                        <span className="italic text-slate-400 font-normal">Barang Terhapus</span>
                       )}
                     </td>
-                    <td className="p-4 text-center font-mono">{Number(log.stock_before)}</td>
-                    <td className="p-4 text-center font-mono">{Number(log.stock_after)}</td>
-                    <td className="p-4 text-center">
+                    <td className={getTdClass('middle') + " text-center font-mono"}>{Number(log.stock_before)}</td>
+                    <td className={getTdClass('middle') + " text-center font-mono"}>{Number(log.stock_after)}</td>
+                    <td className={getTdClass('middle') + " text-center"}>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold inline-flex items-center gap-0.5 ${
-                        isNegative ? 'bg-rose-950/30 text-rose-450' : 'bg-emerald-950/30 text-emerald-400'
+                        isNegative ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
                       }`}>
                         {isNegative ? <TrendingDown size={10} /> : <TrendingUp size={10} />}
                         {isNegative ? delta : `+${delta}`}
                       </span>
                     </td>
-                    <td className="p-4 font-bold text-slate-200 flex items-center gap-1.5">
-                      <User size={12} className="text-slate-500" />
-                      <span>{log.staff_nama || log.creator?.nama || 'System'}</span>
+                    <td className={getTdClass('middle') + " font-bold"}>
+                      <div className="flex items-center gap-1.5">
+                        <User size={12} className="text-slate-400" />
+                        <span>{log.staff_nama || 'System'}</span>
+                      </div>
                     </td>
-                    <td className="p-4 italic text-slate-400">{log.alasan}</td>
+                    <td className={getTdClass('last') + " italic text-slate-550 font-medium"}>{log.alasan}</td>
                   </tr>
                 );
               })
             )}
           </tbody>
         </table>
+      </div>
+      <div className="flex justify-end text-[10px] text-slate-400 mt-2">
+        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih.</span>
       </div>
     </div>
   );

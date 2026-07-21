@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  ShoppingBag, 
-  Package, 
-  CreditCard, 
-  TrendingDown, 
-  Wallet, 
-  ShieldAlert, 
-  ChevronRight 
+import {
+  BarChart3,
+  TrendingUp,
+  ShoppingBag,
+  Package,
+  CreditCard,
+  TrendingDown,
+  Wallet,
+  ShieldAlert,
+  ChevronRight
 } from 'lucide-react';
 
 export const LaporanMenu: React.FC = () => {
@@ -23,7 +23,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Ikhtisar total omzet, transaksi, pembelian, piutang, dan jumlah produk aktif.',
       path: '/laporan/ringkasan-bisnis',
       icon: BarChart3,
-      color: 'text-primary-400 border-primary-500/20 hover:bg-primary-900/10',
+      iconColor: 'text-primary-600',
+      iconBg: 'bg-primary-50',
       num: '1',
     },
     {
@@ -31,7 +32,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Margin laba kotor, rincian produk terjual, dan status transaksi per pelanggan.',
       path: '/laporan/penjualan-detail',
       icon: TrendingUp,
-      color: 'text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/10',
+      iconColor: 'text-emerald-600',
+      iconBg: 'bg-emerald-50',
       num: '2',
     },
     {
@@ -39,7 +41,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Analisa barang masuk, supplier pengirim, dan harga beli historis.',
       path: '/laporan/pembelian-detail',
       icon: ShoppingBag,
-      color: 'text-indigo-400 border-indigo-500/20 hover:bg-indigo-900/10',
+      iconColor: 'text-indigo-600',
+      iconBg: 'bg-indigo-50',
       num: '3',
     },
     {
@@ -47,7 +50,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Nilai aset persediaan gudang saat ini dan monitoring stok kritis.',
       path: '/laporan/stok-persediaan',
       icon: Package,
-      color: 'text-amber-400 border-amber-500/20 hover:bg-amber-900/10',
+      iconColor: 'text-amber-600',
+      iconBg: 'bg-amber-50',
       num: '4',
     },
     {
@@ -55,7 +59,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Laporan umur piutang (aging report) per customer (30, 60, 90+ hari).',
       path: '/laporan/penagihan-piutang',
       icon: CreditCard,
-      color: 'text-rose-400 border-rose-500/20 hover:bg-rose-900/10',
+      iconColor: 'text-rose-600',
+      iconBg: 'bg-rose-50',
       num: '5',
     },
     {
@@ -63,7 +68,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Daftar hutang jatuh tempo ke supplier berdasarkan invoice pembelian kredit.',
       path: '/laporan/hutang',
       icon: TrendingDown,
-      color: 'text-orange-400 border-orange-500/20 hover:bg-orange-900/10',
+      iconColor: 'text-orange-600',
+      iconBg: 'bg-orange-50',
       num: '6',
     },
     {
@@ -71,7 +77,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Rekapitulasi total kas masuk (Tunai/Pelunasan) vs total kas keluar (Pembelian).',
       path: '/laporan/arus-kas',
       icon: Wallet,
-      color: 'text-teal-400 border-teal-500/20 hover:bg-teal-900/10',
+      iconColor: 'text-teal-600',
+      iconBg: 'bg-teal-50',
       num: '7',
     },
     {
@@ -79,7 +86,8 @@ export const LaporanMenu: React.FC = () => {
       desc: 'Lacak riwayat penyesuaian stok manual gudang dan aktivitas krusial.',
       path: '/laporan/audit-aktivitas',
       icon: ShieldAlert,
-      color: 'text-red-400 border-red-500/20 hover:bg-red-900/10',
+      iconColor: 'text-red-600',
+      iconBg: 'bg-red-50',
       num: '8',
     },
   ];
@@ -129,8 +137,8 @@ export const LaporanMenu: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Modul Pelaporan Bisnis</h1>
-        <p className="text-slate-400">Analisa laporan omzet penjualan, stok gudang, hutang piutang, dan rekam audit kas.</p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-950">Modul Pelaporan Bisnis</h1>
+        <p className="text-slate-550 mt-1">Analisa laporan omzet penjualan, stok gudang, hutang piutang, dan rekam audit kas.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -141,22 +149,22 @@ export const LaporanMenu: React.FC = () => {
             <button
               key={rep.path}
               onClick={() => navigate(rep.path)}
-              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${
-                isFocused ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]' : 'border-surface-700/50 hover:bg-surface-800'
-              }`}
+              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${isFocused ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]' : 'border-slate-200/80 bg-white hover:bg-slate-50'
+                }`}
             >
-              <div className="p-3 bg-surface-800 rounded-xl shrink-0 border border-surface-700/50">
-                <Icon size={24} className={isFocused ? 'text-primary-500' : 'text-slate-400'} />
+              <div className={`p-3 rounded-xl shrink-0 ${rep.iconColor} ${rep.iconBg}`}>
+                <Icon size={24} />
               </div>
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                  <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
                     {rep.title}
-                    <span className="shortcut-badge text-[9px] uppercase tracking-normal">Tekan {rep.num}</span>
                   </h3>
-                  <ChevronRight size={16} className={isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'} />
+                  <ChevronRight size={16} className={isFocused ? 'text-primary-600 animate-pulse' : 'text-slate-400'} />
                 </div>
-                <p className="text-sm text-slate-400 leading-relaxed">{rep.desc}</p>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  {rep.desc}
+                </p>
               </div>
             </button>
           );

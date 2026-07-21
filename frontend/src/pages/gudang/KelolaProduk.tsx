@@ -239,6 +239,7 @@ export const KelolaProduk: React.FC = () => {
   };
 
   const handleSupplierPopupKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
     const filtered = suppliers.filter(s =>
       s.nama.toLowerCase().includes(supplierPopupSearch.toLowerCase()) ||
       s.kode.toLowerCase().includes(supplierPopupSearch.toLowerCase())
@@ -597,10 +598,10 @@ export const KelolaProduk: React.FC = () => {
 
   // Keyboard navigation inside add/edit form modal
   const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-    // Get all focusable elements inside the form (excluding disabled and readonly fields)
+    // Get all focusable elements inside the form (excluding disabled/readonly fields, except form-start-fields)
     const form = e.currentTarget;
     const focusables = Array.from(
-      form.querySelectorAll('input:not([disabled]):not([readonly]), select:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), button[type="submit"], button.btn-secondary')
+      form.querySelectorAll('input:not([disabled]):not([readonly]), input.form-start-field:not([disabled]), select:not([disabled]), textarea:not([disabled]), button[type="submit"], button.form-cancel-btn')
     ) as HTMLElement[];
 
     const active = document.activeElement as HTMLElement;
@@ -651,7 +652,7 @@ export const KelolaProduk: React.FC = () => {
       setTimeout(() => {
         const form = document.querySelector('#kelola-produk-form') as HTMLFormElement | null;
         if (form) {
-          const firstInput = form.querySelector('input:not([disabled]):not([readonly]), select:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])') as HTMLElement | null;
+          const firstInput = form.querySelector('input:not([disabled]):not([readonly]), input.form-start-field:not([disabled]), select:not([disabled]), textarea:not([disabled])') as HTMLElement | null;
           firstInput?.focus();
         }
       }, 150);
@@ -804,16 +805,18 @@ export const KelolaProduk: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
-        {toasts.map((t) => (
-          <div key={t.id} className={`pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-sm ${t.type === 'success' ? 'bg-emerald-950/90 border-emerald-700/60 text-emerald-100' : 'bg-red-950/90 border-red-700/60 text-red-100'
-            }`}>
-            {t.type === 'success' ? <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-400" /> : <XCircle size={18} className="mt-0.5 shrink-0 text-red-400" />}
-            <p className="text-sm font-medium flex-1">{t.message}</p>
-            <button onClick={() => dismissToast(t.id)} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"><X size={14} /></button>
-          </div>
-        ))}
-      </div>
+      <ModalPortal>
+        <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+          {toasts.map((t) => (
+            <div key={t.id} className={`pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-sm ${t.type === 'success' ? 'bg-emerald-950/90 border-emerald-700/60 text-emerald-100' : 'bg-red-950/90 border-red-700/60 text-red-100'
+              }`}>
+              {t.type === 'success' ? <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-400" /> : <XCircle size={18} className="mt-0.5 shrink-0 text-red-400" />}
+              <p className="text-sm font-medium flex-1">{t.message}</p>
+              <button onClick={() => dismissToast(t.id)} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"><X size={14} /></button>
+            </div>
+          ))}
+        </div>
+      </ModalPortal>
 
       {/* Archive Confirm Modal */}
       {archiveTarget && (
@@ -1132,9 +1135,9 @@ export const KelolaProduk: React.FC = () => {
                     <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Kode Barang</label>
                     <input
                       type="text"
-                      readOnly
                       value={kode}
-                      className="input-field w-full bg-slate-100/80 border-blue-100 text-slate-500 cursor-not-allowed font-semibold"
+                      onChange={(e) => setKode(e.target.value)}
+                      className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 font-semibold"
                     />
                   </div>
                   <div>
@@ -1143,7 +1146,7 @@ export const KelolaProduk: React.FC = () => {
                       type="text"
                       readOnly
                       value={nama}
-                      className="input-field w-full bg-slate-100/80 border-blue-100 text-slate-500 cursor-not-allowed font-semibold"
+                      className="input-field form-start-field w-full bg-slate-100/80 border-blue-100 text-slate-500 cursor-not-allowed font-semibold"
                     />
                   </div>
                 </div>
@@ -1162,8 +1165,7 @@ export const KelolaProduk: React.FC = () => {
                         value={kode}
                         onChange={(e) => setKode(e.target.value)}
                         placeholder="Tambahkan Kode Barang"
-                        className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
-                        disabled={editMode !== 'create' && editMode !== 'full'}
+                        className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -1174,7 +1176,7 @@ export const KelolaProduk: React.FC = () => {
                         value={nama}
                         onChange={(e) => setNama(e.target.value)}
                         placeholder="Tambahkan Nama Produk"
-                        className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
+                        className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -1252,9 +1254,6 @@ export const KelolaProduk: React.FC = () => {
                               }}
                               onFocus={() => {
                                 setActiveSupplierRowIdx(idx);
-                                setSupplierPopupSearch('');
-                                setSupplierPopupFocusedIdx(0);
-                                setShowSupplierPopup(true);
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
@@ -1382,7 +1381,7 @@ export const KelolaProduk: React.FC = () => {
 
               {/* Submit Buttons */}
               <div className="flex justify-end gap-2 border-t border-blue-100 pt-3 px-4 pb-4 mt-3">
-                <button type="button" onClick={() => setShowFormModal(false)} className="btn-secondary border-slate-200 hover:bg-slate-50 text-slate-700 bg-white">
+                <button type="button" onClick={() => setShowFormModal(false)} className="btn-secondary form-cancel-btn border-slate-200 hover:bg-slate-50 text-slate-700 bg-white">
                   Batal
                 </button>
                 <button type="submit" disabled={isSubmitting} className="btn-primary">
@@ -1517,6 +1516,7 @@ export const KelolaProduk: React.FC = () => {
                 ref={supplierPopupInputRef}
                 type="text"
                 value={supplierPopupSearch}
+                onKeyDown={handleSupplierPopupKeyDown}
                 onChange={(e) => {
                   setSupplierPopupSearch(e.target.value);
                   setSupplierPopupFocusedIdx(0);
