@@ -268,6 +268,10 @@ purchaseRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: 
           where: { id: item.product_id },
           data: { stok: { decrement: item.qty } }
         });
+        await prisma.productPrice.updateMany({
+          where: { product_id: item.product_id, supplier_id: purchase.supplier_id },
+          data: { stok: { decrement: item.qty } }
+        });
       }
     }
 

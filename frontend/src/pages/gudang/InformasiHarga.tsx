@@ -537,6 +537,7 @@ export const InformasiHarga: React.FC = () => {
                       const prevPrice = getPreviousPriceForSupplier(p.supplier.nama);
                       const latestDate = getLatestPurchaseDateForSupplier(p.supplier.nama);
                       const prevDate = getPreviousPurchaseDateForSupplier(p.supplier.nama);
+                      const displayStok = Math.min(Number(p.stok), Math.max(0, Number(selectedProduct.stok)));
                       return (
                         <div key={p.id} className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs space-y-3">
                           {/* Supplier Header */}
@@ -545,11 +546,11 @@ export const InformasiHarga: React.FC = () => {
                               <h4 className="font-bold text-slate-800 text-sm">{p.supplier.nama}</h4>
                               <p className="text-[11px] text-slate-400 font-mono mt-0.5">{p.supplier.kode}</p>
                             </div>
-                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${Number(p.stok) > 0
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${displayStok > 0
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
                               : 'bg-slate-50 text-slate-400 border-slate-200/50'
                               }`}>
-                              {Number(p.stok)} {selectedProduct.satuan} tersedia
+                              {displayStok} {selectedProduct.satuan} tersedia
                             </span>
                           </div>
 

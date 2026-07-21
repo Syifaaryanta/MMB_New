@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
-import { Package, HelpCircle, Tags, Trash2, List, Info, ChevronRight, Loader2 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
+import { Package, Tags, Trash2, List, ChevronRight, Loader2 } from 'lucide-react';
 
 interface GudangStats {
   totalSku: number;
@@ -13,6 +14,7 @@ interface GudangStats {
 
 export const GudangMenu: React.FC = () => {
   const navigate = useNavigate();
+  const { t, lang } = useTranslation();
   const [stats, setStats] = useState<GudangStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,32 +37,32 @@ export const GudangMenu: React.FC = () => {
 
   const subMenus = [
     {
-      title: 'Informasi Harga',
-      desc: 'Cek cepat harga jual, harga beli terakhir, qty penjualan terakhir, estimasi cost.',
+      title: lang === 'en' ? 'Price Information' : 'Informasi Harga',
+      desc: lang === 'en' ? 'Quick check of selling price, last purchase price, last sales qty, cost estimate.' : 'Cek cepat harga jual, harga beli terakhir, qty penjualan terakhir, estimasi cost.',
       path: '/gudang/cek-harga',
       icon: Tags,
       iconColor: 'text-primary-400',
       iconBg: 'bg-primary-50/10',
     },
     {
-      title: 'Kelola Produk (Katalog)',
-      desc: 'Tambah/Edit produk, kelola relasi supplier-harga, arsip cepat.',
+      title: lang === 'en' ? 'Manage Products (Catalog)' : 'Kelola Produk (Katalog)',
+      desc: lang === 'en' ? 'Add/Edit products, manage supplier-price relations, quick archive.' : 'Tambah/Edit produk, kelola relasi supplier-harga, arsip cepat.',
       path: '/gudang/katalog',
       icon: Package,
       iconColor: 'text-emerald-500',
       iconBg: 'bg-emerald-50/10',
     },
     {
-      title: 'Arsip Produk',
-      desc: 'Lihat produk yang diarsipkan dan lakukan pemulihan (restore) produk.',
+      title: lang === 'en' ? 'Archived Products' : 'Arsip Produk',
+      desc: lang === 'en' ? 'View archived products and restore them.' : 'Lihat produk yang diarsipkan dan lakukan pemulihan (restore) produk.',
       path: '/gudang/archive',
       icon: Trash2,
       iconColor: 'text-danger-400',
       iconBg: 'bg-red-50/10',
     },
     {
-      title: 'Daftar Inventori',
-      desc: 'Tampilan tabel ringkas dari seluruh persediaan gudang secara real-time.',
+      title: lang === 'en' ? 'Inventory List' : 'Daftar Inventori',
+      desc: lang === 'en' ? 'Compact table view of all warehouse stock in real-time.' : 'Tampilan tabel ringkas dari seluruh persediaan gudang secara real-time.',
       path: '/gudang/cek-semua',
       icon: List,
       iconColor: 'text-amber-500',
@@ -102,8 +104,14 @@ export const GudangMenu: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Modul Gudang & Inventori</h1>
-        <p className="text-slate-400">Kelola persediaan barang, cek harga jual-beli, dan kelola katalog produk MMB.</p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          {lang === 'en' ? 'Inventory & Warehouse Module' : 'Modul Gudang & Inventori'}
+        </h1>
+        <p className="text-slate-400">
+          {lang === 'en'
+            ? 'Manage product stock, check prices, and manage the MMB product catalog.'
+            : 'Kelola persediaan barang, cek harga jual-beli, dan kelola katalog produk MMB.'}
+        </p>
       </div>
 
       {/* Mini Stats Dashboard */}
@@ -116,19 +124,27 @@ export const GudangMenu: React.FC = () => {
       ) : stats ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Total SKU Aktif</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? 'Total Active SKU' : 'Total SKU Aktif'}
+            </span>
             <span className="text-2xl font-bold text-white mt-1">{stats.totalSku}</span>
           </div>
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Stok Aman</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? 'Safe Stock' : 'Stok Aman'}
+            </span>
             <span className="text-2xl font-bold text-emerald-400 mt-1">{stats.amanStok}</span>
           </div>
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Stok Kritis (Perlu Restock)</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? 'Critical Stock (Restock Needed)' : 'Stok Kritis (Perlu Restock)'}
+            </span>
             <span className="text-2xl font-bold text-danger-400 mt-1">{stats.kritisStok}</span>
           </div>
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Rekan Supplier</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? 'Partner Suppliers' : 'Rekan Supplier'}
+            </span>
             <span className="text-2xl font-bold text-primary-400 mt-1">{stats.totalSupplier}</span>
           </div>
         </div>

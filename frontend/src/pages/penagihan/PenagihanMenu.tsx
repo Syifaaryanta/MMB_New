@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { CreditCard, FileSpreadsheet, History, FileCheck, ChevronRight, Wallet, ShoppingBag } from 'lucide-react';
 
 interface PenagihanStats {
@@ -11,6 +12,7 @@ interface PenagihanStats {
 
 export const PenagihanMenu: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [stats, setStats] = useState<PenagihanStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [focusedIdx, setFocusedIdx] = useState(0);
@@ -31,8 +33,8 @@ export const PenagihanMenu: React.FC = () => {
 
   const subMenus = [
     {
-      title: 'Piutang Aktif',
-      desc: 'Daftar piutang aktif per pelanggan, rincian nota, dan pencatatan angsuran/pelunasan).',
+      title: lang === 'en' ? 'Active Receivables' : 'Piutang Aktif',
+      desc: lang === 'en' ? 'List of active receivables per customer, invoice details, and installment/settlement recording.' : 'Daftar piutang aktif per pelanggan, rincian nota, dan pencatatan angsuran/pelunasan).',
       path: '/penagihan/piutang',
       icon: CreditCard,
       iconColor: 'text-rose-500',
@@ -40,8 +42,8 @@ export const PenagihanMenu: React.FC = () => {
       keyChar: '1',
     },
     {
-      title: 'Pelunasan Supplier (AP)',
-      desc: 'Kelola pembayaran hutang PO ke supplier dengan sistem angsuran FIFO atau Manual.',
+      title: lang === 'en' ? 'Supplier Settlement (AP)' : 'Pelunasan Supplier (AP)',
+      desc: lang === 'en' ? 'Manage PO payable payments to suppliers with FIFO or Manual installment system.' : 'Kelola pembayaran hutang PO ke supplier dengan sistem angsuran FIFO atau Manual.',
       path: '/penagihan/supplier',
       icon: ShoppingBag,
       iconColor: 'text-sky-500',
@@ -49,8 +51,8 @@ export const PenagihanMenu: React.FC = () => {
       keyChar: '2',
     },
     {
-      title: 'Manajemen Nota (3-Color)',
-      desc: 'Ceklis serah terima fisik Nota Merah (Finance), Putih (Customer), & Kuning (Gudang).',
+      title: lang === 'en' ? 'Invoice Management (3-Color)' : 'Manajemen Nota (3-Color)',
+      desc: lang === 'en' ? 'Checklist for physical handover: Red (Finance), White (Customer), & Yellow (Warehouse).' : 'Ceklis serah terima fisik Nota Merah (Finance), Putih (Customer), & Kuning (Gudang).',
       path: '/penagihan/nota',
       icon: FileCheck,
       iconColor: 'text-amber-500',
@@ -58,8 +60,8 @@ export const PenagihanMenu: React.FC = () => {
       keyChar: '3',
     },
     {
-      title: 'Pelanggan Lunas & Rincian Nota',
-      desc: 'Lihat rincian riwayat nota penjualan pelanggan yang telah diselesaikan (lunas) secara lengkap.',
+      title: lang === 'en' ? 'Settled Customers & Invoice Details' : 'Pelanggan Lunas & Rincian Nota',
+      desc: lang === 'en' ? 'View complete details of settled (paid) customer invoices.' : 'Lihat rincian riwayat nota penjualan pelanggan yang telah diselesaikan (lunas) secara lengkap.',
       path: '/penagihan/lunas',
       icon: FileCheck,
       iconColor: 'text-emerald-500',
@@ -67,8 +69,8 @@ export const PenagihanMenu: React.FC = () => {
       keyChar: '4',
     },
     {
-      title: 'History Pembayaran Customer (AR)',
-      desc: 'Audit log setoran cicilan piutang customer (AR) lengkap dengan cetak kuitansi.',
+      title: lang === 'en' ? 'Customer Payment History (AR)' : 'History Pembayaran Customer (AR)',
+      desc: lang === 'en' ? 'Audit log of customer AR installment payments complete with receipt printing.' : 'Audit log setoran cicilan piutang customer (AR) lengkap dengan cetak kuitansi.',
       path: '/penagihan/history-pembayaran',
       icon: History,
       iconColor: 'text-indigo-500',
@@ -76,8 +78,8 @@ export const PenagihanMenu: React.FC = () => {
       keyChar: '5',
     },
     {
-      title: 'History Pelunasan Supplier (AP)',
-      desc: 'Audit log pencatatan pembayaran PO supplier (AP) secara terperinci.',
+      title: lang === 'en' ? 'Supplier Settlement History (AP)' : 'History Pelunasan Supplier (AP)',
+      desc: lang === 'en' ? 'Detailed audit log of supplier PO payment records (AP).' : 'Audit log pencatatan pembayaran PO supplier (AP) secara terperinci.',
       path: '/penagihan/history-pelunasan',
       icon: History,
       iconColor: 'text-violet-500',
@@ -136,8 +138,14 @@ export const PenagihanMenu: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Modul Penagihan (AR & AP)</h1>
-        <p className="text-slate-400">Monitoring piutang aktif, pelunasan hutang supplier, manajemen dokumen fisik nota, dan pencatatan kas masuk/keluar.</p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          {lang === 'en' ? 'Billing Module (AR & AP)' : 'Modul Penagihan (AR & AP)'}
+        </h1>
+        <p className="text-slate-400">
+          {lang === 'en'
+            ? 'Monitor active receivables, settle supplier payables, manage physical invoice documents, and record cash in/out.'
+            : 'Monitoring piutang aktif, pelunasan hutang supplier, manajemen dokumen fisik nota, dan pencatatan kas masuk/keluar.'}
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -152,7 +160,9 @@ export const PenagihanMenu: React.FC = () => {
           {/* Card 1 */}
           <div className="card p-6 flex items-center justify-between border-l-4 border-rose-500 bg-surface-800">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Total Sisa Piutang Aktif</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                {lang === 'en' ? 'Total Active Receivables' : 'Total Sisa Piutang Aktif'}
+              </span>
               <span className="text-2xl font-black text-rose-400 currency">{formatCurrency(stats.totalPiutang)}</span>
             </div>
             <div className="p-3 bg-rose-950 text-rose-400 rounded-xl">
@@ -163,8 +173,12 @@ export const PenagihanMenu: React.FC = () => {
           {/* Card 2 */}
           <div className="card p-6 flex items-center justify-between border-l-4 border-amber-500 bg-surface-800">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Nota Jatuh Tempo (Overdue)</span>
-              <span className="text-2xl font-black text-amber-400">{stats.overdueCount} Nota</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                {lang === 'en' ? 'Overdue Invoices' : 'Nota Jatuh Tempo (Overdue)'}
+              </span>
+              <span className="text-2xl font-black text-amber-400">
+                {stats.overdueCount} {lang === 'en' ? 'Invoices' : 'Nota'}
+              </span>
             </div>
             <div className="p-3 bg-amber-950 text-amber-400 rounded-xl">
               <ClockIcon size={24} />
@@ -194,7 +208,6 @@ export const PenagihanMenu: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg text-white flex items-center gap-2">
                     {menu.title}
-
                   </h3>
                   <ChevronRight size={16} className={isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'} />
                 </div>

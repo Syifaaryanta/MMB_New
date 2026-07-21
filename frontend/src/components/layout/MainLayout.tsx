@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useAuthStore } from '@/stores/authStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { getInitials } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -25,6 +26,7 @@ import api from '@/lib/api';
 
 export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, login, token, logout, checkSessionExpiration } = useAuthStore();
+  const { language } = useSettingsStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -38,13 +40,13 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-      const dateStr = now.toLocaleDateString('id-ID', {
+      const dateStr = now.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
         weekday: 'long',
         day: '2-digit',
         month: 'long',
         year: 'numeric'
       });
-      const clockStr = now.toLocaleTimeString('id-ID', {
+      const clockStr = now.toLocaleTimeString(language === 'id' ? 'id-ID' : 'en-US', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
@@ -56,7 +58,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
     updateDateTime();
     const interval = setInterval(updateDateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const handleFocusChange = (e: Event) => {
@@ -68,58 +70,58 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
     };
   }, []);
 
-  // Define navigation items based on User Role
+  // Define navigation items based on User Role and selected language
   const navItems = [
     {
-      label: 'Dashboard',
+      label: language === 'id' ? 'Dashboard' : 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
       roles: ['admin', 'staff_gudang', 'staff_kantor', 'sales'],
     },
     {
-      label: 'Gudang',
+      label: language === 'id' ? 'Gudang' : 'Inventory',
       path: '/gudang',
       icon: Package,
       roles: ['admin', 'staff_gudang'],
     },
     {
-      label: 'Pembelian PO',
+      label: language === 'id' ? 'Pembelian PO' : 'Purchases PO',
       path: '/pembelian',
       icon: ShoppingCart,
       roles: ['admin', 'staff_gudang', 'sales'],
     },
     {
-      label: 'Penjualan SO',
+      label: language === 'id' ? 'Penjualan SO' : 'Sales SO',
       path: '/penjualan',
       icon: TrendingUp,
       roles: ['admin', 'sales'],
     },
     {
-      label: 'Penagihan AR',
+      label: language === 'id' ? 'Penagihan AR' : 'Billing AR',
       path: '/penagihan',
       icon: DollarSign,
       roles: ['admin', 'sales'],
     },
     {
-      label: 'Histori',
+      label: language === 'id' ? 'Histori' : 'History',
       path: '/history',
       icon: History,
       roles: ['admin', 'sales', 'staff_kantor'],
     },
     {
-      label: 'Laporan',
+      label: language === 'id' ? 'Laporan' : 'Reports',
       path: '/laporan',
       icon: ClipboardList,
       roles: ['admin', 'staff_kantor'],
     },
     {
-      label: 'Master Data',
+      label: language === 'id' ? 'Master Data' : 'Master Data',
       path: '/master-data',
       icon: Database,
       roles: ['admin', 'staff_kantor', 'sales'],
     },
     {
-      label: 'Kelola User',
+      label: language === 'id' ? 'Kelola User' : 'Manage Users',
       path: '/kelola-user',
       icon: UserCheck,
       roles: ['super_admin'],
@@ -258,7 +260,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
           to="/profile"
           className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 text-blue-100 transition-colors ${isCollapsed ? 'justify-center' : ''
             }`}
-          title="User Profile (Ctrl+P)"
+          title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
         >
           <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-sm font-semibold text-white">
             {getInitials(user.username || user.nama)}
@@ -274,10 +276,10 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
           onClick={handleLogout}
           className={`flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/20 hover:text-red-200 text-blue-200 transition-colors ${isCollapsed ? 'justify-center' : ''
             }`}
-          title="Keluar"
+          title={language === 'id' ? 'Keluar' : 'Logout'}
         >
           <LogOut size={20} />
-          {!isCollapsed && <span className="font-medium text-sm">Keluar</span>}
+          {!isCollapsed && <span className="font-medium text-sm">{language === 'id' ? 'Keluar' : 'Logout'}</span>}
         </button>
       </div>
     </div>

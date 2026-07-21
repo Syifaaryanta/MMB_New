@@ -100,7 +100,7 @@ productRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_GUDANG)
             id: uuidv4(),
             product_id: product.id,
             supplier_id: p.supplier_id,
-            stok: p.stok || 0,
+            stok: Math.max(0, Number(p.stok || 0)),
             harga_beli: p.harga_beli || 0,
           },
         });
@@ -176,6 +176,7 @@ productRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_GUDAN
     // Update product prices
     if (prices && Array.isArray(prices)) {
       for (const p of prices) {
+        const targetStok = Math.max(0, Number(p.stok || 0));
         await prisma.productPrice.upsert({
           where: {
             product_id_supplier_id: {
@@ -183,12 +184,12 @@ productRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF_GUDAN
               supplier_id: p.supplier_id,
             },
           },
-          update: { stok: p.stok, harga_beli: p.harga_beli, aktif: p.aktif ?? true },
+          update: { stok: targetStok, harga_beli: p.harga_beli, aktif: p.aktif ?? true },
           create: {
             id: uuidv4(),
             product_id: req.params.id as string,
             supplier_id: p.supplier_id,
-            stok: p.stok || 0,
+            stok: targetStok,
             harga_beli: p.harga_beli || 0,
           },
         });

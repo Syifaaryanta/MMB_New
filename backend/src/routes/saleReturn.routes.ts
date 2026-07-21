@@ -223,6 +223,23 @@ saleReturnRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), as
               },
             });
 
+            // Increment the most recently updated active ProductPrice for this product
+            const activePrices = await tx.productPrice.findMany({
+              where: { product_id: item.product_id, aktif: true },
+              orderBy: { updated_at: 'desc' },
+              take: 1,
+            });
+            if (activePrices.length > 0) {
+              await tx.productPrice.update({
+                where: { id: activePrices[0].id },
+                data: {
+                  stok: {
+                    increment: qtyDelta,
+                  },
+                },
+              });
+            }
+
             // Create StockAdjustment record
             await tx.stockAdjustment.create({
               data: {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { TrendingUp, PlusCircle, Clock, List, FileText, ChevronRight, Undo2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -14,6 +15,7 @@ interface PenjualanStats {
 
 export const PenjualanMenu: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [stats, setStats] = useState<PenjualanStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [focusedIdx, setFocusedIdx] = useState(0);
@@ -34,40 +36,40 @@ export const PenjualanMenu: React.FC = () => {
 
   const subMenus = [
     {
-      title: 'Buat Order SO (POS)',
-      desc: 'Mulai pesanan penjualan baru, kelola pelanggan, limit kredit, dan pengiriman.',
+      title: lang === 'en' ? 'Create Sales Order (POS)' : 'Buat Order SO (POS)',
+      desc: lang === 'en' ? 'Start a new sales order, manage customers, credit limits, and delivery.' : 'Mulai pesanan penjualan baru, kelola pelanggan, limit kredit, dan pengiriman.',
       path: '/penjualan/buat',
       icon: PlusCircle,
       iconColor: 'text-primary-400',
       iconBg: 'bg-primary-50',
     },
     {
-      title: 'Order Penjualan Tertunda (Draft)',
-      desc: 'Buka kembali draf nota penjualan yang ditunda untuk diselesaikan.',
+      title: lang === 'en' ? 'Pending Sales Orders (Draft)' : 'Order Penjualan Tertunda (Draft)',
+      desc: lang === 'en' ? 'Reopen a pending draft sales order to complete it.' : 'Buka kembali draf nota penjualan yang ditunda untuk diselesaikan.',
       path: '/penjualan/draft',
       icon: Clock,
       iconColor: 'text-yellow-500',
       iconBg: 'bg-yellow-50',
     },
     {
-      title: 'Edit Nota Penjualan',
-      desc: 'Cari nota penjualan aktif (Draft/Complete) untuk direvisi barang/pengirimannya.',
+      title: lang === 'en' ? 'Edit Sales Invoice' : 'Edit Nota Penjualan',
+      desc: lang === 'en' ? 'Search active invoices (Draft/Complete) to revise items or delivery.' : 'Cari nota penjualan aktif (Draft/Complete) untuk direvisi barang/pengirimannya.',
       path: '/penjualan/edit',
       icon: FileText,
       iconColor: 'text-purple-500',
       iconBg: 'bg-purple-50',
     },
     {
-      title: 'Retur Penjualan (Sales Return)',
-      desc: 'Kelola pengembalian barang dari customer, ganti barang, potong piutang, atau refund.',
+      title: lang === 'en' ? 'Sales Return' : 'Retur Penjualan (Sales Return)',
+      desc: lang === 'en' ? 'Manage customer returns, item replacement, receivable deduction, or refund.' : 'Kelola pengembalian barang dari customer, ganti barang, potong piutang, atau refund.',
       path: '/penjualan/retur',
       icon: Undo2,
       iconColor: 'text-rose-500',
       iconBg: 'bg-rose-50',
     },
     {
-      title: 'Daftar & Histori Penjualan',
-      desc: 'Lacak riwayat lengkap nota faktur penjualan, reprint nota, atau pembatalan.',
+      title: lang === 'en' ? 'Sales List & History' : 'Daftar & Histori Penjualan',
+      desc: lang === 'en' ? 'Track complete invoice history, reprint invoices, or cancel transactions.' : 'Lacak riwayat lengkap nota faktur penjualan, reprint nota, atau pembatalan.',
       path: '/penjualan/list',
       icon: List,
       iconColor: 'text-emerald-500',
@@ -109,8 +111,14 @@ export const PenjualanMenu: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Modul Penjualan (Point of Sale)</h1>
-        <p className="text-slate-400">Pencatatan kasir penjualan barang (SO), verifikasi kredit limit, dan cetak faktur.</p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          {lang === 'en' ? 'Sales Module (Point of Sale)' : 'Modul Penjualan (Point of Sale)'}
+        </h1>
+        <p className="text-slate-400">
+          {lang === 'en'
+            ? 'Record sales transactions (SO), verify credit limits, and print invoices.'
+            : 'Pencatatan kasir penjualan barang (SO), verifikasi kredit limit, dan cetak faktur.'}
+        </p>
       </div>
 
       {/* Stats Board */}
@@ -123,19 +131,27 @@ export const PenjualanMenu: React.FC = () => {
       ) : stats ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Omzet Hari Ini</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? "Today's Revenue" : 'Omzet Hari Ini'}
+            </span>
             <span className="text-xl font-bold text-white mt-1 currency">{formatCurrency(stats.hariIni)}</span>
           </div>
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Omzet Minggu Ini</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? 'This Week Revenue' : 'Omzet Minggu Ini'}
+            </span>
             <span className="text-xl font-bold text-primary-400 mt-1 currency">{formatCurrency(stats.mingguIni)}</span>
           </div>
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Omzet Bulan Ini</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? 'This Month Revenue' : 'Omzet Bulan Ini'}
+            </span>
             <span className="text-xl font-bold text-emerald-400 mt-1 currency">{formatCurrency(stats.bulanIni)}</span>
           </div>
           <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Total Akumulasi</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">
+              {lang === 'en' ? 'Total Cumulative' : 'Total Akumulasi'}
+            </span>
             <span className="text-xl font-bold text-indigo-400 mt-1 currency">{formatCurrency(stats.total)}</span>
           </div>
         </div>

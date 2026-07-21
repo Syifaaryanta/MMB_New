@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
 
@@ -161,6 +162,11 @@ function RouteStateCleaner() {
 
 function App() {
   const { isAuthenticated } = useAuthStore();
+  const { initializeSettings } = useSettingsStore();
+
+  useEffect(() => {
+    initializeSettings();
+  }, [initializeSettings]);
 
   return (
     <BrowserRouter>

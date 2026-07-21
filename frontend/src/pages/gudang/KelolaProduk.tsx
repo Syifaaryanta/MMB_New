@@ -596,11 +596,32 @@ export const KelolaProduk: React.FC = () => {
       deskripsi,
       satuan,
       foto_urls: fotoUrls,
-      prices: priceRows.map(row => ({
-        ...row,
-        stok: row.stok === '' ? 0 : Number(row.stok),
-        harga_beli: row.harga_beli === '' ? 0 : Number(row.harga_beli)
-      })),
+      prices: priceRows.map(row => {
+        const valStr = String(row.stok).trim();
+        let finalStok = 0;
+
+        // Find the original stock for this supplier (if exists) from currentProduct.product_prices
+        const origPriceRecord = currentProduct?.product_prices?.find(
+          (p) => p.supplier_id === row.supplier_id
+        );
+        const originalStok = origPriceRecord ? Number(origPriceRecord.stok) : 0;
+
+        if (valStr.startsWith('-')) {
+          const diff = parseFloat(valStr.slice(1)) || 0;
+          finalStok = Math.max(0, originalStok - diff);
+        } else if (valStr.startsWith('+')) {
+          const diff = parseFloat(valStr.slice(1)) || 0;
+          finalStok = originalStok + diff;
+        } else {
+          finalStok = valStr === '' ? 0 : Math.max(0, parseFloat(valStr) || 0);
+        }
+
+        return {
+          ...row,
+          stok: finalStok,
+          harga_beli: row.harga_beli === '' ? 0 : Number(row.harga_beli)
+        };
+      }),
       validation: editMode === 'prices' ? {
         tanggal: tanggalDiubah,
         oleh: diubahOleh,
@@ -1302,15 +1323,18 @@ export const KelolaProduk: React.FC = () => {
                             </span>
                           </div>
 
-                          {/* Stok Input */}
+                           {/* Stok Input */}
                           <div className="w-full sm:w-28">
                             <input
-                              type="number"
+                              type="text"
                               value={row.stok}
                               onChange={(e) => {
-                                const copy = [...priceRows];
-                                copy[idx].stok = e.target.value === '' ? '' : parseFloat(e.target.value);
-                                setPriceRows(copy);
+                                const val = e.target.value;
+                                if (val === '' || /^[+-]?\d*\.?\d*$/.test(val)) {
+                                  const copy = [...priceRows];
+                                  copy[idx].stok = val as any;
+                                  setPriceRows(copy);
+                                }
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Delete' || e.key === 'Del') {

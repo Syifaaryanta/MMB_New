@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatNumber } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import {
   TrendingUp,
   ShoppingCart,
@@ -66,6 +67,7 @@ const TARGET_BULANAN = 1_000_000_000;
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [period, setPeriod] = useState<'30' | '180' | '365'>('30');
   const [kpi, setKpi] = useState<KPI | null>(null);
   const [trend, setTrend] = useState<TrendData[]>([]);
@@ -240,8 +242,12 @@ export const Dashboard: React.FC = () => {
       {/* Top Banner / Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Dashboard Operasional</h1>
-          <p className="text-slate-400">Ringkasan kinerja MMB untuk periode {getPeriodLabel()}</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+            {lang === 'en' ? 'Operational Dashboard' : 'Dashboard Operasional'}
+          </h1>
+          <p className="text-slate-400">
+            {lang === 'en' ? 'MMB performance summary for period' : 'Ringkasan kinerja MMB untuk periode'} {getPeriodLabel()}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -250,19 +256,19 @@ export const Dashboard: React.FC = () => {
               onClick={() => setPeriod('30')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === '30' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              30 Hari (F1)
+              {lang === 'en' ? '30 Days (F1)' : '30 Hari (F1)'}
             </button>
             <button
               onClick={() => setPeriod('180')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === '180' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              6 Bulan (F2)
+              {lang === 'en' ? '6 Months (F2)' : '6 Bulan (F2)'}
             </button>
             <button
               onClick={() => setPeriod('365')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === '365' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              1 Tahun (F3)
+              {lang === 'en' ? '1 Year (F3)' : '1 Tahun (F3)'}
             </button>
           </div>
 
@@ -290,7 +296,7 @@ export const Dashboard: React.FC = () => {
             <div className="card-stat">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Omzet SO</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{lang === 'en' ? 'Total Sales Revenue' : 'Total Omzet SO'}</p>
                   <p className="text-2xl font-bold mt-1 text-white currency">{formatCurrency(kpi.total_omzet)}</p>
                 </div>
                 <div className="p-2 bg-primary-950/50 border border-primary-500/30 rounded-lg text-primary-400">
@@ -299,14 +305,14 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
                 <span className="badge badge-green font-mono">{kpi.total_transaksi} SO</span>
-                <span>telah selesai diproses</span>
+                <span>{lang === 'en' ? 'completed and processed' : 'telah selesai diproses'}</span>
               </div>
             </div>
 
             <div className="card-stat">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pembelian PO</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{lang === 'en' ? 'Total Purchases PO' : 'Total Pembelian PO'}</p>
                   <p className="text-2xl font-bold mt-1 text-white currency">{formatCurrency(kpi.total_pembelian)}</p>
                 </div>
                 <div className="p-2 bg-purple-950/50 border border-purple-500/30 rounded-lg text-purple-400">
@@ -315,14 +321,14 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
                 <span className="badge badge-blue font-mono">{kpi.pending_receiving} PO</span>
-                <span>menunggu penerimaan fisik</span>
+                <span>{lang === 'en' ? 'awaiting physical receiving' : 'menunggu penerimaan fisik'}</span>
               </div>
             </div>
 
             <div className="card-stat">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Transaksi</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{lang === 'en' ? 'Total Transactions' : 'Total Transaksi'}</p>
                   <p className="text-2xl font-bold mt-1 text-white">{formatNumber(kpi.total_transaksi)} SO</p>
                 </div>
                 <div className="p-2 bg-blue-950/50 border border-blue-500/30 rounded-lg text-blue-400">
@@ -330,7 +336,9 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
-                <span className="text-blue-400 font-semibold flex items-center gap-0.5">Total invoice Sales Order selesai</span>
+                <span className="text-blue-400 font-semibold flex items-center gap-0.5">
+                  {lang === 'en' ? 'Total completed Sales Order invoices' : 'Total invoice Sales Order selesai'}
+                </span>
               </div>
             </div>
 
@@ -338,7 +346,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Inventory SKU <span className="text-[10px] text-amber-400 font-mono">[F4]</span></p>
-                  <p className="text-2xl font-bold mt-1 text-white">{kpi.total_produk} Barang</p>
+                  <p className="text-2xl font-bold mt-1 text-white">{kpi.total_produk} {lang === 'en' ? 'Items' : 'Barang'}</p>
                 </div>
                 <div className="p-2 bg-amber-950/50 border border-amber-500/30 rounded-lg text-amber-400">
                   <Package size={20} />
@@ -348,12 +356,12 @@ export const Dashboard: React.FC = () => {
                 {kpi.stok_kritis > 0 ? (
                   <span className="badge badge-red font-mono flex items-center gap-1">
                     <AlertTriangle size={12} />
-                    {kpi.stok_kritis} Kritis
+                    {kpi.stok_kritis} {lang === 'en' ? 'Critical' : 'Kritis'}
                   </span>
                 ) : (
-                  <span className="badge badge-green font-mono">Stok Aman</span>
+                  <span className="badge badge-green font-mono">{lang === 'en' ? 'Stock Safe' : 'Stok Aman'}</span>
                 )}
-                <span>stok di bawah batas minimal</span>
+                <span>{lang === 'en' ? 'stock below minimum threshold' : 'stok di bawah batas minimal'}</span>
               </div>
             </div>
           </div>
@@ -364,7 +372,9 @@ export const Dashboard: React.FC = () => {
             <div className="card lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white">Tren Nominal Penjualan vs Pembelian</h3>
+                  <h3 className="text-lg font-bold text-white">
+                    {lang === 'en' ? 'Sales vs Purchase Trend' : 'Tren Nominal Penjualan vs Pembelian'}
+                  </h3>
 
                 </div>
                 <span className="text-xs text-slate-400 flex items-center gap-1.5">
@@ -374,7 +384,7 @@ export const Dashboard: React.FC = () => {
               <div className="h-[300px] w-full">
                 {trend.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-slate-500 text-sm">
-                    Tidak ada data transaksi pada periode ini
+                  {lang === 'en' ? 'No transaction data for this period' : 'Tidak ada data transaksi pada periode ini'}
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">

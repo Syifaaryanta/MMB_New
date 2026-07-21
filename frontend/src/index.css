@@ -403,16 +403,16 @@ LIGHT MODE GLOBAL TEXT & TABLE WORKAROUNDS
 */
 
 /* Override white/light-slate text styles within content areas to dark slate for readability */
-main .text-white,
-main .text-slate-100,
-main .text-slate-200,
-main .text-slate-300,
-main .text-slate-350 {
+html:not(.dark) main .text-white,
+html:not(.dark) main .text-slate-100,
+html:not(.dark) main .text-slate-200,
+html:not(.dark) main .text-slate-300,
+html:not(.dark) main .text-slate-350 {
   color: #1e293b !important;
 }
 
-main .text-slate-400,
-main .text-slate-450 {
+html:not(.dark) main .text-slate-400,
+html:not(.dark) main .text-slate-450 {
   color: #475569 !important;
 }
 
@@ -922,4 +922,299 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
   border-right: 2px solid #3b82f6 !important;
   border-top-right-radius: 8px !important;
   border-bottom-right-radius: 8px !important;
+}
+
+/* Card Focused Style for Navigation grids */
+.card-focused {
+  border-color: rgba(37, 99, 235, 0.6) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(219, 234, 254, 0.9) 100%) !important;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* Dark Mode overrides */
+html.dark {
+  /* Override Tailwind Surface variables for dark mode */
+  --color-surface-900: #0f172a !important; /* Page background */
+  --color-surface-800: #1e293b !important; /* Card background */
+  --color-surface-700: #334155 !important; /* Borders */
+  --color-surface-600: #1e293b !important; /* Hover/Alt BG */
+  --color-surface-500: #475569 !important; /* Darker borders */
+  --color-surface-400: #94a3b8 !important; /* Muted texts */
+}
+
+html.dark body {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.dark main {
+  color: #f8fafc !important;
+}
+
+/* Explicit surface class overrides to avoid compile-time resolution issues */
+html.dark .bg-surface-900 {
+  background-color: #0f172a !important;
+}
+html.dark .bg-surface-800 {
+  background-color: #1e293b !important;
+}
+html.dark .border-surface-700 {
+  border-color: #334155 !important;
+}
+
+/* Sidebar and Header */
+html.dark aside,
+html.dark .aside-bg {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+  border-right: 1px solid #1e293b !important;
+}
+
+html.dark header {
+  background-color: #0f172a !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+html.dark header span, 
+html.dark header p, 
+html.dark header h1, 
+html.dark header h2,
+html.dark header div {
+  color: #f8fafc !important;
+}
+
+/* Card Styling */
+html.dark .card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Fix specificity for card hovers and focused state in dark mode */
+html.dark .card:hover,
+html.dark .card-focused,
+html.dark .card-hovered,
+html.dark .card-hovered:hover,
+html.dark .card:has(*:focus),
+html.dark .card:focus-within {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  background: linear-gradient(135deg, #1e293b 0%, #1e293b 100%) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .card-stat {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.4) !important;
+  color: #f8fafc !important;
+}
+
+/* Typography Colors */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: #ffffff !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+html.dark p.text-slate-500,
+html.dark span.text-slate-500,
+html.dark p.text-slate-400,
+html.dark span.text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Inputs & Form fields */
+html.dark .input-field,
+html.dark select.input-field,
+html.dark textarea.input-field {
+  background-color: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #ffffff !important;
+}
+
+html.dark .input-field:focus {
+  background-color: #0f172a !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+}
+
+html.dark .input-field::placeholder {
+  color: #475569;
+}
+
+html.dark label {
+  color: #cbd5e1 !important;
+}
+
+/* Kill browser autofill white/blue background in dark mode */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+  box-shadow: 0 0 0 1000px #0f172a inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #334155 !important;
+  caret-color: #ffffff;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* Buttons */
+html.dark .btn-secondary {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+
+html.dark .btn-secondary:hover {
+  background: #334155;
+  color: #ffffff;
+  border-color: #475569;
+}
+
+/* Tables */
+html.dark table {
+  border: 1px solid #334155 !important;
+}
+
+html.dark thead tr {
+  background-color: #1e293b !important;
+}
+
+html.dark thead th {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+html.dark tbody tr {
+  background-color: #0f172a !important;
+}
+
+html.dark tbody tr td {
+  border-bottom: 1px solid #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Modals & Popups (e.g. Pilih Pemasok / Pilih Barang / Pilih Pelanggan) */
+html.dark .modal-overlay > div > div {
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+html.dark .modal-overlay > div > div div {
+  border-color: #334155 !important;
+}
+
+html.dark .modal-overlay h2,
+html.dark .modal-overlay h3,
+html.dark .modal-overlay p {
+  color: #ffffff !important;
+}
+
+/* Override selection list items in autocomplete modals */
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.15) !important; /* Dark emerald background */
+  color: #34d399 !important; /* Light green/emerald text */
+}
+
+html.dark .text-emerald-900 {
+  color: #34d399 !important;
+}
+
+html.dark button.border-slate-200.bg-white,
+html.dark button.border-slate-200,
+html.dark .border-slate-200 {
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html.dark button.border-slate-200.bg-white:hover,
+html.dark button.border-slate-200:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .text-slate-900 {
+  color: #ffffff !important;
+}
+
+html.dark .text-slate-750 {
+  color: #e2e8f0 !important;
+}
+
+/* Dark mode translucent colored backgrounds for card icons */
+html.dark .bg-primary-50 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+}
+html.dark .bg-yellow-50 {
+  background-color: rgba(234, 179, 8, 0.18) !important;
+}
+html.dark .bg-purple-50 {
+  background-color: rgba(168, 85, 247, 0.18) !important;
+}
+html.dark .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+}
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+
+html.dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-100 {
+  border-color: #334155 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-slate-900\/60 {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+/* Selected row in dark mode */
+html.dark .bg-blue-100 {
+  background-color: rgba(30, 58, 138, 0.4) !important;
+}
+
+html.dark .table-row-selected td {
+  border-top: 2px solid #2563eb !important;
+  border-bottom: 2px solid #2563eb !important;
+  background-color: rgba(30, 58, 138, 0.4) !important;
+}
+html.dark .table-row-selected td,
+html.dark .table-row-selected td *,
+html.dark .table-row-selected td span,
+html.dark .table-row-selected td div {
+  color: #ffffff !important;
+}
+html.dark .table-row-selected td:first-child {
+  border-left: 2px solid #2563eb !important;
+}
+html.dark .table-row-selected td:last-child {
+  border-right: 2px solid #2563eb !important;
 }

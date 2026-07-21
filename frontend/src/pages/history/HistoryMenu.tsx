@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { useTranslation } from '@/lib/i18n';
 import {
   PackageCheck,
   PackageMinus,
@@ -15,52 +16,53 @@ import {
 
 export const HistoryMenu: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [focusedIdx, setFocusedIdx] = useState(0);
 
   const subMenus = [
     {
-      title: 'Histori Barang Masuk & Keluar',
-      desc: 'Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff.',
+      title: lang === 'en' ? 'Goods In/Out History' : 'Histori Barang Masuk & Keluar',
+      desc: lang === 'en' ? 'Log of goods movement: incoming (PO), outgoing (SO), and stock adjustments by staff.' : 'Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff.',
       path: '/history/barang-inout',
       icon: History,
       iconColor: 'text-primary-600',
       iconBg: 'bg-primary-50',
     },
     {
-      title: 'Histori Penjualan',
-      desc: 'Riwayat Sales Order (SO) yang sudah selesai beserta detail item dan customer.',
+      title: lang === 'en' ? 'Sales History' : 'Histori Penjualan',
+      desc: lang === 'en' ? 'Completed Sales Orders (SO) with item details and customer info.' : 'Riwayat Sales Order (SO) yang sudah selesai beserta detail item dan customer.',
       path: '/penjualan/list?from=history',
       icon: TrendingUp,
       iconColor: 'text-blue-600',
       iconBg: 'bg-blue-50',
     },
     {
-      title: 'Histori Pembelian',
-      desc: 'Riwayat Purchase Order (PO) yang sudah diterima beserta detail item dan supplier.',
+      title: lang === 'en' ? 'Purchase History' : 'Histori Pembelian',
+      desc: lang === 'en' ? 'Completed Purchase Orders (PO) with item details and supplier info.' : 'Riwayat Purchase Order (PO) yang sudah diterima beserta detail item dan supplier.',
       path: '/pembelian/history-pembelian?from=history',
       icon: ShoppingCart,
       iconColor: 'text-amber-600',
       iconBg: 'bg-amber-50',
     },
     {
-      title: 'Histori Pembayaran Pelanggan',
-      desc: 'Riwayat penerimaan kas dan cicilan pembayaran nota dari pelanggan.',
+      title: lang === 'en' ? 'Customer Payment History' : 'Histori Pembayaran Pelanggan',
+      desc: lang === 'en' ? 'History of cash receipts and invoice installment payments from customers.' : 'Riwayat penerimaan kas dan cicilan pembayaran nota dari pelanggan.',
       path: '/penagihan/history-pembayaran?from=history',
       icon: CreditCard,
       iconColor: 'text-purple-600',
       iconBg: 'bg-purple-50',
     },
     {
-      title: 'Histori Pelunasan Supplier',
-      desc: 'Riwayat pengeluaran kas untuk pelunasan nota/hutang belanja kepada supplier.',
+      title: lang === 'en' ? 'Supplier Settlement History' : 'Histori Pelunasan Supplier',
+      desc: lang === 'en' ? 'History of cash expenditures for settling supplier invoices/payables.' : 'Riwayat pengeluaran kas untuk pelunasan nota/hutang belanja kepada supplier.',
       path: '/penagihan/history-pelunasan?from=history',
       icon: DollarSign,
       iconColor: 'text-emerald-600',
       iconBg: 'bg-emerald-50',
     },
     {
-      title: 'Histori Return / Retur',
-      desc: 'Riwayat retur pembelian (PO) dan retur penjualan (SO) yang digabung.',
+      title: lang === 'en' ? 'Return History' : 'Histori Return / Retur',
+      desc: lang === 'en' ? 'Combined history of purchase returns (PO) and sales returns (SO).' : 'Riwayat retur pembelian (PO) dan retur penjualan (SO) yang digabung.',
       path: '/history/retur',
       icon: Undo2,
       iconColor: 'text-rose-600',
@@ -107,10 +109,14 @@ export const HistoryMenu: React.FC = () => {
           <div className="p-2.5 rounded-xl bg-primary-600/10 text-primary-400">
             <History size={22} />
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Histori Transaksi</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+            {lang === 'en' ? 'Transaction History' : 'Histori Transaksi'}
+          </h1>
         </div>
         <p className="text-slate-400 ml-[52px]">
-          Pusat riwayat seluruh pergerakan barang dan transaksi bisnis MMB.
+          {lang === 'en'
+            ? 'Central history of all goods movements and MMB business transactions.'
+            : 'Pusat riwayat seluruh pergerakan barang dan transaksi bisnis MMB.'}
         </p>
       </div>
 

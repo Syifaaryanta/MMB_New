@@ -40,6 +40,28 @@ stockAdjustmentRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.STAFF
 
     await prisma.product.update({ where: { id: product_id }, data: { stok: stock_after } });
 
+    // Sync product prices to match the new adjusted stock
+    const activePrices = await prisma.productPrice.findMany({
+      where: { product_id, aktif: true },
+      orderBy: { updated_at: 'desc' },
+    });
+
+    if (activePrices.length > 0) {
+      // Set the first/most recent active supplier price record to stock_after, and all others to 0
+      await prisma.productPrice.update({
+        where: { id: activePrices[0].id },
+        data: { stok: Math.max(0, stock_after) }
+      });
+
+      if (activePrices.length > 1) {
+        const remainingIds = activePrices.slice(1).map(ap => ap.id);
+        await prisma.productPrice.updateMany({
+          where: { id: { in: remainingIds } },
+          data: { stok: 0 }
+        });
+      }
+    }
+
     const adjustment = await prisma.stockAdjustment.create({
       data: {
         id: uuidv4(),
@@ -75,6 +97,27 @@ stockAdjustmentRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.
           where: { id: adj.product_id },
           data: { stok: revertedStock }
         });
+
+        // Sync product prices to match the reverted stock
+        const activePricesDel = await prisma.productPrice.findMany({
+          where: { product_id: adj.product_id, aktif: true },
+          orderBy: { updated_at: 'desc' },
+        });
+
+        if (activePricesDel.length > 0) {
+          await prisma.productPrice.update({
+            where: { id: activePricesDel[0].id },
+            data: { stok: Math.max(0, revertedStock) }
+          });
+
+          if (activePricesDel.length > 1) {
+            const remainingIdsDel = activePricesDel.slice(1).map(ap => ap.id);
+            await prisma.productPrice.updateMany({
+              where: { id: { in: remainingIdsDel } },
+              data: { stok: 0 }
+            });
+          }
+        }
       }
     }
 

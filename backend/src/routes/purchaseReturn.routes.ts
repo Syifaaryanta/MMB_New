@@ -238,6 +238,16 @@ purchaseReturnRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.SALES)
             },
           });
 
+          // Decrement ProductPrice stock for the specific supplier
+          await tx.productPrice.updateMany({
+            where: { product_id: item.product_id, supplier_id: purchase.supplier_id },
+            data: {
+              stok: {
+                decrement: qtyDelta,
+              },
+            },
+          });
+
           // Create StockAdjustment record
           await tx.stockAdjustment.create({
             data: {

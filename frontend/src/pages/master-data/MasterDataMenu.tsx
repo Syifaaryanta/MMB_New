@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { Database, Users, Truck, ChevronRight } from 'lucide-react';
 
 interface MasterDataStats {
@@ -11,6 +12,7 @@ interface MasterDataStats {
 
 export const MasterDataMenu: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [stats, setStats] = useState<MasterDataStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [focusedIdx, setFocusedIdx] = useState(0);
@@ -37,16 +39,16 @@ export const MasterDataMenu: React.FC = () => {
 
   const subMenus = [
     {
-      title: 'Master Pelanggan (Customer)',
-      desc: 'Kelola profil data pelanggan, alamat, kontak, limit kredit, dan termin jatuh tempo.',
+      title: lang === 'en' ? 'Customer Master Data' : 'Master Pelanggan (Customer)',
+      desc: lang === 'en' ? 'Manage customer profiles, addresses, contacts, credit limits, and payment terms.' : 'Kelola profil data pelanggan, alamat, kontak, limit kredit, dan termin jatuh tempo.',
       path: '/master-data/customer',
       icon: Users,
       iconColor: 'text-blue-600',
       iconBg: 'bg-blue-50',
     },
     {
-      title: 'Master Supplier',
-      desc: 'Kelola profil data pemasok barang, alamat, kontak, dan termin pembayaran.',
+      title: lang === 'en' ? 'Supplier Master Data' : 'Master Supplier',
+      desc: lang === 'en' ? 'Manage supplier profiles, addresses, contacts, and payment terms.' : 'Kelola profil data pemasok barang, alamat, kontak, dan termin pembayaran.',
       path: '/master-data/supplier',
       icon: Truck,
       iconColor: 'text-amber-600',
@@ -96,10 +98,14 @@ export const MasterDataMenu: React.FC = () => {
           <div className="p-2.5 rounded-xl bg-primary-600/10 text-primary-400">
             <Database size={22} />
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Modul Master Data</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+            {lang === 'en' ? 'Master Data Module' : 'Modul Master Data'}
+          </h1>
         </div>
         <p className="text-slate-400 ml-[52px]">
-          Kelola data profil pelanggan (Customer) dan pemasok barang (Supplier) MMB.
+          {lang === 'en'
+            ? 'Manage MMB customer and supplier profile data.'
+            : 'Kelola data profil pelanggan (Customer) dan pemasok barang (Supplier) MMB.'}
         </p>
       </div>
 
@@ -115,8 +121,12 @@ export const MasterDataMenu: React.FC = () => {
           {/* Card 1 */}
           <div className="card p-6 flex items-center justify-between border-l-4 border-blue-500 bg-surface-800">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Total Pelanggan</span>
-              <span className="text-2xl font-black text-blue-400">{stats.customers} Pelanggan</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                {lang === 'en' ? 'Total Customers' : 'Total Pelanggan'}
+              </span>
+              <span className="text-2xl font-black text-blue-400">
+                {stats.customers} {lang === 'en' ? 'Customers' : 'Pelanggan'}
+              </span>
             </div>
             <div className="p-3 bg-blue-950 text-blue-400 rounded-xl">
               <Users size={24} />
@@ -126,8 +136,12 @@ export const MasterDataMenu: React.FC = () => {
           {/* Card 2 */}
           <div className="card p-6 flex items-center justify-between border-l-4 border-amber-500 bg-surface-800">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Total Supplier</span>
-              <span className="text-2xl font-black text-amber-400">{stats.suppliers} Supplier</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                {lang === 'en' ? 'Total Suppliers' : 'Total Supplier'}
+              </span>
+              <span className="text-2xl font-black text-amber-400">
+                {stats.suppliers} {lang === 'en' ? 'Suppliers' : 'Supplier'}
+              </span>
             </div>
             <div className="p-3 bg-amber-950 text-amber-400 rounded-xl">
               <Truck size={24} />
