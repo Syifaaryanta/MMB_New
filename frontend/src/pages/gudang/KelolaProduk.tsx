@@ -46,6 +46,7 @@ interface Product {
   satuan: string;
   foto_urls: any; // string[] stored in JSON
   product_prices: SupplierPrice[];
+  harga_beli_terbaru?: number | null;
 }
 
 export const KelolaProduk: React.FC = () => {
@@ -376,7 +377,7 @@ export const KelolaProduk: React.FC = () => {
     }
   };
 
-  // Image Upload & Compression (<150KB)
+  // Image Upload & Compression (<1MB)
   const compressAndAddImage = async (file: File) => {
     if (fotoUrls.length >= 3) {
       alert('Maksimal 3 foto produk');
@@ -393,10 +394,11 @@ export const KelolaProduk: React.FC = () => {
         let width = img.width;
         let height = img.height;
 
-        // Scale down to maintain small size limit
-        if (width > 600) {
-          height = Math.round((height * 600) / width);
-          width = 600;
+        // Standard max width for good quality
+        const MAX_WIDTH = 1200;
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
         }
 
         canvas.width = width;
@@ -404,8 +406,31 @@ export const KelolaProduk: React.FC = () => {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
 
-        // Quality compression to stay under 150KB
-        const base64 = canvas.toDataURL('image/jpeg', 0.6);
+        // Compress
+        let quality = 0.9;
+        let base64 = canvas.toDataURL('image/jpeg', quality);
+
+        // If base64 length exceeds ~1.33MB (which represents 1MB binary), auto-compress
+        const MAX_BASE64_LENGTH = 1 * 1024 * 1024 * (4 / 3);
+        while (base64.length > MAX_BASE64_LENGTH && quality > 0.1) {
+          quality -= 0.1;
+          base64 = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        // If quality decrease isn't enough, scale down the image dimensions
+        if (base64.length > MAX_BASE64_LENGTH) {
+          let scale = 0.8;
+          while (base64.length > MAX_BASE64_LENGTH && scale > 0.1) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = Math.round(width * scale);
+            tempCanvas.height = Math.round(height * scale);
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx?.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+            base64 = tempCanvas.toDataURL('image/jpeg', 0.5);
+            scale -= 0.1;
+          }
+        }
+
         setFotoUrls((prev) => [...prev, base64]);
       };
     };
@@ -413,18 +438,9 @@ export const KelolaProduk: React.FC = () => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const maxLimit = 2 * 1024 * 1024; // 2MB
-      let hasTooLarge = false;
       Array.from(e.target.files).forEach((file) => {
-        if (file.size > maxLimit) {
-          hasTooLarge = true;
-        } else {
-          compressAndAddImage(file);
-        }
+        compressAndAddImage(file);
       });
-      if (hasTooLarge) {
-        addToast('error', 'Ukuran foto produk tidak boleh lebih dari 2MB.');
-      }
     }
   };
 
@@ -497,12 +513,21 @@ export const KelolaProduk: React.FC = () => {
     setFotoUrls(imgs);
 
     // Map supplier prices
-    const rows: Array<{ supplier_id: string; stok: number | ''; harga_beli: number | ''; aktif: boolean }> = currentProduct.product_prices.map((p) => ({
-      supplier_id: p.supplier.id,
-      stok: (Number(p.stok) === 0 ? '' : Number(p.stok)) as number | '',
-      harga_beli: (Number(p.harga_beli) === 0 ? '' : Number(p.harga_beli)) as number | '',
-      aktif: p.aktif ?? true,
-    }));
+    const rows: Array<{ supplier_id: string; stok: number | ''; harga_beli: number | ''; aktif: boolean }> = currentProduct.product_prices.map((p) => {
+      const isSingleSupplier = currentProduct.product_prices.length === 1;
+      const defaultStok = isSingleSupplier
+        ? (Number(currentProduct.stok) !== 0 ? Number(currentProduct.stok) : (Number(p.stok) !== 0 ? Number(p.stok) : ''))
+        : (Number(p.stok) !== 0 ? Number(p.stok) : '');
+      const defaultHargaBeli = isSingleSupplier
+        ? (currentProduct.harga_beli_terbaru ? Number(currentProduct.harga_beli_terbaru) : (Number(p.harga_beli) !== 0 ? Number(p.harga_beli) : ''))
+        : (Number(p.harga_beli) !== 0 ? Number(p.harga_beli) : '');
+      return {
+        supplier_id: p.supplier.id,
+        stok: defaultStok as number | '',
+        harga_beli: defaultHargaBeli as number | '',
+        aktif: p.aktif ?? true,
+      };
+    });
     setPriceRows(rows);
 
     setShowEditTypeModal(false);
@@ -538,7 +563,9 @@ export const KelolaProduk: React.FC = () => {
       addToast('error', 'Semua supplier terdaftar sudah dimasukkan.');
       return;
     }
-    setPriceRows((prev) => [...prev, { supplier_id: available.id, stok: '', harga_beli: '', aktif: true }]);
+    const defaultStok = currentProduct && Number(currentProduct.stok) !== 0 ? Number(currentProduct.stok) : '';
+    const defaultHargaBeli = currentProduct && currentProduct.harga_beli_terbaru ? Number(currentProduct.harga_beli_terbaru) : '';
+    setPriceRows((prev) => [...prev, { supplier_id: available.id, stok: defaultStok as number | '', harga_beli: defaultHargaBeli as number | '', aktif: true }]);
   };
 
   const removePriceRow = (idx: number) => {
@@ -823,24 +850,24 @@ export const KelolaProduk: React.FC = () => {
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setArchiveTarget(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 bg-amber-500/10 border-b border-amber-500/20 px-5 py-4">
-              <div className="p-2 bg-amber-500/20 rounded-lg"><Archive size={18} className="text-amber-400" /></div>
+          <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center gap-2 bg-amber-50 border-b border-amber-100 px-5 py-4">
+              <div className="p-2 bg-amber-100 rounded-full"><Archive size={20} className="text-amber-600" /></div>
               <div>
-                <h2 className="font-bold text-white text-sm">Arsipkan Produk</h2>
-                <p className="text-xs text-amber-400/80 mt-0.5">Tindakan ini dapat dibatalkan melalui halaman arsip</p>
+                <h2 className="font-bold text-slate-800 text-sm">Arsipkan Produk</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Tindakan ini dapat dibatalkan melalui halaman arsip</p>
               </div>
             </div>
-            <div className="px-5 py-5">
-              <p className="text-slate-300 text-sm leading-relaxed">Apakah Anda yakin ingin mengarsipkan produk <span className="font-bold text-white">"{archiveTarget.nama}"</span>?</p>
-              <p className="text-xs text-slate-500 mt-2">Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.</p>
+            <div className="px-5 py-5 text-center">
+              <p className="text-slate-700 text-sm leading-relaxed">Apakah Anda yakin ingin mengarsipkan produk <span className="font-bold text-slate-900">"{archiveTarget.nama}"</span>?</p>
+              <p className="text-xs text-slate-400 mt-2">Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.</p>
             </div>
-            <div className="flex gap-2 px-5 pb-5 justify-end">
-              <button onClick={() => setArchiveTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-800 hover:bg-surface-700 text-slate-300 hover:text-white transition-colors border border-surface-600">
-                <kbd className="text-[10px] bg-surface-700 border border-surface-600 rounded px-1 py-0.5 font-mono">Esc</kbd>
+            <div className="flex gap-2 px-5 pb-5 justify-center">
+              <button onClick={() => setArchiveTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
+                <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
                 Batal
               </button>
-              <button onClick={confirmArchive} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-lg shadow-amber-500/20">
+              <button onClick={confirmArchive} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-md shadow-amber-500/10">
                 <kbd className="text-[10px] bg-amber-400/40 border border-amber-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
                 Ya, Arsipkan
               </button>
@@ -1197,7 +1224,7 @@ export const KelolaProduk: React.FC = () => {
 
                   {/* Images Upload Area */}
                   <div>
-                    <label className="block text-xs text-slate-700 font-semibold mb-1">Foto Produk (Maks 3, {"<150KB"} per file)</label>
+                    <label className="block text-xs text-slate-700 font-semibold mb-1">Foto Produk (Maks 3, Maks 1MB, auto-kompres jika lebih)</label>
                     <div className="flex flex-wrap items-center gap-2">
                       {fotoUrls.map((url, idx) => (
                         <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-blue-200 bg-white group">

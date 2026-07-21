@@ -218,21 +218,18 @@ export const DetailProduk: React.FC = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full max-w-none px-4 md:px-8 space-y-6">
       {/* Header breadcrumbs */}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">{product.nama}</h1>
           <p className="text-xs text-slate-500 font-mono mt-0.5">{product.kode}</p>
         </div>
-        <button onClick={() => navigate('/gudang')} className="btn-secondary text-xs">
-          Kembali ke Gudang
-        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column: Image Gallery & Lightbox */}
-        <div className="card space-y-4 md:col-span-1 flex flex-col justify-between">
+        <div className="card card-hovered space-y-4 md:col-span-1 flex flex-col justify-between">
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Galeri Foto Produk</h3>
             <div className="relative aspect-square rounded-lg bg-surface-900 border border-surface-700 overflow-hidden flex items-center justify-center group">
@@ -280,7 +277,7 @@ export const DetailProduk: React.FC = () => {
         {/* Right Column: Spec Details & Suppliers Inventory */}
         <div className="md:col-span-2 space-y-6">
           {/* Spec Card */}
-          <div className="card space-y-4 p-0 overflow-hidden border border-slate-200">
+          <div className="card card-hovered space-y-4 p-0 overflow-hidden">
             <div className="bg-blue-50 border-b border-blue-100 p-3">
               <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Spesifikasi Detail</h3>
             </div>
@@ -310,7 +307,7 @@ export const DetailProduk: React.FC = () => {
           </div>
 
           {/* Supplier inventory details */}
-          <div className="card p-0 overflow-hidden border border-slate-200">
+          <div className="card card-hovered p-0 overflow-hidden">
             <div className="bg-amber-50 border-b border-amber-100 p-3">
               <h3 className="text-xs font-bold text-amber-700 uppercase tracking-wider">Rincian Persediaan Per Supplier</h3>
             </div>

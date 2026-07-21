@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import prisma from './lib/prisma';
 import { authRouter } from './routes/auth.routes';
 import { profileRouter } from './routes/profile.routes';
 import { productRouter } from './routes/product.routes';
@@ -65,9 +66,39 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
+// One-time startup database sync to align supplier stock for products that are out of sync
+async function syncDatabaseStockDiscrepancies() {
+  try {
+    const products = await prisma.product.findMany({
+      include: {
+        product_prices: {
+          where: { aktif: true }
+        }
+      }
+    });
+
+    for (const p of products) {
+      // If a product has only one active supplier price record
+      if (p.product_prices.length === 1) {
+        const pp = p.product_prices[0];
+        if (Number(pp.stok) !== Number(p.stok)) {
+          console.log(`[Sync] Aligning stock for product "${p.nama}": Supplier "${pp.id}" stock was ${pp.stok}, changed to match warehouse stock: ${p.stok}`);
+          await prisma.productPrice.update({
+            where: { id: pp.id },
+            data: { stok: p.stok }
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to run startup stock sync:', err);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 MMB Backend API running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  syncDatabaseStockDiscrepancies();
 });
 
 export default app;

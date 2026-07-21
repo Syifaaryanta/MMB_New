@@ -194,25 +194,25 @@ export const ArsipProduk: React.FC = () => {
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setRestoreTarget(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 bg-blue-500/10 border-b border-blue-500/20 px-5 py-4">
-              <div className="p-2 bg-blue-500/20 rounded-lg"><RotateCcw size={18} className="text-blue-400" /></div>
+          <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center gap-2 bg-blue-50 border-b border-blue-100 px-5 py-4">
+              <div className="p-2 bg-blue-100 rounded-full"><RotateCcw size={20} className="text-blue-600" /></div>
               <div>
-                <h2 className="font-bold text-white text-sm">Pulihkan Produk</h2>
-                <p className="text-xs text-blue-400/80 mt-0.5">Produk akan aktif kembali dan dapat digunakan dalam transaksi</p>
+                <h2 className="font-bold text-slate-800 text-sm">Pulihkan Produk</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Produk akan aktif kembali dan dapat digunakan dalam transaksi</p>
               </div>
             </div>
-            <div className="px-5 py-5">
-              <p className="text-slate-300 text-sm leading-relaxed">Apakah Anda yakin ingin memulihkan produk <span className="font-bold text-white">"{restoreTarget.nama}"</span>?</p>
-              <p className="text-xs text-slate-500 mt-2">Produk akan kembali muncul di daftar aktif dan bisa digunakan dalam transaksi pembelian maupun penjualan.</p>
+            <div className="px-5 py-5 text-center">
+              <p className="text-slate-700 text-sm leading-relaxed">Apakah Anda yakin ingin memulihkan produk <span className="font-bold text-slate-900">"{restoreTarget.nama}"</span>?</p>
+              <p className="text-xs text-slate-400 mt-2">Produk akan kembali muncul di daftar aktif dan bisa digunakan dalam transaksi pembelian maupun penjualan.</p>
             </div>
-            <div className="flex gap-2 px-5 pb-5 justify-end">
-              <button onClick={() => setRestoreTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-800 hover:bg-surface-700 text-slate-300 hover:text-white transition-colors border border-surface-600">
-                <kbd className="text-[10px] bg-surface-700 border border-surface-600 rounded px-1 py-0.5 font-mono">Esc</kbd>
+            <div className="flex gap-2 px-5 pb-5 justify-center">
+              <button onClick={() => setRestoreTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
+                <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
                 Batal
               </button>
-              <button onClick={confirmRestore} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-500 hover:bg-blue-400 text-white transition-colors shadow-lg shadow-blue-500/20">
-                <kbd className="text-[10px] bg-blue-400/40 border border-blue-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
+              <button onClick={confirmRestore} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md shadow-blue-600/10">
+                <kbd className="text-[10px] bg-blue-500 border border-blue-400 rounded px-1 py-0.5 font-mono">Y</kbd>
                 Ya, Pulihkan
               </button>
             </div>

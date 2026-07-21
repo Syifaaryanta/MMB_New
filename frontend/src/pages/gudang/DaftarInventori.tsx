@@ -59,53 +59,53 @@ interface ConfirmArchiveModalProps {
 }
 const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, onConfirm, onCancel }) => (
   <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={onCancel}>
-    <div
-      className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Amber header */}
-      <div className="flex items-center gap-3 bg-amber-500/10 border-b border-amber-500/20 px-5 py-4">
-        <div className="p-2 bg-amber-500/20 rounded-lg">
-          <Archive size={18} className="text-amber-400" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={onCancel}>
+      <div
+        className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Amber header */}
+        <div className="flex flex-col items-center text-center gap-2 bg-amber-50 border-b border-amber-100 px-5 py-4">
+          <div className="p-2 bg-amber-100 rounded-full">
+            <Archive size={20} className="text-amber-600" />
+          </div>
+          <div>
+            <h2 className="font-bold text-slate-800 text-sm">Arsipkan Produk</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Tindakan ini dapat dibatalkan melalui halaman arsip</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-bold text-white text-sm">Arsipkan Produk</h2>
-          <p className="text-xs text-amber-400/80 mt-0.5">Tindakan ini dapat dibatalkan melalui halaman arsip</p>
+
+        {/* Body */}
+        <div className="px-5 py-5 text-center">
+          <p className="text-slate-700 text-sm leading-relaxed">
+            Apakah Anda yakin ingin mengarsipkan produk{' '}
+            <span className="font-bold text-slate-900">"{productName}"</span>?
+          </p>
+          <p className="text-xs text-slate-400 mt-2">
+            Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.
+          </p>
         </div>
-      </div>
 
-      {/* Body */}
-      <div className="px-5 py-5">
-        <p className="text-slate-300 text-sm leading-relaxed">
-          Apakah Anda yakin ingin mengarsipkan produk{' '}
-          <span className="font-bold text-white">"{productName}"</span>?
-        </p>
-        <p className="text-xs text-slate-500 mt-2">
-          Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2 px-5 pb-5 justify-end">
-        <button
-          onClick={onCancel}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-800 hover:bg-surface-700 text-slate-300 hover:text-white transition-colors border border-surface-600"
-        >
-          <kbd className="text-[10px] bg-surface-700 border border-surface-600 rounded px-1 py-0.5 font-mono">Esc</kbd>
-          Batal
-        </button>
-        <button
-          onClick={onConfirm}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-lg shadow-amber-500/20"
-        >
-          <kbd className="text-[10px] bg-amber-400/40 border border-amber-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
-          Ya, Arsipkan
-        </button>
+        {/* Actions */}
+        <div className="flex gap-2 px-5 pb-5 justify-center">
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200"
+          >
+            <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-md shadow-amber-500/10"
+          >
+            <kbd className="text-[10px] bg-amber-400/40 border border-amber-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
+            Ya, Arsipkan
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-        </ModalPortal>
+  </ModalPortal>
 );
 
 /* ─── Main Component ─────────────────────────────────────────── */
@@ -408,9 +408,8 @@ export const DaftarInventori: React.FC = () => {
                       <tr
                         onClick={() => setSelectedIdx(idx)}
                         ref={idx === selectedIdx ? activeRowRef : null}
-                        className={`hover:bg-surface-800/20 cursor-pointer transition-colors ${
-                          idx === selectedIdx ? 'table-row-selected border-b-0' : ''
-                        }`}
+                        className={`hover:bg-surface-800/20 cursor-pointer transition-colors ${idx === selectedIdx ? 'table-row-selected border-b-0' : ''
+                          }`}
                         style={idx === selectedIdx ? { borderBottom: 'none' } : {}}
                       >
                         <td className="p-4 font-mono font-semibold text-slate-300">{p.kode}</td>
@@ -502,18 +501,18 @@ export const DaftarInventori: React.FC = () => {
           const photoUrl = photos.length > 0 ? photos[0] : null;
           return photoUrl ? (
             <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={() => setIsZoomed(false)}>
-              <div className="relative max-w-3xl w-full max-h-screen p-4 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => setIsZoomed(false)}
-                  className="absolute top-2 right-2 p-2 bg-black/60 rounded-full hover:bg-black text-white z-10 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-                <img src={photoUrl} alt="Product full preview" className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl" />
+              <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={() => setIsZoomed(false)}>
+                <div className="relative max-w-3xl w-full max-h-screen p-4 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => setIsZoomed(false)}
+                    className="absolute top-2 right-2 p-2 bg-black/60 rounded-full hover:bg-black text-white z-10 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                  <img src={photoUrl} alt="Product full preview" className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl" />
+                </div>
               </div>
-            </div>
-        </ModalPortal>
+            </ModalPortal>
           ) : null;
         })()
       )}

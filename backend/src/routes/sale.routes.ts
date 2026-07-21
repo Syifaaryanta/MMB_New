@@ -3,6 +3,50 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../lib/prisma';
 import { authenticate, authorize, AuthRequest, ROLES } from '../middleware/auth.middleware';
 
+async function decrementSupplierStock(productId: string, qtyToDeduct: number) {
+  let remainingQty = qtyToDeduct;
+  const productPrices = await prisma.productPrice.findMany({
+    where: { product_id: productId, aktif: true },
+    orderBy: { updated_at: 'desc' },
+  });
+
+  for (const pp of productPrices) {
+    if (remainingQty <= 0) break;
+    const currentStok = Number(pp.stok);
+    if (currentStok <= 0) continue;
+
+    const deduct = Math.min(remainingQty, currentStok);
+    await prisma.productPrice.update({
+      where: { id: pp.id },
+      data: { stok: currentStok - deduct },
+    });
+    remainingQty -= deduct;
+  }
+
+  // If there's still remaining qty to deduct, take it from the first active supplier price record
+  if (remainingQty > 0 && productPrices.length > 0) {
+    const firstPP = productPrices[0];
+    const currentStok = Number(firstPP.stok);
+    await prisma.productPrice.update({
+      where: { id: firstPP.id },
+      data: { stok: currentStok - remainingQty },
+    });
+  }
+}
+
+async function incrementSupplierStock(productId: string, qtyToIncrement: number) {
+  const productPrice = await prisma.productPrice.findFirst({
+    where: { product_id: productId, aktif: true },
+    orderBy: { updated_at: 'desc' },
+  });
+  if (productPrice) {
+    await prisma.productPrice.update({
+      where: { id: productPrice.id },
+      data: { stok: Number(productPrice.stok) + qtyToIncrement },
+    });
+  }
+}
+
 export const saleRouter = Router();
 
 async function generateSoNumber(): Promise<string> {
@@ -150,6 +194,7 @@ saleRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async (r
         where: { id: item.product_id },
         data: { stok: { decrement: item.qty } },
       });
+      await decrementSupplierStock(item.product_id, Number(item.qty));
     }
 
     const sale = await prisma.sale.create({
@@ -214,6 +259,7 @@ saleRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async 
         where: { id: item.product_id },
         data: { stok: { increment: item.qty } }
       });
+      await incrementSupplierStock(item.product_id, Number(item.qty));
     }
 
     // Step 2: Validate new items against restored stock
@@ -226,6 +272,7 @@ saleRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async 
             where: { id: it.product_id },
             data: { stok: { decrement: it.qty } }
           });
+          await decrementSupplierStock(it.product_id, Number(it.qty));
         }
         res.status(400).json({ error: `Stok ${product.nama} tidak mencukupi (stok: ${product.stok}, dibutuhkan: ${item.qty})` });
         return;
@@ -238,6 +285,7 @@ saleRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async 
         where: { id: item.product_id },
         data: { stok: { decrement: item.qty } }
       });
+      await decrementSupplierStock(item.product_id, Number(item.qty));
     }
 
     const itemsSubtotal = (items || []).reduce((sum: number, i: any) => sum + (i.qty * i.unit_price), 0);
@@ -359,6 +407,7 @@ saleRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: Auth
     // Always restore stock (since stock is decremented at draft stage)
     for (const item of sale.sale_items) {
       await prisma.product.update({ where: { id: item.product_id }, data: { stok: { increment: item.qty } } });
+      await incrementSupplierStock(item.product_id, Number(item.qty));
     }
 
     // Restore customer saldo_piutang only if completed
