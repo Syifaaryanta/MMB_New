@@ -2,19 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, User as UserIcon, AlertCircle, Loader2 } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const emailRef = useRef<HTMLInputElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
   // Auto redirect if already logged in
@@ -22,13 +22,13 @@ export const Login: React.FC = () => {
     if (isAuthenticated) {
       navigate('/dashboard');
     }
-    emailRef.current?.focus();
+    usernameRef.current?.focus();
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Email dan Password wajib diisi');
+    if (!username || !password) {
+      setError('Username dan Password wajib diisi');
       return;
     }
 
@@ -36,7 +36,7 @@ export const Login: React.FC = () => {
     setError(null);
 
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { username, password });
       const { user, token } = response.data;
       login(user, token);
       navigate('/dashboard');
@@ -80,19 +80,19 @@ export const Login: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-              Email Address
+              Username
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                <Mail size={18} />
+                <UserIcon size={18} />
               </span>
               <input
-                ref={emailRef}
-                type="email"
+                ref={usernameRef}
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@mmb.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Masukkan username (contoh: admin)"
                 className="input-field pl-10"
                 disabled={isLoading}
               />

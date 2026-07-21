@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useAuthStore } from '@/stores/authStore';
@@ -18,10 +18,13 @@ import {
   ChevronRight,
   ClipboardList,
   History,
+  UserCheck,
 } from 'lucide-react';
 
+import api from '@/lib/api';
+
 export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout } = useAuthStore();
+  const { user, login, token, logout, checkSessionExpiration } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -32,7 +35,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const [realtimeDate, setRealtimeDate] = useState('');
   const [realtimeClock, setRealtimeClock] = useState('');
 
-  React.useEffect(() => {
+  useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
       const dateStr = now.toLocaleDateString('id-ID', {
@@ -55,7 +58,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
     return () => clearInterval(interval);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleFocusChange = (e: Event) => {
       setCalendarFocused((e as CustomEvent).detail);
     };
@@ -83,7 +86,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       label: 'Pembelian PO',
       path: '/pembelian',
       icon: ShoppingCart,
-      roles: ['admin', 'sales'],
+      roles: ['admin', 'staff_gudang', 'sales'],
     },
     {
       label: 'Penjualan SO',
@@ -113,12 +116,44 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       label: 'Master Data',
       path: '/master-data',
       icon: Database,
-      roles: ['admin', 'staff_gudang', 'staff_kantor', 'sales'],
+      roles: ['admin', 'staff_kantor', 'sales'],
+    },
+    {
+      label: 'Kelola User',
+      path: '/kelola-user',
+      icon: UserCheck,
+      roles: ['super_admin'],
     },
   ];
 
-  // Filter items matching user's role
-  const allowedNavItems = user ? navItems.filter((item) => item.roles.includes(user.role)) : [];
+  // Filter items matching user's role (super_admin sees all)
+  const allowedNavItems = user
+    ? navItems.filter((item) => user.role === 'super_admin' || item.roles.includes(user.role as any))
+    : [];
+
+  // Sync User Profile (e.g. role updates)
+  useEffect(() => {
+    if (token) {
+      api.get('/auth/me').then((res) => {
+        if (res.data && token) {
+          login(res.data, token);
+        }
+      }).catch(() => {});
+    }
+  }, [token, login]);
+
+  // Session Expiration Check (18:00 Auto Logout)
+  useEffect(() => {
+    const checkExpiration = () => {
+      const isExpired = checkSessionExpiration();
+      if (isExpired) {
+        navigate('/login');
+      }
+    };
+    checkExpiration();
+    const interval = setInterval(checkExpiration, 10000);
+    return () => clearInterval(interval);
+  }, [checkSessionExpiration, navigate]);
 
   // Global Keyboard Shortcuts
   // Escape: Hanya untuk menutup mobile drawer jika sedang terbuka
@@ -132,8 +167,8 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
     // Jika mobile drawer tidak terbuka, biarkan halaman menangani Esc sendiri
   }, { enableOnFormTags: true });
 
-  // Ctrl+Shift+P: Navigate to User Profile
-  useHotkeys('ctrl+shift+p', (e) => {
+  // Ctrl+P / Cmd+P: Navigate to User Profile
+  useHotkeys('ctrl+p, cmd+p', (e) => {
     e.preventDefault();
     navigate('/profile');
   }, { enableOnFormTags: true });
@@ -223,14 +258,14 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
           to="/profile"
           className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 text-blue-100 transition-colors ${isCollapsed ? 'justify-center' : ''
             }`}
-          title="User Profile (Ctrl+Shift+P)"
+          title="User Profile (Ctrl+P)"
         >
           <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-sm font-semibold text-white">
-            {getInitials(user.nama)}
+            {getInitials(user.username || user.nama)}
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user.nama}</p>
+              <p className="text-sm font-semibold text-white truncate">{user.username || user.nama}</p>
               <p className="text-xs text-blue-300 truncate capitalize">{user.role.replace('_', ' ')}</p>
             </div>
           )}
@@ -311,9 +346,9 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
               to="/profile"
               className="flex items-center gap-3 hover:opacity-85 transition-opacity"
             >
-              <span className="hidden sm:inline text-sm font-semibold text-slate-800">{user.nama}</span>
+              <span className="hidden sm:inline text-sm font-semibold text-slate-800">{user.username || user.nama}</span>
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-primary-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md border border-primary-400/20">
-                {getInitials(user.nama)}
+                {getInitials(user.username || user.nama)}
               </div>
             </Link>
           </div>

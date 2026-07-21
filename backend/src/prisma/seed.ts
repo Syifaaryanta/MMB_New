@@ -31,9 +31,10 @@ async function main() {
     data: {
       id: adminId,
       email: 'admin@mmb.com',
+      username: 'admin',
       password: await bcrypt.hash('admin123', 10),
       nama: 'Budi Santoso',
-      role: 'admin',
+      role: 'super_admin',
       aktif: true,
     },
   });
@@ -42,6 +43,7 @@ async function main() {
     data: {
       id: uuidv4(),
       email: 'gudang@mmb.com',
+      username: 'gudang',
       password: await bcrypt.hash('gudang123', 10),
       nama: 'Agus Prasetyo',
       role: 'staff_gudang',
@@ -53,6 +55,7 @@ async function main() {
     data: {
       id: uuidv4(),
       email: 'sales@mmb.com',
+      username: 'sales',
       password: await bcrypt.hash('sales123', 10),
       nama: 'Rina Wulandari',
       role: 'sales',
@@ -64,6 +67,7 @@ async function main() {
     data: {
       id: uuidv4(),
       email: 'kantor@mmb.com',
+      username: 'kantor',
       password: await bcrypt.hash('kantor123', 10),
       nama: 'Dewi Kartika',
       role: 'staff_kantor',

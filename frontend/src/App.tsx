@@ -7,6 +7,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 // Pages
 import { Login } from '@/pages/auth/Login';
 import { Profile } from '@/pages/auth/Profile';
+import { KelolaUser } from '@/pages/admin/KelolaUser';
 import { Dashboard } from '@/pages/dashboard/Dashboard';
 
 // Real Gudang Pages
@@ -190,7 +191,7 @@ function App() {
                   </Route>
 
                   {/* Pembelian */}
-                  <Route element={<ProtectedRoute allowedRoles={['admin', 'sales']} />}>
+                  <Route element={<ProtectedRoute allowedRoles={['admin', 'staff_gudang', 'sales']} />}>
                     <Route path="pembelian" element={<PembelianMenu />} />
                     <Route path="pembelian/order" element={<BuatOrderPO />} />
                     <Route path="pembelian/input" element={<InputItemPO />} />
@@ -249,6 +250,11 @@ function App() {
                   <Route path="master-data" element={<MasterDataMenu />} />
                   <Route path="master-data/customer" element={<MasterData type="customer" />} />
                   <Route path="master-data/supplier" element={<MasterData type="supplier" />} />
+
+                  {/* Kelola User (Super Admin only) */}
+                  <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
+                    <Route path="kelola-user" element={<KelolaUser />} />
+                  </Route>
 
                   {/* Catch-all to Dashboard */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />

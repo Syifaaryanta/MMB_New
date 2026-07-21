@@ -200,7 +200,7 @@ body {
 /* Input Styles - Use Longhands to Avoid Overriding Tailwind Spacers */
 .input-field {
   background: #ffffff !important;
-  border: 1px solid #93c5fd !important;
+  border: 1px solid #cbd5e1 !important;
   border-radius: 6px;
   color: #0f172a !important;
   padding-top: 8px;
@@ -228,12 +228,25 @@ body {
 .input-field.pl-10 { padding-left: 40px !important; }
 
 .input-field:focus {
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  border-color: #64748b !important;
+  box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.15) !important;
   outline: none;
 }
 
 .input-field::placeholder { color: #94a3b8; }
+
+/* Kill browser autofill blue background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  caret-color: #0f172a;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
 
 /* Button Styles - Scaled Down */
 .btn-primary {

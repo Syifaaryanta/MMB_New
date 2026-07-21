@@ -53,16 +53,18 @@ export const authorize = (...roles: string[]) => {
       res.status(401).json({ error: 'Tidak terautentikasi' });
       return;
     }
-    if (!roles.includes(req.user.role)) {
-      res.status(403).json({ error: 'Tidak memiliki akses untuk fitur ini' });
+    if (req.user.role === 'super_admin' || roles.includes(req.user.role)) {
+      next();
       return;
     }
-    next();
+    res.status(403).json({ error: 'Tidak memiliki akses untuk fitur ini' });
+    return;
   };
 };
 
 // Role constants
 export const ROLES = {
+  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   STAFF_GUDANG: 'staff_gudang',
   STAFF_KANTOR: 'staff_kantor',
