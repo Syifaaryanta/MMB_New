@@ -157,23 +157,21 @@ export const LaporanMenu: React.FC = () => {
             <button
               key={rep.path}
               onClick={() => navigate(rep.path)}
-              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${isFocused ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]' : 'border-slate-200/80 bg-white hover:bg-slate-50'
+              className={`card text-left p-6 flex items-center gap-5 border transition-all duration-150 cursor-pointer ${isFocused ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]' : 'border-slate-200/80 bg-white hover:bg-slate-50'
                 }`}
             >
               <div className={`p-3 rounded-xl shrink-0 ${rep.iconColor} ${rep.iconBg}`}>
                 <Icon size={24} />
               </div>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                    {rep.title}
-                  </h3>
-                  <ChevronRight size={16} className={isFocused ? 'text-primary-600 animate-pulse' : 'text-slate-400'} />
-                </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2 truncate">
+                  {rep.title}
+                </h3>
                 <p className="text-sm text-slate-500 leading-relaxed">
                   {rep.desc}
                 </p>
               </div>
+              <ChevronRight size={16} className={`shrink-0 ${isFocused ? 'text-primary-600 animate-pulse' : 'text-slate-400'}`} />
             </button>
           );
         })}

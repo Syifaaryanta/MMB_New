@@ -166,7 +166,7 @@ export const PenjualanMenu: React.FC = () => {
             <button
               key={menu.path}
               onClick={() => navigate(menu.path)}
-              className={`card text-left p-6 flex gap-5 border transition-all duration-150 cursor-pointer ${isFocused
+              className={`card text-left p-6 flex items-center gap-5 border transition-all duration-150 cursor-pointer ${isFocused
                 ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]'
                 : 'border-surface-700/50 hover:bg-surface-800'
                 }`}
@@ -174,13 +174,11 @@ export const PenjualanMenu: React.FC = () => {
               <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
                 <Icon size={24} />
               </div>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-lg text-white">{menu.title}</h3>
-                  <ChevronRight size={16} className={isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'} />
-                </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <h3 className="font-bold text-lg text-white truncate">{menu.title}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed">{menu.desc}</p>
               </div>
+              <ChevronRight size={16} className={`shrink-0 ${isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'}`} />
             </button>
           );
         })}
