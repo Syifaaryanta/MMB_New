@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { Search, ChevronLeft, ChevronRight, X, AlertTriangle, Image as ImageIcon, Archive, CheckCircle, XCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -54,10 +55,11 @@ const ToastNotifications: React.FC<{ toasts: Toast[]; onDismiss: (id: number) =>
 /* ─── Confirm Archive Modal ──────────────────────────────────── */
 interface ConfirmArchiveModalProps {
   productName: string;
+  lang: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
-const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, onConfirm, onCancel }) => (
+const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, lang, onConfirm, onCancel }) => (
   <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={onCancel}>
       <div
@@ -70,19 +72,19 @@ const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, 
             <Archive size={20} className="text-amber-600" />
           </div>
           <div>
-            <h2 className="font-bold text-slate-800 text-sm">Arsipkan Produk</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Tindakan ini dapat dibatalkan melalui halaman arsip</p>
+            <h2 className="font-bold text-slate-800 text-sm">{lang === 'en' ? 'Archive Product' : 'Arsipkan Produk'}</h2>
+            <p className="text-xs text-slate-500 mt-0.5">{lang === 'en' ? 'This action can be undone from the archives page' : 'Tindakan ini dapat dibatalkan melalui halaman arsip'}</p>
           </div>
         </div>
 
         {/* Body */}
         <div className="px-5 py-5 text-center">
           <p className="text-slate-700 text-sm leading-relaxed">
-            Apakah Anda yakin ingin mengarsipkan produk{' '}
+            {lang === 'en' ? 'Are you sure you want to archive product' : 'Apakah Anda yakin ingin mengarsipkan produk'}{' '}
             <span className="font-bold text-slate-900">"{productName}"</span>?
           </p>
           <p className="text-xs text-slate-400 mt-2">
-            Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.
+            {lang === 'en' ? 'Archived products will not appear in the active list, but the data remains stored.' : 'Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.'}
           </p>
         </div>
 
@@ -93,14 +95,14 @@ const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, 
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200"
           >
             <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
-            Batal
+            {lang === 'en' ? 'Cancel' : 'Batal'}
           </button>
           <button
             onClick={onConfirm}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-md shadow-amber-500/10"
           >
             <kbd className="text-[10px] bg-amber-400/40 border border-amber-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
-            Ya, Arsipkan
+            {lang === 'en' ? 'Yes, Archive' : 'Ya, Arsipkan'}
           </button>
         </div>
       </div>
@@ -111,6 +113,7 @@ const ConfirmArchiveModal: React.FC<ConfirmArchiveModalProps> = ({ productName, 
 /* ─── Main Component ─────────────────────────────────────────── */
 export const DaftarInventori: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -216,11 +219,11 @@ export const DaftarInventori: React.FC = () => {
     setArchiveTarget(null);
     try {
       await api.patch(`/products/${id}/archive`);
-      addToast('success', `Produk "${nama}" berhasil diarsipkan.`);
+      addToast('success', lang === 'en' ? `Product "${nama}" successfully archived.` : `Produk "${nama}" berhasil diarsipkan.`);
       fetchInventory();
     } catch (err) {
       console.error(err);
-      addToast('error', `Gagal mengarsipkan produk "${nama}". Coba lagi.`);
+      addToast('error', lang === 'en' ? `Failed to archive product "${nama}". Try again.` : `Gagal mengarsipkan produk "${nama}". Coba lagi.`);
     }
   };
 
@@ -306,6 +309,7 @@ export const DaftarInventori: React.FC = () => {
       {archiveTarget && (
         <ConfirmArchiveModal
           productName={archiveTarget.nama}
+          lang={lang}
           onConfirm={confirmArchive}
           onCancel={() => setArchiveTarget(null)}
         />
@@ -314,11 +318,17 @@ export const DaftarInventori: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Daftar Inventori Real-time</h1>
-          <p className="text-slate-400">Ikhtisar persediaan fisik seluruh unit barang yang tersedia di gudang MMB</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+            {lang === 'en' ? 'Real-time Inventory List' : 'Daftar Inventori Real-time'}
+          </h1>
+          <p className="text-slate-400">
+            {lang === 'en'
+              ? 'Overview of physical inventory of all items available in MMB warehouse'
+              : 'Ikhtisar persediaan fisik seluruh unit barang yang tersedia di gudang MMB'}
+          </p>
         </div>
         <button onClick={() => navigate('/gudang')} className="btn-secondary text-xs">
-          Kembali ke Gudang
+          {lang === 'en' ? 'Back to Inventory' : 'Kembali ke Gudang'}
         </button>
       </div>
 
@@ -341,7 +351,7 @@ export const DaftarInventori: React.FC = () => {
                 setSelectedIdx(0);
               }
             }}
-            placeholder="Cari Kode atau Nama Barang... (F1)"
+            placeholder={lang === 'en' ? 'Search Item Code or Name... (F1)' : 'Cari Kode atau Nama Barang... (F1)'}
             className="input-field pl-9 w-full"
           />
           {search && (
@@ -357,23 +367,23 @@ export const DaftarInventori: React.FC = () => {
         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
-            <span>Cari</span>
+            <span>{lang === 'en' ? 'Search' : 'Cari'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
-            <span>Zoom</span>
+            <span>{lang === 'en' ? 'Zoom' : 'Zoom'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Enter</kbd>
-            <span>Detail</span>
+            <span>{lang === 'en' ? 'Detail' : 'Detail'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Del</kbd>
-            <span>Arsip</span>
+            <span>{lang === 'en' ? 'Archive' : 'Arsip'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
-            <span>Kembali</span>
+            <span>{lang === 'en' ? 'Back' : 'Kembali'}</span>
           </span>
         </div>
       </div>
@@ -391,11 +401,11 @@ export const DaftarInventori: React.FC = () => {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                  <th className="p-4">Kode Barang</th>
-                  <th className="p-4">Nama Barang</th>
-                  <th className="p-4 text-right">Stok Fisik</th>
-                  <th className="p-4 text-right">Harga Beli Terbaru</th>
-                  <th className="p-4 text-center">Status</th>
+                  <th className="p-4">{lang === 'en' ? 'Item Code' : 'Kode Barang'}</th>
+                  <th className="p-4">{lang === 'en' ? 'Item Name' : 'Nama Barang'}</th>
+                  <th className="p-4 text-right">{lang === 'en' ? 'Physical Stock' : 'Stok Fisik'}</th>
+                  <th className="p-4 text-right">{lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terbaru'}</th>
+                  <th className="p-4 text-center">{lang === 'en' ? 'Status' : 'Status'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-700/50">
@@ -424,10 +434,10 @@ export const DaftarInventori: React.FC = () => {
                           {isLow ? (
                             <span className="badge badge-red inline-flex items-center gap-1">
                               <AlertTriangle size={12} />
-                              <span>Kritis</span>
+                              <span>{lang === 'en' ? 'Critical' : 'Kritis'}</span>
                             </span>
                           ) : (
-                            <span className="badge badge-green">Aman</span>
+                            <span className="badge badge-green">{lang === 'en' ? 'Safe' : 'Aman'}</span>
                           )}
                         </td>
                       </tr>
@@ -446,11 +456,19 @@ export const DaftarInventori: React.FC = () => {
                                 )}
                               </div>
                               <div className="space-y-1">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Preview Gambar</h4>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  {lang === 'en' ? 'Image Preview' : 'Preview Gambar'}
+                                </h4>
                                 {photoUrl ? (
-                                  <p className="text-xs text-slate-600">Tekan <kbd className="shortcut-badge text-[10px]">F2</kbd> untuk fullsize</p>
+                                  <p className="text-xs text-slate-600">
+                                    {lang === 'en' ? 'Press ' : 'Tekan '}
+                                    <kbd className="shortcut-badge text-[10px]">F2</kbd>
+                                    {lang === 'en' ? ' for full size' : ' untuk fullsize'}
+                                  </p>
                                 ) : (
-                                  <p className="text-[11px] text-slate-500 italic">Tidak ada foto produk</p>
+                                  <p className="text-[11px] text-slate-500 italic">
+                                    {lang === 'en' ? 'No product photo' : 'Tidak ada foto produk'}
+                                  </p>
                                 )}
                               </div>
                             </div>
@@ -467,7 +485,9 @@ export const DaftarInventori: React.FC = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between p-4 bg-surface-800/50 border-t border-surface-700">
             <span className="text-xs text-slate-400">
-              Menampilkan {products.length} dari {totalProducts} SKU terdaftar
+              {lang === 'en'
+                ? `Showing ${products.length} of ${totalProducts} registered SKUs`
+                : `Menampilkan ${products.length} dari ${totalProducts} SKU terdaftar`}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -477,7 +497,9 @@ export const DaftarInventori: React.FC = () => {
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-xs px-3 font-semibold">Halaman {page}</span>
+              <span className="text-xs px-3 font-semibold">
+                {lang === 'en' ? `Page ${page}` : `Halaman ${page}`}
+              </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={products.length < 50}
@@ -490,7 +512,7 @@ export const DaftarInventori: React.FC = () => {
         </div>
       ) : (
         <div className="text-center p-12 bg-surface-800/20 border border-dashed border-surface-700 rounded-xl">
-          Belum ada produk aktif terdaftar.
+          {lang === 'en' ? 'No active products registered yet.' : 'Belum ada produk aktif terdaftar.'}
         </div>
       )}
 

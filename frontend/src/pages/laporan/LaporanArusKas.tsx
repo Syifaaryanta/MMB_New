@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   Wallet, 
@@ -22,6 +23,7 @@ interface CashFlowData {
 
 export const LaporanArusKas: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [data, setData] = useState<CashFlowData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -79,18 +81,42 @@ export const LaporanArusKas: React.FC = () => {
     const netFlow = totalInflow - totalOutflow;
 
     const reportRows = [
-      { Kategori: 'ARUS KAS MASUK (INFLOW)', Keterangan: 'Penjualan Tunai Langsung', Jumlah: Number(data.masuk_tunai) },
-      { Kategori: 'ARUS KAS MASUK (INFLOW)', Keterangan: 'Pelunasan & Angsuran Piutang', Jumlah: Number(data.masuk_piutang) },
-      { Kategori: 'TOTAL ARUS KAS MASUK', Keterangan: '', Jumlah: totalInflow },
-      { Kategori: 'ARUS KAS KELUAR (OUTFLOW)', Keterangan: 'Pembelian & Pengadaan Barang', Jumlah: totalOutflow },
-      { Kategori: 'TOTAL ARUS KAS KELUAR', Keterangan: '', Jumlah: totalOutflow },
-      { Kategori: 'ARUS KAS BERSIH (NET FLOW)', Keterangan: '', Jumlah: netFlow },
+      {
+        Kategori: lang === 'en' ? 'CASH INFLOW' : 'ARUS KAS MASUK (INFLOW)',
+        Keterangan: lang === 'en' ? 'Direct Cash Sales' : 'Penjualan Tunai Langsung',
+        Jumlah: Number(data.masuk_tunai)
+      },
+      {
+        Kategori: lang === 'en' ? 'CASH INFLOW' : 'ARUS KAS MASUK (INFLOW)',
+        Keterangan: lang === 'en' ? 'Receivables Collection & Installments' : 'Pelunasan & Angsuran Piutang',
+        Jumlah: Number(data.masuk_piutang)
+      },
+      {
+        Kategori: lang === 'en' ? 'TOTAL CASH INFLOW' : 'TOTAL ARUS KAS MASUK',
+        Keterangan: '',
+        Jumlah: totalInflow
+      },
+      {
+        Kategori: lang === 'en' ? 'CASH OUTFLOW' : 'ARUS KAS KELUAR (OUTFLOW)',
+        Keterangan: lang === 'en' ? 'Purchases & Procurement' : 'Pembelian & Pengadaan Barang',
+        Jumlah: totalOutflow
+      },
+      {
+        Kategori: lang === 'en' ? 'TOTAL CASH OUTFLOW' : 'TOTAL ARUS KAS KELUAR',
+        Keterangan: '',
+        Jumlah: totalOutflow
+      },
+      {
+        Kategori: lang === 'en' ? 'NET CASH FLOW' : 'ARUS KAS BERSIH (NET FLOW)',
+        Keterangan: '',
+        Jumlah: netFlow
+      },
     ];
 
     exportStyledExcel(
       reportRows,
       `Laporan_Arus_Kas_${fromDate}_to_${toDate}.xlsx`,
-      'Laporan Arus Kas (Cash Flow)',
+      lang === 'en' ? 'Cash Flow Statement' : 'Laporan Arus Kas (Cash Flow)',
       [],
       ['Kategori'],
       ['Jumlah']
@@ -118,10 +144,16 @@ export const LaporanArusKas: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Arus Kas (Cash Flow)</h1>
-          <p className="text-slate-550 text-xs mt-1">Pemantauan kas masuk (Tunai & Piutang) vs kas keluar (Pembelian Gudang).</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">
+            {lang === 'en' ? 'Cash Flow Statement' : 'Laporan Arus Kas (Cash Flow)'}
+          </h1>
+          <p className="text-slate-555 text-xs mt-1">
+            {lang === 'en'
+              ? 'Monitoring cash inflow (Cash & Receivables) vs cash outflow (Warehouse Purchases).'
+              : 'Pemantauan kas masuk (Tunai & Piutang) vs kas keluar (Pembelian Gudang).'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -131,7 +163,7 @@ export const LaporanArusKas: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -140,7 +172,9 @@ export const LaporanArusKas: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Date From */}
         <div>
-          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F1)</label>
+          <label className="block text-[10px] text-slate-555 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Start Date (F1)' : 'Tanggal Awal (F1)'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -156,7 +190,9 @@ export const LaporanArusKas: React.FC = () => {
 
         {/* Date To */}
         <div>
-          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-555 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -171,9 +207,17 @@ export const LaporanArusKas: React.FC = () => {
         </div>
 
         {/* Hints */}
-        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed">
-          <p>Laporan ini menghitung realisasi dana kas fisik yang masuk dan keluar.</p>
-          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge">F1</kbd> filter tanggal, <kbd className="shortcut-badge">F10</kbd> ekspor Excel.</p>
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed font-semibold">
+          <p>
+            {lang === 'en'
+              ? 'This report calculates the realization of physical cash inflow and outflow.'
+              : 'Laporan ini menghitung realisasi dana kas fisik yang masuk dan keluar.'}
+          </p>
+          <p className="mt-0.5 font-semibold text-slate-400">
+            {lang === 'en'
+              ? 'Shortcuts: F1 date filter, F10 export Excel.'
+              : 'Pintasan: F1 filter tanggal, F10 ekspor Excel.'}
+          </p>
         </div>
       </div>
 
@@ -183,7 +227,9 @@ export const LaporanArusKas: React.FC = () => {
           {/* Card 1: Kas Masuk */}
           <div className="bg-white border border-slate-200 rounded-xl py-2.5 px-4 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
             <div>
-              <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Total Kas Masuk (Inflow)</span>
+              <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+                {lang === 'en' ? 'Total Cash Inflow' : 'Total Kas Masuk (Inflow)'}
+              </span>
               <span className="text-lg font-extrabold text-emerald-600 block mt-0.5 font-mono">{formatCurrency(totalInflow)}</span>
             </div>
             <div className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
@@ -194,7 +240,9 @@ export const LaporanArusKas: React.FC = () => {
           {/* Card 2: Kas Keluar */}
           <div className="bg-white border border-slate-200 rounded-xl py-2.5 px-4 shadow-sm flex items-center justify-between border-l-4 border-l-rose-500">
             <div>
-              <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Total Kas Keluar (Outflow)</span>
+              <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+                {lang === 'en' ? 'Total Cash Outflow' : 'Total Kas Keluar (Outflow)'}
+              </span>
               <span className="text-lg font-extrabold text-rose-600 block mt-0.5 font-mono">{formatCurrency(totalOutflow)}</span>
             </div>
             <div className="p-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl">
@@ -207,7 +255,9 @@ export const LaporanArusKas: React.FC = () => {
             netCashFlow >= 0 ? 'border-l-emerald-500' : 'border-l-rose-500'
           }`}>
             <div>
-              <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Saldo Kas Bersih</span>
+              <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+                {lang === 'en' ? 'Net Cash Balance' : 'Saldo Kas Bersih'}
+              </span>
               <span className={`text-lg font-extrabold block mt-0.5 font-mono ${netCashFlow >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                 {formatCurrency(netCashFlow)}
               </span>
@@ -232,26 +282,28 @@ export const LaporanArusKas: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm col-span-1 lg:col-span-2 space-y-4">
             <h3 className="text-xs font-bold text-slate-900 border-b border-slate-100 pb-1.5 flex items-center gap-1.5 uppercase tracking-wider">
               <Activity size={16} className="text-primary-600" />
-              <span>Aktivitas Aliran Dana Kas Fisik</span>
+              <span>{lang === 'en' ? 'Physical Cash Flow Activity' : 'Aktivitas Aliran Dana Kas Fisik'}</span>
             </h3>
 
             {/* Inflow Section */}
             <div className="space-y-1.5">
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Arus Kas Masuk (Cash Inflow)</span>
+                <span>{lang === 'en' ? 'Cash Inflow' : 'Arus Kas Masuk (Cash Inflow)'}</span>
               </h4>
               <div className="pl-3 space-y-1.5 text-xs">
                 <div className="flex justify-between items-center py-1.5 border-b border-slate-100 hover:bg-slate-50/50 px-2 rounded transition-colors">
-                  <span className="text-slate-650 font-medium">Penjualan Tunai Langsung</span>
+                  <span className="text-slate-650 font-medium">{lang === 'en' ? 'Direct Cash Sales' : 'Penjualan Tunai Langsung'}</span>
                   <span className="font-mono text-slate-800 font-bold">{formatCurrency(data.masuk_tunai)}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-slate-100 hover:bg-slate-50/50 px-2 rounded transition-colors">
-                  <span className="text-slate-655 font-medium">Pelunasan & Angsuran Piutang (AR)</span>
+                  <span className="text-slate-655 font-medium">
+                    {lang === 'en' ? 'Collection & Receivables Installments (AR)' : 'Pelunasan & Angsuran Piutang (AR)'}
+                  </span>
                   <span className="font-mono text-slate-800 font-bold">{formatCurrency(data.masuk_piutang)}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-t border-slate-100 font-bold text-slate-900 px-2 bg-slate-50/50 rounded mt-0.5">
-                  <span className="text-slate-800">Total Arus Masuk</span>
+                  <span className="text-slate-800">{lang === 'en' ? 'Total Inflow' : 'Total Arus Masuk'}</span>
                   <span className="font-mono text-emerald-600 text-xs font-extrabold">{formatCurrency(totalInflow)}</span>
                 </div>
               </div>
@@ -261,15 +313,15 @@ export const LaporanArusKas: React.FC = () => {
             <div className="space-y-1.5">
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                <span>Arus Kas Keluar (Cash Outflow)</span>
+                <span>{lang === 'en' ? 'Cash Outflow' : 'Arus Kas Keluar (Cash Outflow)'}</span>
               </h4>
               <div className="pl-3 space-y-1.5 text-xs">
                 <div className="flex justify-between items-center py-1.5 border-b border-slate-100 hover:bg-slate-50/50 px-2 rounded transition-colors">
-                  <span className="text-slate-650 font-medium">Pembelian & Pengadaan Barang (AP)</span>
+                  <span className="text-slate-650 font-medium">{lang === 'en' ? 'Purchases & Procurement (AP)' : 'Pembelian & Pengadaan Barang (AP)'}</span>
                   <span className="font-mono text-slate-800 font-bold">{formatCurrency(data.keluar_pembelian)}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-t border-slate-100 font-bold text-slate-900 px-2 bg-slate-50/50 rounded mt-0.5">
-                  <span className="text-slate-800">Total Arus Keluar</span>
+                  <span className="text-slate-800">{lang === 'en' ? 'Total Outflow' : 'Total Arus Keluar'}</span>
                   <span className="font-mono text-rose-600 text-xs font-extrabold">{formatCurrency(totalOutflow)}</span>
                 </div>
               </div>
@@ -278,8 +330,12 @@ export const LaporanArusKas: React.FC = () => {
             {/* Net Flow Section */}
             <div className="pt-3 border-t border-dashed border-slate-200/80 flex justify-between items-center px-2 bg-slate-50 rounded-lg p-2.5">
               <div>
-                <strong className="text-xs uppercase text-slate-850 block font-bold">Surplus / Defisit Kas Bersih</strong>
-                <span className="text-[10px] text-slate-500 font-medium">Selisih aliran kas fisik bersih</span>
+                <strong className="text-xs uppercase text-slate-855 block font-bold">
+                  {lang === 'en' ? 'Net Cash Surplus / Deficit' : 'Surplus / Defisit Kas Bersih'}
+                </strong>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {lang === 'en' ? 'Net physical cash flow difference' : 'Selisih aliran kas fisik bersih'}
+                </span>
               </div>
               <strong className={`font-mono text-sm sm:text-base font-black ${netCashFlow >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {formatCurrency(netCashFlow)}
@@ -301,7 +357,7 @@ export const LaporanArusKas: React.FC = () => {
                 <Wallet size={20} />
               </div>
               <div className="space-y-1">
-                <strong className="text-xs text-slate-800 block font-bold">Status Aliran Kas</strong>
+                <strong className="text-xs text-slate-800 block font-bold">{lang === 'en' ? 'Cash Flow Status' : 'Status Aliran Kas'}</strong>
                 <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
                   netCashFlow >= 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
                 }`}>
@@ -310,8 +366,12 @@ export const LaporanArusKas: React.FC = () => {
               </div>
               <p className="text-[10px] text-slate-550 leading-relaxed font-medium">
                 {netCashFlow >= 0 
-                  ? 'Kondisi keuangan operasional sehat. Penerimaan dari penjualan tunai dan pelunasan piutang sanggup mendanai beban operasional belanja gudang.'
-                  : 'Arus dana keluar melebihi penerimaan. Perlu dilakukan efisiensi belanja barang atau akselerasi penagihan piutang dari customer.'
+                  ? (lang === 'en'
+                      ? 'Operational financial condition is healthy. Cash sales and collection of receivables are sufficient to fund warehouse purchase expenses.'
+                      : 'Kondisi keuangan operasional sehat. Penerimaan dari penjualan tunai dan pelunasan piutang sanggup mendanai beban operasional belanja gudang.')
+                  : (lang === 'en'
+                      ? 'Cash outflow exceeds inflow. Expense reduction or accelerated collections of receivables are required.'
+                      : 'Arus dana keluar melebihi penerimaan. Perlu dilakukan efisiensi belanja barang atau akselerasi penagihan piutang dari customer.')
                 }
               </p>
             </div>
@@ -319,7 +379,7 @@ export const LaporanArusKas: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-550 italic text-xs shadow-sm">
-          Gagal memuat rekam data laporan arus kas.
+          {lang === 'en' ? 'Failed to load cash flow statement data.' : 'Gagal memuat rekam data laporan arus kas.'}
         </div>
       )}
     </div>

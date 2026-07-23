@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n';
 import { Package, Award, DollarSign, Activity, FileText, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2, X } from 'lucide-react';
 
 interface SupplierPrice {
@@ -30,6 +31,7 @@ interface Product {
 
 export const DetailProduk: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get('id');
 
@@ -209,9 +211,9 @@ export const DetailProduk: React.FC = () => {
   if (!product) {
     return (
       <div className="card text-center p-8 max-w-md mx-auto mt-10">
-        <p className="text-slate-400">Produk tidak ditemukan</p>
+        <p className="text-slate-400">{lang === 'en' ? 'Product not found' : 'Produk tidak ditemukan'}</p>
         <button onClick={() => navigate(-1)} className="btn-primary mt-4">
-          Kembali
+          {lang === 'en' ? 'Back' : 'Kembali'}
         </button>
       </div>
     );
@@ -231,7 +233,9 @@ export const DetailProduk: React.FC = () => {
         {/* Left Column: Image Gallery & Lightbox */}
         <div className="card card-hovered space-y-4 md:col-span-1 flex flex-col justify-between">
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Galeri Foto Produk</h3>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              {lang === 'en' ? 'Product Photo Gallery' : 'Galeri Foto Produk'}
+            </h3>
             <div className="relative aspect-square rounded-lg bg-surface-900 border border-surface-700 overflow-hidden flex items-center justify-center group">
               {activePhoto ? (
                 <>
@@ -239,7 +243,7 @@ export const DetailProduk: React.FC = () => {
                   <button
                     onClick={() => setIsZoomed(true)}
                     className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Zoom Layar Penuh (F2)"
+                    title={lang === 'en' ? 'Zoom Fullscreen (F2)' : 'Zoom Layar Penuh (F2)'}
                   >
                     <Maximize2 size={14} />
                   </button>
@@ -247,7 +251,7 @@ export const DetailProduk: React.FC = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center text-slate-600 gap-1">
                   <ImageIcon size={32} />
-                  <span className="text-xs">Tidak ada foto</span>
+                  <span className="text-xs">{lang === 'en' ? 'No photo' : 'Tidak ada foto'}</span>
                 </div>
               )}
             </div>
@@ -270,7 +274,11 @@ export const DetailProduk: React.FC = () => {
           </div>
 
           <div className="text-xs text-slate-500 border-t border-surface-700/50 pt-3 flex flex-wrap gap-x-4 gap-y-1">
-            <span>Tekan <kbd className="shortcut-badge text-[10px]">F2</kbd> untuk fullscreen</span>
+            <span>
+              {lang === 'en' ? 'Press ' : 'Tekan '}
+              <kbd className="shortcut-badge text-[10px]">F2</kbd>
+              {lang === 'en' ? ' for fullscreen' : ' untuk fullscreen'}
+            </span>
           </div>
         </div>
 
@@ -279,27 +287,29 @@ export const DetailProduk: React.FC = () => {
           {/* Spec Card */}
           <div className="card card-hovered space-y-4 p-0 overflow-hidden">
             <div className="bg-blue-50 border-b border-blue-100 p-3">
-              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Spesifikasi Detail</h3>
+              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                {lang === 'en' ? 'Detailed Specification' : 'Spesifikasi Detail'}
+              </h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 pb-4">
               <div>
-                <p className="text-xs text-slate-400">Total Stok Tersedia</p>
+                <p className="text-xs text-slate-400">{lang === 'en' ? 'Total Available Stock' : 'Total Stok Tersedia'}</p>
                 <p className="text-base font-extrabold text-slate-800 mt-0.5">
                   {Number(product.stok)} {product.satuan}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Harga Beli Terbaru</p>
+                <p className="text-xs text-slate-400">{lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terbaru'}</p>
                 <p className="text-base font-extrabold text-emerald-600 mt-0.5 currency">
                   {latestPrice > 0 ? formatCurrency(latestPrice) : '-'}
                 </p>
                 {latestDate ? (
                   <span className="text-[11px] text-slate-500 block font-mono mt-0.5">
-                    Beli: {formatDate(latestDate)}
+                    {lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(latestDate)}
                   </span>
                 ) : (
                   <span className="text-[11px] text-slate-400/60 block italic mt-0.5">
-                    Belum ada pembelian
+                    {lang === 'en' ? 'No purchases yet' : 'Belum ada pembelian'}
                   </span>
                 )}
               </div>
@@ -309,7 +319,9 @@ export const DetailProduk: React.FC = () => {
           {/* Supplier inventory details */}
           <div className="card card-hovered p-0 overflow-hidden">
             <div className="bg-amber-50 border-b border-amber-100 p-3">
-              <h3 className="text-xs font-bold text-amber-700 uppercase tracking-wider">Rincian Persediaan Per Supplier</h3>
+              <h3 className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+                {lang === 'en' ? 'Inventory Details Per Supplier' : 'Rincian Persediaan Per Supplier'}
+              </h3>
             </div>
             <div className="p-4 pt-3">
               {product.product_prices.length > 0 ? (
@@ -330,7 +342,7 @@ export const DetailProduk: React.FC = () => {
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
                             : 'bg-slate-50 text-slate-400 border-slate-200/50'
                             }`}>
-                            {Number(p.stok)} {product.satuan} tersedia
+                            {Number(p.stok)} {product.satuan} {lang === 'en' ? 'available' : 'tersedia'}
                           </span>
                         </div>
 
@@ -338,27 +350,31 @@ export const DetailProduk: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4 pt-1">
                           {/* Latest Modal Price */}
                           <div className="space-y-0.5">
-                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Harga Beli Terbaru</span>
+                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                              {lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terbaru'}
+                            </span>
                             <strong className="text-base font-extrabold text-emerald-600 block">{formatCurrency(Number(p.harga_beli))}</strong>
                             {latestDate ? (
-                              <span className="text-[10px] text-slate-400 block font-mono">Beli: {formatDate(latestDate)}</span>
+                              <span className="text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(latestDate)}</span>
                             ) : (
-                              <span className="text-[10px] text-slate-400 block">Belum ada transaksi</span>
+                              <span className="text-[10px] text-slate-400 block">{lang === 'en' ? 'No transactions yet' : 'Belum ada transaksi'}</span>
                             )}
                           </div>
 
                           {/* Previous Modal Price */}
                           <div className="space-y-0.5 border-l border-slate-100 pl-4">
-                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">Harga Beli Sebelumnya</span>
+                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                              {lang === 'en' ? 'Previous Purchase Price' : 'Harga Beli Sebelumnya'}
+                            </span>
                             {prevPrice !== null ? (
                               <>
                                 <strong className="text-base font-bold text-slate-600 block">{formatCurrency(prevPrice)}</strong>
                                 {prevDate && (
-                                  <span className="text-[10px] text-slate-400 block font-mono">Beli: {formatDate(prevDate)}</span>
+                                  <span className="text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(prevDate)}</span>
                                 )}
                               </>
                             ) : (
-                              <span className="text-slate-400 text-xs italic block mt-1">Tidak ada data</span>
+                              <span className="text-slate-400 text-xs italic block mt-1">{lang === 'en' ? 'No data' : 'Tidak ada data'}</span>
                             )}
                           </div>
                         </div>
@@ -368,7 +384,7 @@ export const DetailProduk: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center p-6 bg-surface-900 border border-dashed border-surface-700 rounded-lg text-slate-500 text-xs">
-                  Tidak ada data stok terdaftar di supplier.
+                  {lang === 'en' ? 'No stock data registered with suppliers.' : 'Tidak ada data stok terdaftar di supplier.'}
                 </div>
               )}
             </div>
@@ -446,7 +462,9 @@ export const DetailProduk: React.FC = () => {
               </div>
             )}
             <div className="text-[11px] text-slate-400 bg-white/5 border border-white/5 rounded-full px-3 py-1 font-medium">
-              Gunakan <kbd className="bg-white/10 px-1 py-0.5 rounded text-[10px] font-mono">←</kbd> / <kbd className="bg-white/10 px-1 py-0.5 rounded text-[10px] font-mono">→</kbd> untuk navigasi, <kbd className="bg-white/10 px-1 py-0.5 rounded text-[10px] font-mono">Esc</kbd> untuk kembali
+              {lang === 'en'
+                ? 'Use ← / → to navigate, Esc to return'
+                : 'Gunakan ← / → untuk navigasi, Esc untuk kembali'}
             </div>
           </div>
         </div>

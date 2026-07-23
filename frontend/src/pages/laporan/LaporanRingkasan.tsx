@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   BarChart3, 
@@ -37,6 +38,7 @@ interface RingkasanData {
 
 export const LaporanRingkasan: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [data, setData] = useState<RingkasanData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -90,19 +92,40 @@ export const LaporanRingkasan: React.FC = () => {
     const profit = data.total_omzet - data.total_pembelian;
     const ratio = data.total_omzet > 0 ? (data.total_pembelian / data.total_omzet) * 100 : 0;
     const reportRows = [
-      { Indikator: 'Total Omzet Penjualan', Nilai: data.total_omzet },
-      { Indikator: 'Total Transaksi Jual', Nilai: data.total_transaksi },
-      { Indikator: 'Total Nilai Pembelian', Nilai: data.total_pembelian },
-      { Indikator: 'Total Outstanding Piutang', Nilai: data.total_piutang },
-      { Indikator: 'Total SKU Produk Aktif', Nilai: data.total_produk },
-      { Indikator: 'Estimasi Laba Kotor (Omzet - Pembelian)', Nilai: profit },
-      { Indikator: 'Rasio Belanja / Omzet (%)', Nilai: `${ratio.toFixed(1)}%` },
+      {
+        Indikator: lang === 'en' ? 'Total Sales Revenue' : 'Total Omzet Penjualan',
+        Nilai: data.total_omzet
+      },
+      {
+        Indikator: lang === 'en' ? 'Total Sales Transactions' : 'Total Transaksi Jual',
+        Nilai: data.total_transaksi
+      },
+      {
+        Indikator: lang === 'en' ? 'Total Purchase Value' : 'Total Nilai Pembelian',
+        Nilai: data.total_pembelian
+      },
+      {
+        Indikator: lang === 'en' ? 'Total Outstanding Receivables' : 'Total Outstanding Piutang',
+        Nilai: data.total_piutang
+      },
+      {
+        Indikator: lang === 'en' ? 'Total Active Product SKUs' : 'Total SKU Produk Aktif',
+        Nilai: data.total_produk
+      },
+      {
+        Indikator: lang === 'en' ? 'Estimated Gross Profit (Revenue - Purchases)' : 'Estimasi Laba Kotor (Omzet - Pembelian)',
+        Nilai: profit
+      },
+      {
+        Indikator: lang === 'en' ? 'Purchase / Revenue Ratio (%)' : 'Rasio Belanja / Omzet (%)',
+        Nilai: `${ratio.toFixed(1)}%`
+      },
     ];
 
     exportStyledExcel(
       reportRows,
       `Laporan_Ringkasan_Bisnis_${fromDate}_to_${toDate}.xlsx`,
-      'Ringkasan Bisnis',
+      lang === 'en' ? 'Business Summary' : 'Ringkasan Bisnis',
       ['Nilai'],
       ['Indikator']
     );
@@ -125,10 +148,16 @@ export const LaporanRingkasan: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Ringkasan Bisnis</h1>
-          <p className="text-slate-550 text-xs mt-1">Ikhtisar performa penjualan, pembelian, piutang, dan stok dalam periode terpilih.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">
+            {lang === 'en' ? 'Business Summary Report' : 'Laporan Ringkasan Bisnis'}
+          </h1>
+          <p className="text-slate-555 text-xs mt-1">
+            {lang === 'en'
+              ? 'Overview of sales performance, purchases, receivables, and stock in the selected period.'
+              : 'Ikhtisar performa penjualan, pembelian, piutang, dan stok dalam periode terpilih.'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -138,7 +167,7 @@ export const LaporanRingkasan: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -147,7 +176,9 @@ export const LaporanRingkasan: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Date From */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F1)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Start Date (F1)' : 'Tanggal Awal (F1)'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -162,7 +193,9 @@ export const LaporanRingkasan: React.FC = () => {
 
         {/* Date To */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -175,9 +208,17 @@ export const LaporanRingkasan: React.FC = () => {
         </div>
 
         {/* Help box */}
-        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-550 leading-relaxed">
-          <p>Ubah tanggal untuk menghitung ulang performa periode secara dinamis.</p>
-          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge text-[9px]">F1</kbd> filter tanggal, <kbd className="shortcut-badge text-[9px]">F10</kbd> ekspor Excel.</p>
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-555 leading-relaxed">
+          <p>
+            {lang === 'en'
+              ? 'Change dates to dynamically recalculate period performance.'
+              : 'Ubah tanggal untuk menghitung ulang performa periode secara dinamis.'}
+          </p>
+          <p className="mt-0.5 font-semibold text-slate-500">
+            {lang === 'en'
+              ? 'Shortcuts: F1 date filter, F10 export Excel.'
+              : 'Pintasan: F1 filter tanggal, F10 ekspor Excel.'}
+          </p>
         </div>
       </div>
 
@@ -194,9 +235,13 @@ export const LaporanRingkasan: React.FC = () => {
             {/* Card 1: Omzet */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-primary-500 transition-all hover:shadow-md">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Omzet Penjualan</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  {lang === 'en' ? 'Total Sales Revenue' : 'Total Omzet Penjualan'}
+                </span>
                 <span className="text-xl font-black text-slate-900 block font-mono">{formatCurrency(data.total_omzet)}</span>
-                <span className="text-[10px] text-slate-500 block font-medium">{data.total_transaksi} Transaksi selesai</span>
+                <span className="text-[10px] text-slate-500 block font-medium">
+                  {data.total_transaksi} {lang === 'en' ? 'Transactions completed' : 'Transaksi selesai'}
+                </span>
               </div>
               <div className="p-3 bg-primary-50 text-primary-600 border border-primary-100 rounded-xl">
                 <TrendingUp size={24} />
@@ -206,9 +251,13 @@ export const LaporanRingkasan: React.FC = () => {
             {/* Card 2: Pembelian */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500 transition-all hover:shadow-md">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nilai Pembelian Barang</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  {lang === 'en' ? 'Purchase Value' : 'Nilai Pembelian Barang'}
+                </span>
                 <span className="text-xl font-black text-slate-900 block font-mono">{formatCurrency(data.total_pembelian)}</span>
-                <span className="text-[10px] text-slate-500 block font-medium">Pesanan pembelian ke supplier</span>
+                <span className="text-[10px] text-slate-500 block font-medium">
+                  {lang === 'en' ? 'Purchase orders to suppliers' : 'Pesanan pembelian ke supplier'}
+                </span>
               </div>
               <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
                 <ShoppingBag size={24} />
@@ -218,9 +267,13 @@ export const LaporanRingkasan: React.FC = () => {
             {/* Card 3: Piutang */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-rose-500 transition-all hover:shadow-md">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Outstanding Piutang</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  {lang === 'en' ? 'Total Outstanding Receivables' : 'Total Outstanding Piutang'}
+                </span>
                 <span className="text-xl font-black text-rose-600 block font-mono">{formatCurrency(data.total_piutang)}</span>
-                <span className="text-[10px] text-slate-500 block font-medium">Sisa kredit aktif customer</span>
+                <span className="text-[10px] text-slate-500 block font-medium">
+                  {lang === 'en' ? 'Active credit remaining' : 'Sisa kredit aktif customer'}
+                </span>
               </div>
               <div className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl">
                 <CreditCard size={24} />
@@ -230,9 +283,15 @@ export const LaporanRingkasan: React.FC = () => {
             {/* Card 4: Produk */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500 transition-all hover:shadow-md">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SKU Produk Aktif</span>
-                <span className="text-xl font-black text-slate-900 block font-mono">{data.total_produk} Item</span>
-                <span className="text-[10px] text-slate-500 block font-medium">Jumlah database barang aktif</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  {lang === 'en' ? 'Active Product SKUs' : 'SKU Produk Aktif'}
+                </span>
+                <span className="text-xl font-black text-slate-900 block font-mono">
+                  {data.total_produk} {lang === 'en' ? 'Items' : 'Item'}
+                </span>
+                <span className="text-[10px] text-slate-500 block font-medium">
+                  {lang === 'en' ? 'Total active products in database' : 'Jumlah database barang aktif'}
+                </span>
               </div>
               <div className="p-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
                 <Package size={24} />
@@ -246,11 +305,15 @@ export const LaporanRingkasan: React.FC = () => {
               return (
                 <div className={`bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 ${isPositive ? 'border-l-emerald-500' : 'border-l-rose-500'} transition-all hover:shadow-md`}>
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estimasi Laba Kotor</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Estimated Gross Profit' : 'Estimasi Laba Kotor'}
+                    </span>
                     <span className={`text-xl font-black block font-mono ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {formatCurrency(profit)}
                     </span>
-                    <span className="text-[10px] text-slate-500 block font-medium">Selisih Omzet - Pembelian</span>
+                    <span className="text-[10px] text-slate-500 block font-medium">
+                      {lang === 'en' ? 'Difference of Revenue - Purchases' : 'Selisih Omzet - Pembelian'}
+                    </span>
                   </div>
                   <div className={`p-3 rounded-xl border ${isPositive ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                     {isPositive ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
@@ -265,9 +328,13 @@ export const LaporanRingkasan: React.FC = () => {
               return (
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-teal-500 transition-all hover:shadow-md">
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rasio Belanja / Omzet</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Purchase / Revenue Ratio' : 'Rasio Belanja / Omzet'}
+                    </span>
                     <span className="text-xl font-black text-slate-900 block font-mono">{ratio.toFixed(1)}%</span>
-                    <span className="text-[10px] text-slate-500 block font-medium">Porsi belanja dari pendapatan</span>
+                    <span className="text-[10px] text-slate-500 block font-medium">
+                      {lang === 'en' ? 'Purchase portion of revenue' : 'Porsi belanja dari pendapatan'}
+                    </span>
                   </div>
                   <div className="p-3 bg-teal-50 text-teal-600 border border-teal-100 rounded-xl">
                     <Percent size={24} />
@@ -283,15 +350,15 @@ export const LaporanRingkasan: React.FC = () => {
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm lg:col-span-2">
               <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
                 <BarChart3 size={16} className="text-primary-500" />
-                Grafik Komparasi Keuangan
+                {lang === 'en' ? 'Financial Comparison Chart' : 'Grafik Komparasi Keuangan'}
               </h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={[
-                      { name: 'Omzet', Nilai: data.total_omzet, color: '#3b82f6' },
-                      { name: 'Pembelian', Nilai: data.total_pembelian, color: '#6366f1' },
-                      { name: 'Piutang', Nilai: data.total_piutang, color: '#f43f5e' },
+                      { name: lang === 'en' ? 'Revenue' : 'Omzet', Nilai: data.total_omzet, color: '#3b82f6' },
+                      { name: lang === 'en' ? 'Purchases' : 'Pembelian', Nilai: data.total_pembelian, color: '#6366f1' },
+                      { name: lang === 'en' ? 'Receivables' : 'Piutang', Nilai: data.total_piutang, color: '#f43f5e' },
                     ]}
                     margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
                   >
@@ -310,7 +377,7 @@ export const LaporanRingkasan: React.FC = () => {
                     />
                     <Tooltip 
                       cursor={{ fill: '#f8fafc' }}
-                      formatter={(value: any) => [formatCurrency(value), 'Nilai']}
+                      formatter={(value: any) => [formatCurrency(value), lang === 'en' ? 'Value' : 'Nilai']}
                       contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px' }}
                     />
                     <Bar dataKey="Nilai" radius={[8, 8, 0, 0]}>
@@ -334,24 +401,26 @@ export const LaporanRingkasan: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-emerald-500" />
-                  Analisa & Rekomendasi
+                  {lang === 'en' ? 'Analysis & Recommendations' : 'Analisa & Rekomendasi'}
                 </h3>
                 <div className="space-y-4">
                   {/* Metric 1 */}
                   {(() => {
                     const ratio = data.total_omzet > 0 ? (data.total_pembelian / data.total_omzet) * 100 : 0;
-                    let text = 'Belanja seimbang dengan penjualan.';
+                    let text = lang === 'en' ? 'Purchases are balanced with sales.' : 'Belanja seimbang dengan penjualan.';
                     let statusColor = 'text-emerald-600 bg-emerald-50 border-emerald-100';
                     if (ratio > 90) {
-                      text = 'Belanja terlalu tinggi mendekati omzet. Arus kas berisiko.';
+                      text = lang === 'en' ? 'Purchases are too high, approaching revenue. Cash flow at risk.' : 'Belanja terlalu tinggi mendekati omzet. Arus kas berisiko.';
                       statusColor = 'text-rose-600 bg-rose-50 border-rose-100';
                     } else if (ratio > 70) {
-                      text = 'Belanja tinggi, awasi margin produk.';
+                      text = lang === 'en' ? 'Purchases are high, monitor product margins.' : 'Belanja tinggi, awasi margin produk.';
                       statusColor = 'text-amber-600 bg-amber-50 border-amber-100';
                     }
                     return (
                       <div className={`p-3 rounded-lg border text-xs ${statusColor} space-y-1`}>
-                        <span className="font-bold block">Status Rasio Belanja</span>
+                        <span className="font-bold block">
+                          {lang === 'en' ? 'Purchase Ratio Status' : 'Status Rasio Belanja'}
+                        </span>
                         <p>{text}</p>
                       </div>
                     );
@@ -360,18 +429,20 @@ export const LaporanRingkasan: React.FC = () => {
                   {/* Metric 2 */}
                   {(() => {
                     const ratioAR = data.total_omzet > 0 ? (data.total_piutang / data.total_omzet) * 100 : 0;
-                    let text = 'Piutang berada pada tingkat aman.';
+                    let text = lang === 'en' ? 'Receivables are at a safe level.' : 'Piutang berada pada tingkat aman.';
                     let statusColor = 'text-emerald-600 bg-emerald-50 border-emerald-100';
                     if (ratioAR > 50) {
-                      text = 'Piutang melebihi 50% omzet. Lakukan penagihan agresif.';
+                      text = lang === 'en' ? 'Receivables exceed 50% of revenue. Perform aggressive billing.' : 'Piutang melebihi 50% omzet. Lakukan penagihan agresif.';
                       statusColor = 'text-rose-600 bg-rose-50 border-rose-100';
                     } else if (ratioAR > 30) {
-                      text = 'Piutang sedang, batasi limit kredit pelanggan baru.';
+                      text = lang === 'en' ? 'Receivables are moderate, limit credit for new customers.' : 'Piutang sedang, batasi limit kredit pelanggan baru.';
                       statusColor = 'text-amber-600 bg-amber-50 border-amber-100';
                     }
                     return (
                       <div className={`p-3 rounded-lg border text-xs ${statusColor} space-y-1`}>
-                        <span className="font-bold block">Status Kesehatan Piutang</span>
+                        <span className="font-bold block">
+                          {lang === 'en' ? 'Receivables Health Status' : 'Status Kesehatan Piutang'}
+                        </span>
                         <p>{text}</p>
                       </div>
                     );
@@ -380,14 +451,16 @@ export const LaporanRingkasan: React.FC = () => {
               </div>
               
               <div className="pt-4 border-t border-slate-100 text-[10px] text-slate-500">
-                * Analisa otomatis diperbarui setiap kali Anda memperbarui filter tanggal di atas.
+                {lang === 'en'
+                  ? '* Analysis is automatically updated whenever you change date filter above.'
+                  : '* Analisa otomatis diperbarui setiap kali Anda memperbarui filter tanggal di atas.'}
               </div>
             </div>
           </div>
         </div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 italic text-xs shadow-sm">
-          Gagal mengambil data ringkasan bisnis.
+          {lang === 'en' ? 'Failed to fetch business summary data.' : 'Gagal mengambil data ringkasan bisnis.'}
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import {
   Search,
   RefreshCw,
@@ -41,6 +42,7 @@ const getStoredState = <T,>(key: string, defaultValue: T): T => {
 
 export const ManajemenNota: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [invoices, setInvoices] = useState<InvoiceNota[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<InvoiceNota[]>([]);
   const [groupedInvoices, setGroupedInvoices] = useState<CustomerGroup[]>([]);
@@ -458,7 +460,7 @@ export const ManajemenNota: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -470,8 +472,14 @@ export const ManajemenNota: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Manajemen Dokumen Nota</h1>
-          <p className="text-slate-400 text-sm">Pemeriksaan fisik dokumen serah terima nota 3-warna (Merah, Putih, Kuning).</p>
+          <h1 className="text-2xl font-extrabold text-white">
+            {lang === 'en' ? 'Invoice Document Management' : 'Manajemen Dokumen Nota'}
+          </h1>
+          <p className="text-slate-400 text-sm">
+            {lang === 'en'
+              ? 'Physical inspection of 3-color invoice hand-over documents (Red, White, Yellow).'
+              : 'Pemeriksaan fisik dokumen serah terima nota 3-warna (Merah, Putih, Kuning).'}
+          </p>
         </div>
       </div>
 
@@ -479,13 +487,15 @@ export const ManajemenNota: React.FC = () => {
       <div className="card p-4 space-y-4">
         {/* Search */}
         <div className="relative w-full">
-          <label className="block text-[11px] text-slate-400 mb-1.5 font-semibold uppercase tracking-wider">Cari Pelanggan (F1)</label>
+          <label className="block text-[11px] text-slate-400 mb-1.5 font-semibold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Customer (F1)' : 'Cari Pelanggan (F1)'}
+          </label>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-3 text-slate-500" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Nama pelanggan..."
+              placeholder={lang === 'en' ? 'Customer name...' : 'Nama pelanggan...'}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -508,10 +518,20 @@ export const ManajemenNota: React.FC = () => {
         {/* Sync Controls */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center text-xs text-slate-400 pt-2.5 border-t border-slate-100/10">
           <p className="flex items-center gap-1.5">
-            Tekan <kbd className="shortcut-badge text-primary-400 font-bold px-1.5 py-0.5 bg-slate-800 rounded">F4</kbd> untuk sinkronisasi otomatis status nota lunas di database.
+            {lang === 'en' ? (
+              <>
+                Press <kbd className="shortcut-badge text-primary-400 font-bold px-1.5 py-0.5 bg-slate-800 rounded">F4</kbd> to automatically synchronize settled invoice statuses in database.
+              </>
+            ) : (
+              <>
+                Tekan <kbd className="shortcut-badge text-primary-400 font-bold px-1.5 py-0.5 bg-slate-800 rounded">F4</kbd> untuk sinkronisasi otomatis status nota lunas di database.
+              </>
+            )}
           </p>
           <p className="text-[10px] text-slate-500 italic mt-1 md:mt-0">
-            *Nota yang sisa piutangnya Rp 0 akan tercentang Merah, Putih, & Kuning sekaligus.
+            {lang === 'en'
+              ? '*Invoices with remaining balance of Rp 0 will be marked Red, White, and Yellow simultaneously.'
+              : '*Nota yang sisa piutangnya Rp 0 akan tercentang Merah, Putih, & Kuning sekaligus.'}
           </p>
         </div>
       </div>
@@ -523,7 +543,9 @@ export const ManajemenNota: React.FC = () => {
             <Search size={28} className="text-primary-500/80 animate-pulse" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-500 font-medium">
-            Silakan ketik nama customer pada kolom pencarian untuk menampilkan data.
+            {lang === 'en'
+              ? 'Please type a customer name in the search field to display data.'
+              : 'Silakan ketik nama customer pada kolom pencarian untuk menampilkan data.'}
           </p>
         </div>
       ) : !isConfirmed ? (
@@ -532,7 +554,15 @@ export const ManajemenNota: React.FC = () => {
             <Search size={28} className="text-amber-500/80 animate-bounce" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-500 font-medium">
-            Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih customer dan menampilkan data.
+            {lang === 'en' ? (
+              <>
+                Press <span className="font-extrabold text-blue-600 font-mono">Enter</span> to select a customer and display data.
+              </>
+            ) : (
+              <>
+                Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih customer dan menampilkan data.
+              </>
+            )}
           </p>
         </div>
       ) : (
@@ -568,7 +598,9 @@ export const ManajemenNota: React.FC = () => {
                         {group.customer_nama}
                       </h3>
                       <p className="text-[10px] text-slate-400 mt-0.5">
-                        Total {group.invoices.length} Invoice
+                        {lang === 'en'
+                          ? `Total ${group.invoices.length} Invoices`
+                          : `Total ${group.invoices.length} Invoice`}
                       </p>
                     </div>
                   </div>
@@ -581,20 +613,20 @@ export const ManajemenNota: React.FC = () => {
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
                           <th className="p-4 w-12 text-center">No</th>
-                          <th className="p-4">No. Invoice</th>
-                          <th className="p-4">Tgl Transaksi</th>
-                          <th className="p-4">Jatuh Tempo</th>
-                          <th className="p-4 text-right">Nilai Belanja</th>
+                          <th className="p-4">{lang === 'en' ? 'Invoice No.' : 'No. Invoice'}</th>
+                          <th className="p-4">{lang === 'en' ? 'Transaction Date' : 'Tgl Transaksi'}</th>
+                          <th className="p-4">{lang === 'en' ? 'Due Date' : 'Jatuh Tempo'}</th>
+                          <th className="p-4 text-right">{lang === 'en' ? 'Total Amount' : 'Nilai Belanja'}</th>
 
                           {/* Colored Nota Columns */}
                           <th className="p-4 text-center w-28 bg-rose-100/50 text-rose-700 border-l border-slate-200 font-bold uppercase text-[10px] tracking-wider">
-                            Merah
+                            {lang === 'en' ? 'Red' : 'Merah'}
                           </th>
                           <th className="p-4 text-center w-28 bg-slate-100 text-slate-700 border-l border-slate-200 font-bold uppercase text-[10px] tracking-wider">
-                            Putih
+                            {lang === 'en' ? 'White' : 'Putih'}
                           </th>
                           <th className="p-4 text-center w-28 bg-amber-100/50 text-amber-700 border-l border-slate-200 font-bold uppercase text-[10px] tracking-wider">
-                            Kuning
+                            {lang === 'en' ? 'Yellow' : 'Kuning'}
                           </th>
                         </tr>
                       </thead>
@@ -609,7 +641,7 @@ export const ManajemenNota: React.FC = () => {
                           const getTdClass = (pos: 'first' | 'middle' | 'last', customBg?: string, selectedBg?: string) => {
                             let base = "p-4 transition-all duration-150 border-b ";
                             if (isInvSelected) {
-                              base += (selectedBg || "bg-blue-100") + " text-primary-950 font-bold border-blue-300 ";
+                              base += (selectedBg || "bg-blue-100") + " text-primary-955 font-bold border-blue-300 ";
                               if (pos === 'first') base += "border-l-4 border-primary-600 ";
                             } else {
                               base += (customBg || "text-slate-800") + " border-slate-200 ";
@@ -642,8 +674,8 @@ export const ManajemenNota: React.FC = () => {
                                 {formatCurrency(Number(inv.subtotal))}
                               </td>
 
-                              {/* Nota Merah Checkbox */}
-                              <td className={getTdClass('middle', 'bg-rose-50/30 text-rose-950', 'bg-rose-100/30') + ` text-center border-l border-slate-200 transition-all ${isMerahActive ? 'ring-2 ring-rose-500 ring-inset bg-rose-200/50' : ''
+                              {/* Checkbox Merah */}
+                              <td className={getTdClass('middle', 'bg-rose-50/30 text-rose-955', 'bg-rose-100/30') + ` text-center border-l border-slate-200 transition-all ${isMerahActive ? 'ring-2 ring-rose-500 ring-inset bg-rose-200/50' : ''
                                 }`}>
                                 <input
                                   type="checkbox"
@@ -658,8 +690,8 @@ export const ManajemenNota: React.FC = () => {
                                 />
                               </td>
 
-                              {/* Nota Putih Checkbox */}
-                              <td className={getTdClass('middle', 'bg-slate-50/40 text-slate-950', 'bg-slate-100/40') + ` text-center border-l border-slate-200 transition-all ${isPutihActive ? 'ring-2 ring-slate-400 ring-inset bg-slate-200/50' : ''
+                              {/* Checkbox Putih */}
+                              <td className={getTdClass('middle', 'bg-slate-50/40 text-slate-955', 'bg-slate-100/40') + ` text-center border-l border-slate-200 transition-all ${isPutihActive ? 'ring-2 ring-slate-400 ring-inset bg-slate-200/50' : ''
                                 }`}>
                                 <input
                                   type="checkbox"
@@ -674,8 +706,8 @@ export const ManajemenNota: React.FC = () => {
                                 />
                               </td>
 
-                              {/* Nota Kuning Checkbox */}
-                              <td className={getTdClass('last', 'bg-amber-50/30 text-amber-950', 'bg-amber-100/30') + ` text-center border-l border-slate-200 transition-all ${isKuningActive ? 'ring-2 ring-amber-500 ring-inset bg-amber-200/50' : ''
+                              {/* Checkbox Kuning */}
+                              <td className={getTdClass('last', 'bg-amber-50/30 text-amber-955', 'bg-amber-100/30') + ` text-center border-l border-slate-200 transition-all ${isKuningActive ? 'ring-2 ring-amber-500 ring-inset bg-amber-200/50' : ''
                                 }`}>
                                 <input
                                   type="checkbox"
@@ -715,7 +747,9 @@ export const ManajemenNota: React.FC = () => {
             <div className="flex justify-between items-center w-full border-b border-surface-700 pb-3 shrink-0">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Search size={18} />
-                <span>Pilih Pelanggan (Customer)</span>
+                <span>
+                  {lang === 'en' ? 'Select Customer' : 'Pilih Pelanggan (Customer)'}
+                </span>
               </h3>
               <button
                 onClick={() => {
@@ -731,55 +765,59 @@ export const ManajemenNota: React.FC = () => {
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
               {isLoading ? (
                 <div className="py-8 text-center text-slate-500 italic text-xs">
-                  Memuat data pelanggan...
+                  {lang === 'en' ? 'Loading customer data...' : 'Memuat data pelanggan...'}
                 </div>
               ) : groupedInvoices.length === 0 ? (
                 <div className="py-8 text-center text-slate-500 italic text-xs">
-                  Tidak ada pelanggan yang cocok dengan pencarian "{searchQuery}".
+                  {lang === 'en'
+                    ? `No customers match search query "${searchQuery}".`
+                    : `Tidak ada pelanggan yang cocok dengan pencarian "${searchQuery}".`}
                 </div>
               ) : (
                 groupedInvoices.map((group, idx) => (
                   <button
-                    type="button"
-                    key={group.customer_nama}
-                    ref={(el) => {
-                      popupItemRefs.current[idx] = el;
-                    }}
-                    onClick={() => {
-                      setSelectedCustIdx(idx);
-                      setSelectedInvoiceIdx(null);
-                      setExpandedCustNames({});
-                      setShowSearchPopup(false);
-                      setIsConfirmed(true);
-                      setTimeout(() => {
-                        document.body.focus();
-                      }, 50);
-                    }}
-                    onMouseEnter={() => setPopupFocusedIndex(idx)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${idx === popupFocusedIndex
-                        ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
-                        : 'border-surface-700 hover:bg-surface-750 text-slate-355 bg-surface-900'
-                      }`}
-                  >
-                    <div>
-                      <p className="font-semibold text-white">{group.customer_nama}</p>
-                      <p className="text-[10px] text-slate-450 mt-0.5">
-                        Jumlah Nota: {group.invoices.length}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[11px] font-bold text-rose-400 block">
-                        Total Belanja: {formatCurrency(group.invoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0))}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
-      )}
-    </div>
-  );
-};
+                     type="button"
+                     key={group.customer_nama}
+                     ref={(el) => {
+                       popupItemRefs.current[idx] = el;
+                     }}
+                     onClick={() => {
+                       setSelectedCustIdx(idx);
+                       setSelectedInvoiceIdx(null);
+                       setExpandedCustNames({});
+                       setShowSearchPopup(false);
+                       setIsConfirmed(true);
+                       setTimeout(() => {
+                         document.body.focus();
+                       }, 50);
+                     }}
+                     onMouseEnter={() => setPopupFocusedIndex(idx)}
+                     className={`w-full text-left px-4 py-3 flex items-center justify-between text-xs transition-all border rounded-lg cursor-pointer ${idx === popupFocusedIndex
+                         ? 'border-primary-500 bg-primary-600/10 text-primary-400 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                         : 'border-surface-700 hover:bg-surface-750 text-slate-355 bg-surface-900'
+                       }`}
+                   >
+                     <div>
+                       <p className="font-semibold text-white">{group.customer_nama}</p>
+                       <p className="text-[10px] text-slate-450 mt-0.5">
+                         {lang === 'en'
+                           ? `Invoices Count: ${group.invoices.length}`
+                           : `Jumlah Nota: ${group.invoices.length}`}
+                       </p>
+                     </div>
+                     <div className="text-right">
+                       <span className="text-[11px] font-bold text-rose-400 block">
+                         {lang === 'en' ? 'Total Spend: ' : 'Total Belanja: '}{formatCurrency(group.invoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0))}
+                       </span>
+                     </div>
+                   </button>
+                 ))
+               )}
+             </div>
+           </div>
+         </div>
+         </ModalPortal>
+       )}
+     </div>
+   );
+ };

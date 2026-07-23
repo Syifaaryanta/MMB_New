@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatRupiahInput, parseRupiahInput } from '@/lib/utils';
 import {
   Plus,
@@ -51,6 +52,7 @@ interface Product {
 
 export const KelolaProduk: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const editTypeModalRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -583,7 +585,7 @@ export const KelolaProduk: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!kode || !nama) {
-      setFormError('Kode dan Nama Produk wajib diisi');
+      setFormError(lang === 'en' ? 'Product Code and Name are required' : 'Kode dan Nama Produk wajib diisi');
       return;
     }
 
@@ -875,22 +877,31 @@ export const KelolaProduk: React.FC = () => {
             <div className="flex flex-col items-center text-center gap-2 bg-amber-50 border-b border-amber-100 px-5 py-4">
               <div className="p-2 bg-amber-100 rounded-full"><Archive size={20} className="text-amber-600" /></div>
               <div>
-                <h2 className="font-bold text-slate-800 text-sm">Arsipkan Produk</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Tindakan ini dapat dibatalkan melalui halaman arsip</p>
+                <h2 className="font-bold text-slate-800 text-sm">
+                  {lang === 'en' ? 'Archive Product' : 'Arsipkan Produk'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {lang === 'en' ? 'This action can be undone through the archives page' : 'Tindakan ini dapat dibatalkan melalui halaman arsip'}
+                </p>
               </div>
             </div>
             <div className="px-5 py-5 text-center">
-              <p className="text-slate-700 text-sm leading-relaxed">Apakah Anda yakin ingin mengarsipkan produk <span className="font-bold text-slate-900">"{archiveTarget.nama}"</span>?</p>
-              <p className="text-xs text-slate-400 mt-2">Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.</p>
+              <p className="text-slate-700 text-sm leading-relaxed">
+                {lang === 'en' ? 'Are you sure you want to archive product' : 'Apakah Anda yakin ingin mengarsipkan produk'}{' '}
+                <span className="font-bold text-slate-900">"{archiveTarget.nama}"</span>?
+              </p>
+              <p className="text-xs text-slate-400 mt-2">
+                {lang === 'en' ? 'Archived products will not appear in the active list, but the data remains stored.' : 'Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.'}
+              </p>
             </div>
             <div className="flex gap-2 px-5 pb-5 justify-center">
               <button onClick={() => setArchiveTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
                 <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
-                Batal
+                {lang === 'en' ? 'Cancel' : 'Batal'}
               </button>
               <button onClick={confirmArchive} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-md shadow-amber-500/10">
                 <kbd className="text-[10px] bg-amber-400/40 border border-amber-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
-                Ya, Arsipkan
+                {lang === 'en' ? 'Yes, Archive' : 'Ya, Arsipkan'}
               </button>
             </div>
           </div>
@@ -900,13 +911,19 @@ export const KelolaProduk: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Katalog Kelola Produk</h1>
-          <p className="text-slate-400">Kelola master data barang gudang aktif dan daftar harga supplier</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+            {lang === 'en' ? 'Manage Product Catalog' : 'Katalog Kelola Produk'}
+          </h1>
+          <p className="text-slate-400">
+            {lang === 'en'
+              ? 'Manage active warehouse product master data and supplier price lists'
+              : 'Kelola master data barang gudang aktif dan daftar harga supplier'}
+          </p>
         </div>
 
         <button onClick={handleOpenCreate} className="btn-primary">
           <Plus size={16} />
-          <span>Tambah Barang (F3)</span>
+          <span>{lang === 'en' ? 'Add Product (F3)' : 'Tambah Barang (F3)'}</span>
         </button>
       </div>
 
@@ -928,7 +945,7 @@ export const KelolaProduk: React.FC = () => {
                 setPopupFocusedIndex(0);
               }
             }}
-            placeholder="Ketik Nama/Kode Barang + Tekan Enter..."
+            placeholder={lang === 'en' ? 'Type Item Name/Code + Press Enter...' : 'Ketik Nama/Kode Barang + Tekan Enter...'}
             className="input-field pl-9 w-full"
           />
           {searchQuery && (
@@ -947,31 +964,31 @@ export const KelolaProduk: React.FC = () => {
         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
-            <span>Cari</span>
+            <span>{lang === 'en' ? 'Search' : 'Cari'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
-            <span>Galeri</span>
+            <span>{lang === 'en' ? 'Gallery' : 'Galeri'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F3</kbd>
-            <span>Tambah</span>
+            <span>{lang === 'en' ? 'Add' : 'Tambah'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Enter</kbd>
-            <span>Edit</span>
+            <span>{lang === 'en' ? 'Edit' : 'Edit'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Del</kbd>
-            <span>Arsip</span>
+            <span>{lang === 'en' ? 'Archive' : 'Arsip'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">PgUp/PgDn</kbd>
-            <span>Hal</span>
+            <span>{lang === 'en' ? 'Page' : 'Hal'}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
-            <span>Kembali</span>
+            <span>{lang === 'en' ? 'Back' : 'Kembali'}</span>
           </span>
         </div>
       </div>
@@ -980,8 +997,14 @@ export const KelolaProduk: React.FC = () => {
       {search.trim() === '' ? (
         <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10 min-h-[250px]">
           <Search className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-          <h3 className="text-lg font-bold text-slate-400">Pencarian Katalog Produk</h3>
-          <p className="text-sm max-w-sm mt-1">Tekan <kbd className="shortcut-badge ml-0.5">F1</kbd> lalu masukkan nama/kode barang untuk menampilkan data katalog.</p>
+          <h3 className="text-lg font-bold text-slate-400">
+            {lang === 'en' ? 'Product Catalog Search' : 'Pencarian Katalog Produk'}
+          </h3>
+          <p className="text-sm max-w-sm mt-1">
+            {lang === 'en'
+              ? 'Press F1 then enter item name/code to display catalog data.'
+              : 'Tekan F1 lalu masukkan nama/kode barang untuk menampilkan data katalog.'}
+          </p>
         </div>
       ) : isLoading ? (
         <div className="space-y-3">
@@ -995,11 +1018,11 @@ export const KelolaProduk: React.FC = () => {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                  <th className="p-4">Kode</th>
-                  <th className="p-4">Nama Produk</th>
-                  <th className="p-4 text-center">Stok</th>
-                  <th className="p-4">Supplier Utama</th>
-                  <th className="p-4 text-right">Harga Beli Termurah</th>
+                  <th className="p-4">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                  <th className="p-4">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                  <th className="p-4 text-center">{lang === 'en' ? 'Stock' : 'Stok'}</th>
+                  <th className="p-4">{lang === 'en' ? 'Primary Supplier' : 'Supplier Utama'}</th>
+                  <th className="p-4 text-right">{lang === 'en' ? 'Cheapest Purchase Price' : 'Harga Beli Termurah'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-700/50">
@@ -1035,7 +1058,9 @@ export const KelolaProduk: React.FC = () => {
           {/* Pagination Footer */}
           <div className="flex items-center justify-between p-4 bg-surface-800/50 border-t border-surface-700">
             <span className="text-xs text-slate-400">
-              Menampilkan {products.length} dari {totalProducts} barang
+              {lang === 'en'
+                ? `Showing ${products.length} of ${totalProducts} items`
+                : `Menampilkan ${products.length} dari ${totalProducts} barang`}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -1045,7 +1070,9 @@ export const KelolaProduk: React.FC = () => {
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-xs px-3 font-semibold">Halaman {page}</span>
+              <span className="text-xs px-3 font-semibold font-mono">
+                {lang === 'en' ? `Page ${page}` : `Halaman ${page}`}
+              </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={products.length < 10}
@@ -1058,7 +1085,7 @@ export const KelolaProduk: React.FC = () => {
         </div>
       ) : (
         <div className="text-center p-12 bg-surface-800/20 border border-dashed border-surface-700 rounded-xl">
-          Tidak ada barang aktif ditemukan.
+          {lang === 'en' ? 'No active products found.' : 'Tidak ada barang aktif ditemukan.'}
         </div>
       )}
 
@@ -1107,13 +1134,19 @@ export const KelolaProduk: React.FC = () => {
               className="bg-surface-800 border border-surface-700 rounded-xl max-w-sm w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col"
             >
               <div className="flex justify-between items-center w-full">
-                <h3 className="text-lg font-bold text-white">Pilih Mode Pengeditan</h3>
+                <h3 className="text-lg font-bold text-white">
+                  {lang === 'en' ? 'Select Edit Mode' : 'Pilih Mode Pengeditan'}
+                </h3>
                 <button onClick={() => setShowEditTypeModal(false)}>
                   <X size={18} />
                 </button>
               </div>
               <div className="mt-4 mb-4">
-                <p className="text-xs text-slate-400">Pilih aspek produk yang ingin Anda perbarui untuk mempercepat pengisian.</p>
+                <p className="text-xs text-slate-400">
+                  {lang === 'en'
+                    ? 'Select the aspect of the product you want to update to speed up the process.'
+                    : 'Pilih aspek produk yang ingin Anda perbarui untuk mempercepat pengisian.'}
+                </p>
               </div>
               <div className="flex flex-col gap-2.5 mb-4">
                 {editOptions.map((opt, idx) => {
@@ -1130,14 +1163,24 @@ export const KelolaProduk: React.FC = () => {
                         }`}
                     >
                       <Icon size={16} className={isActive ? '' : opt.colorClass} />
-                      <span>{opt.label}</span>
+                      <span>
+                        {opt.mode === 'info'
+                          ? (lang === 'en' ? 'Product Info & Photo Only' : 'Hanya Informasi & Foto Produk')
+                          : (lang === 'en' ? 'Supplier Stock & Price Only' : 'Hanya Stok & Harga Supplier')
+                        }
+                      </span>
                     </button>
                   );
                 })}
               </div>
               <div className="flex justify-between text-[10px] text-slate-500 border-t border-surface-700/50 pt-2.5">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> pilih, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+                <span>
+                  {lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}
+                </span>
+                <span>
+                  <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'select, ' : 'pilih, '}
+                  <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+                </span>
               </div>
             </div>
           </div>
@@ -1157,12 +1200,14 @@ export const KelolaProduk: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold text-white">
                     {editMode === 'create'
-                      ? 'Tambah Produk Baru'
+                      ? (lang === 'en' ? 'Add New Product' : 'Tambah Produk Baru')
                       : editMode === 'prices'
-                        ? 'Edit Stok & Harga'
-                        : `Edit Produk: ${nama}`}
+                        ? (lang === 'en' ? 'Edit Stock & Price' : 'Edit Stok & Harga')
+                        : (lang === 'en' ? `Edit Product: ${nama}` : `Edit Produk: ${nama}`)}
                   </h3>
-                  <p className="text-[10px] text-white/70 mt-0.5 capitalize">Mode Pengeditan: {editMode} Mode</p>
+                  <p className="text-[10px] text-white/70 mt-0.5 capitalize">
+                    {lang === 'en' ? 'Edit Mode: ' : 'Mode Pengeditan: '} {editMode} Mode
+                  </p>
                 </div>
                 <button type="button" onClick={() => setShowFormModal(false)}>
                   <X size={18} />
@@ -1180,7 +1225,9 @@ export const KelolaProduk: React.FC = () => {
               {editMode === 'prices' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mx-6 mt-6">
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Kode Barang</label>
+                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">
+                      {lang === 'en' ? 'Item Code' : 'Kode Barang'}
+                    </label>
                     <input
                       type="text"
                       value={kode}
@@ -1189,7 +1236,9 @@ export const KelolaProduk: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Nama Barang</label>
+                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">
+                      {lang === 'en' ? 'Item Name' : 'Nama Barang'}
+                    </label>
                     <input
                       type="text"
                       readOnly
@@ -1203,34 +1252,42 @@ export const KelolaProduk: React.FC = () => {
               {/* Product Info Section (Visible in 'create', 'full', 'info') */}
               {(editMode === 'create' || editMode === 'full' || editMode === 'info') && (
                 <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
-                  <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">A. Informasi Barang</h4>
+                  <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    {lang === 'en' ? 'A. Item Information' : 'A. Informasi Barang'}
+                  </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1">Kode Barang</label>
+                      <label className="block text-xs text-slate-700 font-semibold mb-1">
+                        {lang === 'en' ? 'Item Code' : 'Kode Barang'}
+                      </label>
                       <input
                         type="text"
                         required
                         value={kode}
                         onChange={(e) => setKode(e.target.value)}
-                        placeholder="Tambahkan Kode Barang"
+                        placeholder={lang === 'en' ? 'Add Item Code' : 'Tambahkan Kode Barang'}
                         className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1">Nama Produk</label>
+                      <label className="block text-xs text-slate-700 font-semibold mb-1">
+                        {lang === 'en' ? 'Product Name' : 'Nama Produk'}
+                      </label>
                       <input
                         type="text"
                         required
                         value={nama}
                         onChange={(e) => setNama(e.target.value)}
-                        placeholder="Tambahkan Nama Produk"
+                        placeholder={lang === 'en' ? 'Add Product Name' : 'Tambahkan Nama Produk'}
                         className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs text-slate-700 font-semibold mb-1">Keterangan/Deskripsi</label>
+                    <label className="block text-xs text-slate-700 font-semibold mb-1">
+                      {lang === 'en' ? 'Description / Details' : 'Keterangan/Deskripsi'}
+                    </label>
                     <textarea
                       ref={descRef}
                       value={deskripsi}
@@ -1238,14 +1295,16 @@ export const KelolaProduk: React.FC = () => {
                         setDeskripsi(e.target.value);
                         adjustDescHeight();
                       }}
-                      placeholder="Tambahkan detail produk..."
+                      placeholder={lang === 'en' ? 'Add product details...' : 'Tambahkan detail produk...'}
                       className="input-field min-h-[40px] resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 overflow-hidden"
                     />
                   </div>
 
                   {/* Images Upload Area */}
                   <div>
-                    <label className="block text-xs text-slate-700 font-semibold mb-1">Foto Produk (Maks 3, Maks 1MB, auto-kompres jika lebih)</label>
+                    <label className="block text-xs text-slate-700 font-semibold mb-1">
+                      {lang === 'en' ? 'Product Photo (Max 3, Max 1MB, auto-compressed if larger)' : 'Foto Produk (Maks 3, Maks 1MB, auto-kompres jika lebih)'}
+                    </label>
                     <div className="flex flex-wrap items-center gap-2">
                       {fotoUrls.map((url, idx) => (
                         <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-blue-200 bg-white group">
@@ -1263,7 +1322,7 @@ export const KelolaProduk: React.FC = () => {
                       {fotoUrls.length < 3 && (
                         <label className="w-16 h-16 border border-dashed border-blue-200 hover:border-blue-500 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-blue-600 bg-white cursor-pointer transition-colors">
                           <Upload size={16} />
-                          <span className="text-[9px] mt-0.5">Upload (F1)</span>
+                          <span className="text-[9px] mt-0.5">{lang === 'en' ? 'Upload (F1)' : 'Upload (F1)'}</span>
                           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" multiple />
                         </label>
                       )}
@@ -1276,10 +1335,12 @@ export const KelolaProduk: React.FC = () => {
               {(editMode === 'create' || editMode === 'full' || editMode === 'prices') && (
                 <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">B. Harga Beli & Stok per Supplier</h4>
+                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                      {lang === 'en' ? 'B. Purchase Price & Stock per Supplier' : 'B. Harga Beli & Stok per Supplier'}
+                    </h4>
                     <button type="button" onClick={addPriceRow} className="btn-secondary py-1 px-2.5 text-xs border-blue-200 hover:bg-blue-50 text-blue-700 bg-white">
                       <Plus size={12} />
-                      <span>Tambah Supplier (F2)</span>
+                      <span>{lang === 'en' ? 'Add Supplier (F2)' : 'Tambah Supplier (F2)'}</span>
                     </button>
                   </div>
 
@@ -1315,7 +1376,7 @@ export const KelolaProduk: React.FC = () => {
                                   removePriceRow(idx);
                                 }
                               }}
-                              placeholder="Pilih Supplier..."
+                              placeholder={lang === 'en' ? 'Select Supplier...' : 'Pilih Supplier...'}
                               className="input-field py-2 pr-8 w-full font-semibold bg-white border-blue-200 text-slate-800 cursor-pointer"
                             />
                             <span className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 pointer-events-none">
@@ -1342,7 +1403,7 @@ export const KelolaProduk: React.FC = () => {
                                   removePriceRow(idx);
                                 }
                               }}
-                              placeholder="Stok"
+                              placeholder={lang === 'en' ? 'Stock' : 'Stok'}
                               className="input-field py-2 font-semibold w-full bg-white border-blue-200 text-slate-800"
                             />
                           </div>
@@ -1363,7 +1424,7 @@ export const KelolaProduk: React.FC = () => {
                                   removePriceRow(idx);
                                 }
                               }}
-                              placeholder="Harga Beli"
+                              placeholder={lang === 'en' ? 'Purchase Price' : 'Harga Beli'}
                               className="input-field py-2 text-emerald-600 w-full font-mono font-semibold bg-white border-blue-200"
                             />
                           </div>
@@ -1381,7 +1442,9 @@ export const KelolaProduk: React.FC = () => {
                     </div>
                   ) : (
                     <div className="text-center p-4 bg-white rounded border border-dashed border-blue-200 text-xs text-slate-500">
-                      Belum ada supplier harga yang ditambahkan. Silakan klik Tambah Supplier di atas atau tekan F2.
+                      {lang === 'en'
+                        ? 'No supplier price added yet. Please click Add Supplier above or press F2.'
+                        : 'Belum ada supplier harga yang ditambahkan. Silakan klik Tambah Supplier di atas atau tekan F2.'}
                     </div>
                   )}
                 </div>
@@ -1392,11 +1455,13 @@ export const KelolaProduk: React.FC = () => {
                 <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
                   <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle size={14} className="text-blue-600" />
-                    <span>Validasi Perubahan Stok</span>
+                    <span>{lang === 'en' ? 'Stock Change Validation' : 'Validasi Perubahan Stok'}</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Tanggal Diubah</label>
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                        {lang === 'en' ? 'Change Date' : 'Tanggal Diubah'}
+                      </label>
                       <input
                         type="date"
                         required
@@ -1406,24 +1471,28 @@ export const KelolaProduk: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Diubah Oleh</label>
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                        {lang === 'en' ? 'Changed By' : 'Diubah Oleh'}
+                      </label>
                       <input
                         type="text"
                         required
                         value={diubahOleh}
                         onChange={(e) => setDiubahOleh(e.target.value)}
-                        placeholder="Nama Staff"
+                        placeholder={lang === 'en' ? 'Staff Name' : 'Nama Staff'}
                         className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Alasan Diubah</label>
+                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                      {lang === 'en' ? 'Reason for Change' : 'Alasan Diubah'}
+                    </label>
                     <textarea
                       required
                       value={alasanDiubah}
                       onChange={(e) => setAlasanDiubah(e.target.value)}
-                      placeholder="Contoh: koreksi stok fisik setelah stock opname"
+                      placeholder={lang === 'en' ? 'Example: physical stock correction after stock opname' : 'Contoh: koreksi stok fisik setelah stock opname'}
                       className="input-field h-16 resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
                     />
                   </div>
@@ -1433,18 +1502,18 @@ export const KelolaProduk: React.FC = () => {
               {/* Submit Buttons */}
               <div className="flex justify-end gap-2 border-t border-blue-100 pt-3 px-4 pb-4 mt-3">
                 <button type="button" onClick={() => setShowFormModal(false)} className="btn-secondary form-cancel-btn border-slate-200 hover:bg-slate-50 text-slate-700 bg-white">
-                  Batal
+                  {lang === 'en' ? 'Cancel' : 'Batal'}
                 </button>
                 <button type="submit" disabled={isSubmitting} className="btn-primary">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Menyimpan...</span>
+                      <span>{lang === 'en' ? 'Saving...' : 'Menyimpan...'}</span>
                     </>
                   ) : (
                     <>
                       <Save size={16} />
-                      <span>Simpan (F10)</span>
+                      <span>{lang === 'en' ? 'Save (F10)' : 'Simpan (F10)'}</span>
                     </>
                   )}
                 </button>
@@ -1476,7 +1545,9 @@ export const KelolaProduk: React.FC = () => {
                     className="max-w-full max-h-full object-contain"
                   />
                 ) : (
-                  <div className="text-slate-500 text-sm">Tidak ada foto produk terupload</div>
+                  <div className="text-slate-500 text-sm">
+                    {lang === 'en' ? 'No product photo uploaded' : 'Tidak ada foto produk terupload'}
+                  </div>
                 )}
               </div>
             </div>
@@ -1498,7 +1569,7 @@ export const KelolaProduk: React.FC = () => {
             <div className="flex justify-between items-center w-full">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Search size={18} />
-                <span>Pilih Barang</span>
+                <span>{lang === 'en' ? 'Select Item' : 'Pilih Barang'}</span>
               </h3>
               <button onClick={() => setShowSearchPopup(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
@@ -1521,19 +1592,22 @@ export const KelolaProduk: React.FC = () => {
                       <p className="text-xs text-slate-500 font-mono">{prod.kode}</p>
                     </div>
                     <span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-slate-600">
-                      Stok: {Number(prod.stok)} {prod.satuan}
+                      {lang === 'en' ? 'Stock' : 'Stok'}: {Number(prod.stok)} {prod.satuan}
                     </span>
                   </button>
                 ))
               ) : (
                 <div className="text-center py-8 text-slate-500 text-sm">
-                  Tidak ada barang yang cocok dengan "{searchQuery}".
+                  {lang === 'en' ? `No item matches "${searchQuery}".` : `Tidak ada barang yang cocok dengan "${searchQuery}".`}
                 </div>
               )}
             </div>
             <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+              <span>
+                <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
+                <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+              </span>
             </div>
           </div>
         </div>
@@ -1553,7 +1627,7 @@ export const KelolaProduk: React.FC = () => {
             <div className="flex justify-between items-center w-full">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Search size={18} />
-                <span>Pilih Supplier</span>
+                <span>{lang === 'en' ? 'Select Supplier' : 'Pilih Supplier'}</span>
               </h3>
               <button onClick={() => setShowSupplierPopup(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
@@ -1572,7 +1646,7 @@ export const KelolaProduk: React.FC = () => {
                   setSupplierPopupSearch(e.target.value);
                   setSupplierPopupFocusedIdx(0);
                 }}
-                placeholder="Cari Kode atau Nama Supplier..."
+                placeholder={lang === 'en' ? 'Search Supplier Code or Name...' : 'Cari Kode atau Nama Supplier...'}
                 className="input-field pl-10 w-full bg-white text-slate-800"
               />
             </div>

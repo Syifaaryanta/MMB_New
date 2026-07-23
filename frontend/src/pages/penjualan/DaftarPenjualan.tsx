@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, parseAdjustments, formatExtraChargeDesc } from '@/lib/utils';
 import { Search, Calendar, User, FileText, X, Eye, Trash2, Printer, AlertTriangle, Info } from 'lucide-react';
 
@@ -22,6 +23,7 @@ interface Sale {
 
 export const DaftarPenjualan: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const fromHistory = searchParams.get('from') === 'history';
@@ -148,7 +150,7 @@ export const DaftarPenjualan: React.FC = () => {
     try {
       setIsLoading(true);
       await api.delete(`/sales/${target.id}`);
-      showToast('Transaksi berhasil dibatalkan dan stok dikembalikan', 'success');
+      showToast(lang === 'en' ? 'Transaction successfully cancelled and stock returned' : 'Transaksi berhasil dibatalkan dan stok dikembalikan', 'success');
       let url = `/sales?status=completed&limit=1000`;
       if (fromDate) url += `&from=${fromDate}`;
       if (toDate) url += `&to=${toDate}`;
@@ -157,7 +159,7 @@ export const DaftarPenjualan: React.FC = () => {
       setSelectedIdx(0);
     } catch (err: any) {
       console.error(err);
-      showToast(err.response?.data?.error || 'Gagal membatalkan transaksi', 'error');
+      showToast(err.response?.data?.error || (lang === 'en' ? 'Failed to cancel transaction' : 'Gagal membatalkan transaksi'), 'error');
     } finally {
       setIsLoading(false);
       setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
@@ -270,7 +272,7 @@ export const DaftarPenjualan: React.FC = () => {
         window.print();
       }, 250);
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Gagal memproses cetak ulang nota', 'error');
+      showToast(err.response?.data?.error || (lang === 'en' ? 'Failed to process receipt reprint' : 'Gagal memproses cetak ulang nota'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -432,21 +434,29 @@ export const DaftarPenjualan: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Daftar Nota Penjualan</h1>
-            <p className="text-slate-400">Daftar transaksi penjualan (SO) yang telah diselesaikan</p>
+            <h1 className="text-2xl font-extrabold text-white">
+              {lang === 'en' ? 'Sales Invoice List' : 'Daftar Nota Penjualan'}
+            </h1>
+            <p className="text-slate-400">
+              {lang === 'en' ? 'List of completed sales transactions (SO)' : 'Daftar transaksi penjualan (SO) yang telah diselesaikan'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pencarian SO</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                {lang === 'en' ? 'SO Search Filter' : 'Filter Pencarian SO'}
+              </h3>
             </div>
 
             <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Start Date' : 'Tanggal Awal'}
+                  </label>
                   <input
                     ref={fromDateRef}
                     type="date"
@@ -458,7 +468,9 @@ export const DaftarPenjualan: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+                  </label>
                   <input
                     ref={toDateRef}
                     type="date"
@@ -471,11 +483,13 @@ export const DaftarPenjualan: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nomor Order</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                  {lang === 'en' ? 'Order Number' : 'Nomor Order'}
+                </label>
                 <input
                   ref={noOrderFilterRef}
                   type="text"
-                  placeholder="Semua / Ketik No Order"
+                  placeholder={lang === 'en' ? 'All / Enter Order No' : 'Semua / Ketik No Order'}
                   value={noOrderFilter}
                   onChange={(e) => setNoOrderFilter(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
@@ -489,13 +503,13 @@ export const DaftarPenjualan: React.FC = () => {
                   onClick={() => navigate('/penjualan')}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
                 >
-                  Tampilkan (Enter)
+                  {lang === 'en' ? 'Show (Enter)' : 'Tampilkan (Enter)'}
                 </button>
               </div>
             </form>
@@ -511,8 +525,12 @@ export const DaftarPenjualan: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Daftar Nota Penjualan</h1>
-            <p className="text-slate-400">Daftar transaksi penjualan (SO) yang telah diselesaikan</p>
+            <h1 className="text-2xl font-extrabold text-white">
+              {lang === 'en' ? 'Sales Invoice List' : 'Daftar Nota Penjualan'}
+            </h1>
+            <p className="text-slate-400">
+              {lang === 'en' ? 'List of completed sales transactions (SO)' : 'Daftar transaksi penjualan (SO) yang telah diselesaikan'}
+            </p>
           </div>
         </div>
 
@@ -526,7 +544,7 @@ export const DaftarPenjualan: React.FC = () => {
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Cari nama customer (F1)..."
+                  placeholder={lang === 'en' ? 'Search customer name (F1)...' : 'Cari nama customer (F1)...'}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -548,7 +566,7 @@ export const DaftarPenjualan: React.FC = () => {
                   onClick={() => setShowFilterPage(true)}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm"
                 >
-                  Filter Tanggal & No Order (F2)
+                  {lang === 'en' ? 'Filter Date & Order No (F2)' : 'Filter Tanggal & No Order (F2)'}
                 </button>
               </div>
             </div>
@@ -565,11 +583,11 @@ export const DaftarPenjualan: React.FC = () => {
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                        <th className="p-4">No Order</th>
-                        <th className="p-4">No Faktur</th>
-                        <th className="p-4">Pelanggan</th>
-                        <th className="p-4">Tanggal Order</th>
-                        <th className="p-4">Jatuh Tempo</th>
+                        <th className="p-4">{lang === 'en' ? 'Order No' : 'No Order'}</th>
+                        <th className="p-4">{lang === 'en' ? 'Invoice No' : 'No Faktur'}</th>
+                        <th className="p-4">{lang === 'en' ? 'Customer' : 'Pelanggan'}</th>
+                        <th className="p-4">{lang === 'en' ? 'Order Date' : 'Tanggal Order'}</th>
+                        <th className="p-4">{lang === 'en' ? 'Due Date' : 'Jatuh Tempo'}</th>
                         <th className="p-4 text-right">Subtotal</th>
                       </tr>
                     </thead>
@@ -632,8 +650,12 @@ export const DaftarPenjualan: React.FC = () => {
             ) : (
               <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20">
                 <Calendar className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-                <h3 className="text-lg font-bold text-slate-400">Tidak ada data SO ditemukan</h3>
-                <p className="text-sm mt-1">Gunakan filter F1 untuk melakukan pencarian penjualan.</p>
+                <h3 className="text-lg font-bold text-slate-400">
+                  {lang === 'en' ? 'No SO data found' : 'Tidak ada data SO ditemukan'}
+                </h3>
+                <p className="text-sm mt-1">
+                  {lang === 'en' ? 'Use F1 filter to search sales.' : 'Gunakan filter F1 untuk melakukan pencarian penjualan.'}
+                </p>
               </div>
             )}
           </div>
@@ -644,9 +666,11 @@ export const DaftarPenjualan: React.FC = () => {
             <div className="pb-1">
               <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
                 <FileText size={18} className="text-blue-600" />
-                <span>Detail Order: {activeSo.no_order}</span>
+                <span>{lang === 'en' ? 'Order Detail:' : 'Detail Order:'} {activeSo.no_order}</span>
               </h1>
-              <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-blue-600 uppercase">{activeSo.status}</span></p>
+              <p className="text-xs text-slate-500 font-mono mt-1">
+                Status: <span className="font-bold text-blue-600 uppercase">{activeSo.status}</span>
+              </p>
             </div>
 
             {/* 3 Separate Cards Layout */}
@@ -655,37 +679,53 @@ export const DaftarPenjualan: React.FC = () => {
                 {/* Card 1: Informasi Order */}
                 <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                   <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
-                    <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Order</h3>
+                    <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                      {lang === 'en' ? 'Order Information' : 'Informasi Order'}
+                    </h3>
                   </div>
                   <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-600">
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Order</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Order No.' : 'No. Order'}
+                      </span>
                       <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeSo.no_order}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Faktur</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Invoice No.' : 'No. Faktur'}
+                      </span>
                       <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeSo.no_faktur || '-'}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Order</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Order Date' : 'Tanggal Order'}
+                      </span>
                       <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activeSo.order_date)}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Pengiriman</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Delivery' : 'Pengiriman'}
+                      </span>
                       <span className="text-xs font-bold text-slate-800 mt-0.5 block">
-                        {activeSo.diantar ? 'Diantar' : 'Diambil'}
+                        {activeSo.diantar ? (lang === 'en' ? 'Delivered' : 'Diantar') : (lang === 'en' ? 'Picked Up' : 'Diambil')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Jatuh Tempo</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Due Date' : 'Jatuh Tempo'}
+                      </span>
                       <span className="text-xs font-bold text-slate-800 mt-0.5 block">
-                        {activeSo.limit_bulan !== undefined ? `${activeSo.limit_bulan + 1} Bulan` : '-'}
+                        {activeSo.limit_bulan !== undefined ? (lang === 'en' ? `${activeSo.limit_bulan + 1} Month(s)` : `${activeSo.limit_bulan + 1} Bulan`) : '-'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Status Cetak</span>
-                      <span className={`text-xs font-bold mt-0.5 block ${activeSo.print_count && activeSo.print_count > 0 ? 'text-green-650' : 'text-amber-600'}`}>
-                        {activeSo.print_count && activeSo.print_count > 0 ? `Sudah Cetak (${activeSo.print_count}x)` : 'Belum Cetak'}
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Print Status' : 'Status Cetak'}
+                      </span>
+                      <span className={`text-xs font-bold mt-0.5 block ${activeSo.print_count && activeSo.print_count > 0 ? 'text-green-655' : 'text-amber-600'}`}>
+                        {activeSo.print_count && activeSo.print_count > 0
+                          ? (lang === 'en' ? `Printed (${activeSo.print_count}x)` : `Sudah Cetak (${activeSo.print_count}x)`)
+                          : (lang === 'en' ? 'Not Printed' : 'Belum Cetak')}
                       </span>
                     </div>
                   </div>
@@ -694,21 +734,29 @@ export const DaftarPenjualan: React.FC = () => {
                 {/* Card 2: Data Customer */}
                 <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                   <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
-                    <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Data Customer</h3>
+                    <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                      {lang === 'en' ? 'Customer Data' : 'Data Customer'}
+                    </h3>
                   </div>
                   <div className="space-y-3.5 p-3.5 text-xs text-slate-600">
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Customer</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Customer Name' : 'Nama Customer'}
+                      </span>
                       <span className="text-xs font-extrabold text-slate-850 mt-0.5 block">{activeSo.customer_nama}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Alamat Pengiriman</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Shipping Address' : 'Alamat Pengiriman'}
+                      </span>
                       <span className="text-xs font-semibold text-slate-700 mt-0.5 block leading-normal">
-                        {activeSo.customer_alamat || 'Alamat tidak dicantumkan'}
+                        {activeSo.customer_alamat || (lang === 'en' ? 'Address not specified' : 'Alamat tidak dicantumkan')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Telepon / Kontak</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        {lang === 'en' ? 'Phone Number / Contact' : 'No. Telepon / Kontak'}
+                      </span>
                       <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeSo.customer_telp || '-'}</span>
                     </div>
                   </div>
@@ -719,7 +767,9 @@ export const DaftarPenjualan: React.FC = () => {
             {/* Card 3: Daftar Barang */}
             <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
               <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
-                <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang</h3>
+                <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                  {lang === 'en' ? 'Product List' : 'Daftar Barang'}
+                </h3>
               </div>
               <div className="p-4">
                 <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -727,11 +777,11 @@ export const DaftarPenjualan: React.FC = () => {
                     <thead>
                       <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
                         <th className="p-3 w-12 text-center">#</th>
-                        <th className="p-3 w-32 text-center">Kode</th>
-                        <th className="p-3">Nama Barang</th>
+                        <th className="p-3 w-32 text-center">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                        <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                         <th className="p-3 text-center w-24">Qty</th>
-                        <th className="p-3 text-right w-36">Harga Satuan</th>
-                        <th className="p-3 text-right w-40">Total Harga</th>
+                        <th className="p-3 text-right w-36">{lang === 'en' ? 'Unit Price' : 'Harga Satuan'}</th>
+                        <th className="p-3 text-right w-40">{lang === 'en' ? 'Total Price' : 'Total Harga'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -790,7 +840,9 @@ export const DaftarPenjualan: React.FC = () => {
                   </table>
                   <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
                     <div className="flex gap-6 items-center">
-                      <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Subtotal Keseluruhan</span>
+                      <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                        {lang === 'en' ? 'Grand Subtotal' : 'Subtotal Keseluruhan'}
+                      </span>
                       <span className="text-base font-extrabold text-blue-600 font-mono">
                         {formatCurrency(Number(activeSo.subtotal))}
                       </span>
@@ -807,7 +859,7 @@ export const DaftarPenjualan: React.FC = () => {
                 onClick={() => setIsInfoHidden((prev) => !prev)}
                 className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
               >
-                <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+                <span>{isInfoHidden ? (lang === 'en' ? 'Show Info' : 'Tampilkan Info') : (lang === 'en' ? 'Hide Info' : 'Sembunyikan Info')}</span>
                 <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
               </button>
               <button
@@ -818,7 +870,7 @@ export const DaftarPenjualan: React.FC = () => {
                 }}
                 className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
               >
-                <span>Tutup</span>
+                <span>{lang === 'en' ? 'Close' : 'Tutup'}</span>
                 <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
               </button>
               <button
@@ -827,7 +879,7 @@ export const DaftarPenjualan: React.FC = () => {
                 className="px-6 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-extrabold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/10 flex items-center gap-2 focus:outline-none"
               >
                 <Printer size={15} />
-                <span>Cetak Nota</span>
+                <span>{lang === 'en' ? 'Print Invoice' : 'Cetak Nota'}</span>
                 <kbd className="text-[10px] text-blue-200 font-bold font-mono uppercase bg-blue-700 px-1.5 py-0.5 rounded ml-1">P</kbd>
               </button>
             </div>
@@ -841,11 +893,13 @@ export const DaftarPenjualan: React.FC = () => {
               <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden border border-blue-200">
                 <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2 border-b border-primary-700/80">
                   <Printer size={24} className="shrink-0 text-white animate-pulse" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Cetak Ulang Nota</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">
+                    {lang === 'en' ? 'Reprint Invoice' : 'Cetak Ulang Nota'}
+                  </h3>
                 </div>
                 <div className="p-6 text-center">
                   <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
-                    Apakah Anda yakin ingin mencetak ulang nota ini?
+                    {lang === 'en' ? 'Are you sure you want to reprint this invoice?' : 'Apakah Anda yakin ingin mencetak ulang nota ini?'}
                   </p>
                   <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
                     <button
@@ -853,7 +907,7 @@ export const DaftarPenjualan: React.FC = () => {
                       onClick={() => setShowConfirmReissue(false)}
                       className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all focus:ring-2 focus:ring-slate-500/20"
                     >
-                      Batal (Esc)
+                      {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                     </button>
                     <button
                       type="button"
@@ -863,7 +917,7 @@ export const DaftarPenjualan: React.FC = () => {
                       }}
                       className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md focus:ring-2 focus:ring-primary-500/20"
                     >
-                      Ya, Lanjut (Enter/Y)
+                      {lang === 'en' ? 'Yes, Continue (Enter/Y)' : 'Ya, Lanjut (Enter/Y)'}
                     </button>
                   </div>
                 </div>
@@ -882,7 +936,7 @@ export const DaftarPenjualan: React.FC = () => {
                 <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                     <Printer size={18} className="text-primary-600" />
-                    <span>Konfirmasi Cetak Nota</span>
+                    <span>{lang === 'en' ? 'Confirm Invoice Printing' : 'Konfirmasi Cetak Nota'}</span>
                   </h3>
                   <button
                     onClick={() => setShowPrintConfirm(false)}
@@ -894,17 +948,19 @@ export const DaftarPenjualan: React.FC = () => {
 
                 {/* Subtitle */}
                 <p className="text-xs text-slate-500 mt-4 font-medium">
-                  Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
+                  {lang === 'en'
+                    ? 'Select item sorting option, then choose action: Save as Draft (Enter) or Print (P).'
+                    : 'Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).'}
                 </p>
 
                 {/* Sorting Pills */}
                 <div className="flex gap-2.5 mt-4">
                   {(['asli', 'abjad', 'qty', 'harga'] as const).map((opt) => {
                     const labelMap = {
-                      asli: 'Urutan Asli',
-                      abjad: 'Abjad (A-Z)',
-                      qty: 'Qty Terbanyak',
-                      harga: 'Harga Tertinggi',
+                      asli: lang === 'en' ? 'Original Order' : 'Urutan Asli',
+                      abjad: lang === 'en' ? 'Alphabetical (A-Z)' : 'Abjad (A-Z)',
+                      qty: lang === 'en' ? 'Highest Qty' : 'Qty Terbanyak',
+                      harga: lang === 'en' ? 'Highest Price' : 'Harga Tertinggi',
                     };
                     return (
                       <button
@@ -927,10 +983,10 @@ export const DaftarPenjualan: React.FC = () => {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-100 border-b border-blue-250 text-slate-700 font-bold">
-                        <th className="p-3">Nama Barang</th>
+                        <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                         <th className="p-3 text-right w-20">Qty</th>
-                        <th className="p-3 text-right w-32">Harga</th>
-                        <th className="p-3 text-right w-32">Jumlah</th>
+                        <th className="p-3 text-right w-32">{lang === 'en' ? 'Price' : 'Harga'}</th>
+                        <th className="p-3 text-right w-32">{lang === 'en' ? 'Amount' : 'Jumlah'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-150 bg-white">
@@ -963,14 +1019,14 @@ export const DaftarPenjualan: React.FC = () => {
                     onClick={() => setShowPrintConfirm(false)}
                     className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all"
                   >
-                    Batal (Esc)
+                    {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowPrintConfirm(false)}
                     className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
                   >
-                    Simpan Draft (Enter)
+                    {lang === 'en' ? 'Save Draft (Enter)' : 'Simpan Draft (Enter)'}
                   </button>
                   <button
                     type="button"
@@ -1004,11 +1060,21 @@ export const DaftarPenjualan: React.FC = () => {
                 <p className="border-t border-dashed border-black my-1.5"></p>
               </div>
               <div className="space-y-0.5">
-                <p>No. Faktur: {activeSo.no_faktur || activeSo.no_order}</p>
-                <p>Tanggal: {formatDate(activeSo.order_date)}</p>
-                <p>Pelanggan: {activeSo.customer_nama}</p>
-                <p>Termin: {activeSo.limit_bulan + 1} Bulan</p>
-                <p>Status: LUNAS (KREDIT J.TEMPO)</p>
+                <p>{lang === 'en' ? 'Invoice No.:' : 'No. Faktur:'} {activeSo.no_faktur || activeSo.no_order}</p>
+                <p>{lang === 'en' ? 'Date:' : 'Tanggal:'} {formatDate(activeSo.order_date)}</p>
+                <p>{lang === 'en' ? 'Customer:' : 'Pelanggan:'} {activeSo.customer_nama}</p>
+                <p>
+                  {lang === 'en' ? 'Terms:' : 'Termin:'}{' '}
+                  {activeSo.limit_bulan !== undefined
+                    ? (lang === 'en' ? `Credit (${activeSo.limit_bulan + 1} Month(s))` : `Kredit (${activeSo.limit_bulan + 1} Bulan)`)
+                    : (lang === 'en' ? 'Cash' : 'Tunai')}
+                </p>
+                <p>
+                  Status:{' '}
+                  {activeSo.limit_bulan !== undefined && activeSo.limit_bulan >= 0
+                    ? (lang === 'en' ? 'UNPAID (CREDIT DUE)' : 'BELUM LUNAS (KREDIT J.TEMPO)')
+                    : (lang === 'en' ? 'PAID' : 'LUNAS')}
+                </p>
                 <p className="border-t border-dashed border-black my-1.5"></p>
               </div>
               <div className="space-y-1">
@@ -1030,8 +1096,8 @@ export const DaftarPenjualan: React.FC = () => {
                 <p className="font-bold text-xs">Total: {formatCurrency(Number(activeSo.subtotal))}</p>
               </div>
               <div className="text-center text-[9px] pt-3 space-y-0.5">
-                <p>Terima Kasih Atas Kunjungan Anda</p>
-                <p>Barang yang sudah dibeli tidak dapat ditukar</p>
+                <p>{lang === 'en' ? 'Thank You for Your Visit' : 'Terima Kasih Atas Kunjungan Anda'}</p>
+                <p>{lang === 'en' ? 'Purchased goods cannot be returned/exchanged' : 'Barang yang sudah dibeli tidak dapat ditukar'}</p>
               </div>
             </div>
           ) : (
@@ -1040,30 +1106,40 @@ export const DaftarPenjualan: React.FC = () => {
               <div className="flex justify-between items-start border-b border-black pb-4">
                 <div>
                   <h1 className="text-lg font-bold uppercase tracking-wider">Maju Mulia Bersama</h1>
-                  <p className="text-xs text-slate-700">Distributor Bahan Bangunan & Logam</p>
+                  <p className="text-xs text-slate-700">
+                    {lang === 'en' ? 'Building Materials & Metal Distributor' : 'Distributor Bahan Bangunan & Logam'}
+                  </p>
                   <p className="text-xs text-slate-700">Jl. Raya Industri Utama No. 88, Cikarang, Bekasi</p>
                   <p className="text-xs text-slate-700">Telp: (021) 89876543 | Email: contact@mmb.com</p>
                 </div>
                 <div className="text-right">
-                  <h2 className="text-base font-bold uppercase">Faktur Penjualan</h2>
+                  <h2 className="text-base font-bold uppercase">
+                    {lang === 'en' ? 'Sales Invoice' : 'Faktur Penjualan'}
+                  </h2>
                   <p className="text-xs font-semibold font-mono">{activeSo.no_faktur || activeSo.no_order}</p>
-                  <p className="text-[10px] mt-2">Tanggal: {formatDate(activeSo.order_date)}</p>
+                  <p className="text-[10px] mt-2">{lang === 'en' ? 'Date:' : 'Tanggal:'} {formatDate(activeSo.order_date)}</p>
                   {activeSo.due_date && (
-                    <p className="text-[10px] text-red-600 font-bold">Jatuh Tempo: {formatDate(activeSo.due_date)}</p>
+                    <p className="text-[10px] text-red-600 font-bold">
+                      {lang === 'en' ? 'Due Date:' : 'Jatuh Tempo:'} {formatDate(activeSo.due_date)}
+                    </p>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-[10px]">
                 <div>
-                  <p className="font-bold uppercase text-slate-500">Pelanggan:</p>
+                  <p className="font-bold uppercase text-slate-500">{lang === 'en' ? 'Customer:' : 'Pelanggan:'}</p>
                   <p className="font-bold text-xs">{activeSo.customer_nama}</p>
-                  <p>{activeSo.customer_alamat || 'Alamat tidak dicantumkan'}</p>
-                  <p>Telp: {activeSo.customer_telp || '-'}</p>
+                  <p>{activeSo.customer_alamat || (lang === 'en' ? 'Address not specified' : 'Alamat tidak dicantumkan')}</p>
+                  <p>{lang === 'en' ? 'Tel:' : 'Telp:'} {activeSo.customer_telp || '-'}</p>
                 </div>
                 <div>
-                  <p className="font-bold uppercase text-slate-500">Pengiriman & Catatan:</p>
-                  <p className="font-semibold">{activeSo.diantar ? '🚚 DIANTAR SOPIR' : '🚶 DIAMBIL SENDIRI'}</p>
+                  <p className="font-bold uppercase text-slate-500">{lang === 'en' ? 'Delivery & Notes:' : 'Pengiriman & Catatan:'}</p>
+                  <p className="font-semibold">
+                    {activeSo.diantar
+                      ? (lang === 'en' ? '🚚 DELIVERED BY DRIVER' : '🚚 DIANTAR SOPIR')
+                      : (lang === 'en' ? '🚶 SELF PICKUP' : '🚶 DIAMBIL SENDIRI')}
+                  </p>
                   {activeSo.sender_note && <p className="italic mt-1">"{activeSo.sender_note}"</p>}
                 </div>
               </div>
@@ -1072,10 +1148,10 @@ export const DaftarPenjualan: React.FC = () => {
                 <thead>
                   <tr className="bg-slate-100 border-b border-black font-bold uppercase text-[9px]">
                     <th className="p-1.5 border-r border-black w-8 text-center">No</th>
-                    <th className="p-1.5 border-r border-black">Kode Barang</th>
-                    <th className="p-1.5 border-r border-black">Nama Produk</th>
-                    <th className="p-1.5 border-r border-black text-right w-20">Kuantitas</th>
-                    <th className="p-1.5 border-r border-black text-right w-28">Harga</th>
+                    <th className="p-1.5 border-r border-black">{lang === 'en' ? 'Product Code' : 'Kode Barang'}</th>
+                    <th className="p-1.5 border-r border-black">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                    <th className="p-1.5 border-r border-black text-right w-20">{lang === 'en' ? 'Quantity' : 'Kuantitas'}</th>
+                    <th className="p-1.5 border-r border-black text-right w-28">{lang === 'en' ? 'Price' : 'Harga'}</th>
                     <th className="p-1.5 text-right w-28">Subtotal</th>
                   </tr>
                 </thead>
@@ -1106,7 +1182,7 @@ export const DaftarPenjualan: React.FC = () => {
                   ))}
                   <tr className="bg-slate-50 border-t border-black">
                     <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
-                      Grand Total Penjualan
+                      {lang === 'en' ? 'Grand Total Sales' : 'Grand Total Penjualan'}
                     </td>
                     <td className="p-1.5 text-right font-black">
                       {formatCurrency(Number(activeSo.subtotal))}
@@ -1117,15 +1193,15 @@ export const DaftarPenjualan: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-4 text-center text-[9px] pt-8">
                 <div className="space-y-10">
-                  <p>Penerima / Customer</p>
+                  <p>{lang === 'en' ? 'Recipient / Customer' : 'Penerima / Customer'}</p>
                   <p className="underline font-bold">( ____________________ )</p>
                 </div>
                 <div className="space-y-10">
-                  <p>Sopir / Pengirim</p>
+                  <p>{lang === 'en' ? 'Driver / Shipper' : 'Sopir / Pengirim'}</p>
                   <p className="underline font-bold">( ____________________ )</p>
                 </div>
                 <div className="space-y-10">
-                  <p>Hormat Kami, Kasir</p>
+                  <p>{lang === 'en' ? 'Sincerely, Cashier' : 'Hormat Kami, Kasir'}</p>
                   <p className="underline font-bold">({activeSo.creator?.nama || '____________________'})</p>
                 </div>
               </div>
@@ -1140,7 +1216,9 @@ export const DaftarPenjualan: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <div className="relative bg-white border border-slate-200 rounded-xl p-6 max-w-xs w-full shadow-2xl animate-scale-in text-center space-y-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
-              <p className="text-xs font-bold text-slate-700">Memeriksa status pembayaran transaksi...</p>
+              <p className="text-xs font-bold text-slate-700">
+                {lang === 'en' ? 'Checking transaction payment status...' : 'Memeriksa status pembayaran transaksi...'}
+              </p>
             </div>
           </div>
         </ModalPortal>
@@ -1157,18 +1235,32 @@ export const DaftarPenjualan: React.FC = () => {
                   <X size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Transaksi Tidak Dapat Dihapus</h2>
-                  <p className="text-xs text-red-100 mt-1 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">
+                    {lang === 'en' ? 'Transaction Cannot Be Deleted' : 'Transaksi Tidak Dapat Dihapus'}
+                  </h2>
+                  <p className="text-xs text-red-100 mt-1 font-semibold">
+                    {lang === 'en' ? 'Already has payment history or return documents' : 'Sudah memiliki riwayat pembayaran atau retur'}
+                  </p>
                 </div>
               </div>
 
               {/* Body */}
               <div className="px-5 py-5 bg-white text-xs">
                 <p className="text-slate-700 font-semibold leading-relaxed">
-                  Data transaksi penjualan <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> tidak dapat dihapus karena sudah memiliki pelunasan/pembayaran sebagian sebesar <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> atau sudah memiliki dokumen retur.
+                  {lang === 'en' ? (
+                    <>
+                      Sales transaction data <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> cannot be deleted because it already has full/partial payments of <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> or has return documents.
+                    </>
+                  ) : (
+                    <>
+                      Data transaksi penjualan <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> tidak dapat dihapus karena sudah memiliki pelunasan/pembayaran sebagian sebesar <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> atau sudah memiliki dokumen retur.
+                    </>
+                  )}
                 </p>
                 <p className="text-slate-500 mt-2">
-                  Harap batalkan/hapus pembayaran terkait di menu penagihan/pelunasan terlebih dahulu sebelum menghapus transaksi ini.
+                  {lang === 'en'
+                    ? 'Please cancel/delete the associated payments in the billing/payment menu first before deleting this transaction.'
+                    : 'Harap batalkan/hapus pembayaran terkait di menu penagihan/pelunasan terlebih dahulu sebelum menghapus transaksi ini.'}
                 </p>
               </div>
 
@@ -1176,9 +1268,9 @@ export const DaftarPenjualan: React.FC = () => {
               <div className="flex gap-2 px-5 py-4 bg-slate-50 border-t border-slate-100 justify-end">
                 <button
                   onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
-                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-655 hover:bg-slate-50 transition-all bg-white"
                 >
-                  Tutup (Esc)
+                  {lang === 'en' ? 'Close (Esc)' : 'Tutup (Esc)'}
                 </button>
                 <button
                   onClick={() => {
@@ -1186,16 +1278,15 @@ export const DaftarPenjualan: React.FC = () => {
                     setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
                     navigate(`/penagihan/history-pembayaran?search=${noOrder}`);
                   }}
-                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
+                  className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-355 transition-all shadow-md shadow-red-500/20"
                 >
-                  Lihat Pembayaran (Y)
+                  {lang === 'en' ? 'View Payments (Y)' : 'Lihat Pembayaran (Y)'}
                 </button>
               </div>
             </div>
           </div>
         </ModalPortal>
       )}
-
       {deleteCheckState.status === 'can_delete' && deleteCheckState.targetItem && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in" onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}>
@@ -1207,20 +1298,38 @@ export const DaftarPenjualan: React.FC = () => {
                   <AlertTriangle size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Konfirmasi Batal Transaksi</h2>
-                  <p className="text-xs text-amber-50 mt-1 font-semibold">Tindakan ini akan mengembalikan stok barang ke gudang</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">
+                    {lang === 'en' ? 'Confirm Transaction Cancellation' : 'Konfirmasi Batal Transaksi'}
+                  </h2>
+                  <p className="text-xs text-amber-50 mt-1 font-semibold">
+                    {lang === 'en' ? 'This action will return the stock of goods to the warehouse' : 'Tindakan ini akan mengembalikan stok barang ke gudang'}
+                  </p>
                 </div>
               </div>
 
               {/* Body */}
               <div className="px-5 py-5 bg-white text-xs">
                 <p className="text-slate-700 font-semibold leading-relaxed">
-                  Apakah Anda yakin ingin membatalkan dan menghapus transaksi order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>?
+                  {lang === 'en' ? (
+                    <>
+                      Are you sure you want to cancel and delete order transaction <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>?
+                    </>
+                  ) : (
+                    <>
+                      Apakah Anda yakin ingin membatalkan dan menghapus transaksi order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>?
+                    </>
+                  )}
                 </p>
                 <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-650">
-                  <div><span className="font-bold">Tanggal SO:</span> {formatDate(deleteCheckState.targetItem.order_date)}</div>
-                  <div><span className="font-bold">Customer:</span> {deleteCheckState.targetItem.customer_nama}</div>
-                  <div><span className="font-bold">Total Nilai SO:</span> {formatCurrency(deleteCheckState.targetItem.subtotal)}</div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'SO Date:' : 'Tanggal SO:'}</span> {formatDate(deleteCheckState.targetItem.order_date)}
+                  </div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'Customer:' : 'Customer:'}</span> {deleteCheckState.targetItem.customer_nama}
+                  </div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'Total SO Value:' : 'Total Nilai SO:'}</span> {formatCurrency(deleteCheckState.targetItem.subtotal)}
+                  </div>
                 </div>
               </div>
 
@@ -1230,13 +1339,13 @@ export const DaftarPenjualan: React.FC = () => {
                   onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-250 text-slate-600 hover:bg-slate-100 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   onClick={confirmDeleteSale}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
-                  Ya, Batalkan (Enter)
+                  {lang === 'en' ? 'Yes, Cancel (Enter)' : 'Ya, Batalkan (Enter)'}
                 </button>
               </div>
             </div>

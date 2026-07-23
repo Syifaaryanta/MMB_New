@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   Package, 
@@ -37,6 +38,7 @@ interface Product {
 
 export const LaporanStok: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,22 +184,25 @@ export const LaporanStok: React.FC = () => {
       const assetVal = Number(p.stok) * lowestPrice;
 
       return {
-        'Kode Barang': p.kode,
-        'Nama Barang': p.nama,
-        'Deskripsi': p.deskripsi || '-',
-        'Stok Akhir': Number(p.stok),
-        'Estimasi Harga Beli Terendah': lowestPrice,
-        'Estimasi Nilai Aset': assetVal,
+        [lang === 'en' ? 'SKU Code' : 'Kode Barang']: p.kode,
+        [lang === 'en' ? 'Product Name' : 'Nama Barang']: p.nama,
+        [lang === 'en' ? 'Description' : 'Deskripsi']: p.deskripsi || '-',
+        [lang === 'en' ? 'Final Stock' : 'Stok Akhir']: Number(p.stok),
+        [lang === 'en' ? 'Est Lowest Purchase Price' : 'Estimasi Harga Beli Terendah']: lowestPrice,
+        [lang === 'en' ? 'Est Asset Value' : 'Estimasi Nilai Aset']: assetVal,
       };
     });
 
     exportStyledExcel(
       excelRows,
       `Laporan_Stok_Persediaan_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      'Laporan Stok Persediaan',
-      ['Stok Akhir'],
-      ['Kode Barang'],
-      ['Estimasi Harga Beli Terendah', 'Estimasi Nilai Aset']
+      lang === 'en' ? 'Stock Inventory Report' : 'Laporan Stok Persediaan',
+      [lang === 'en' ? 'Final Stock' : 'Stok Akhir'],
+      [lang === 'en' ? 'SKU Code' : 'Kode Barang'],
+      [
+        lang === 'en' ? 'Est Lowest Purchase Price' : 'Estimasi Harga Beli Terendah',
+        lang === 'en' ? 'Est Asset Value' : 'Estimasi Nilai Aset'
+      ]
     );
   };
 
@@ -209,19 +214,6 @@ export const LaporanStok: React.FC = () => {
     }).format(val);
   };
 
-  const handleFilterEnter = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (filteredProducts.length > 0) {
-        setIsTableFocused(true);
-        setSelectedIdx(0);
-        if (e.currentTarget instanceof HTMLElement) {
-          e.currentTarget.blur();
-        }
-      }
-    }
-  };
-
   return (
     <div className="space-y-6 text-slate-800 animate-fade-in">
       {/* Header */}
@@ -231,10 +223,16 @@ export const LaporanStok: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Stok Persediaan</h1>
-          <p className="text-slate-550 text-xs mt-1">Monitoring kuantitas inventori gudang, stok kritis, dan total estimasi aset.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">
+            {lang === 'en' ? 'Stock Inventory Report' : 'Laporan Stok Persediaan'}
+          </h1>
+          <p className="text-slate-555 text-xs mt-1">
+            {lang === 'en'
+              ? 'Monitoring warehouse inventory quantity, critical stock, and total estimated assets.'
+              : 'Monitoring kuantitas inventori gudang, stok kritis, dan total estimasi aset.'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -244,7 +242,7 @@ export const LaporanStok: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -254,7 +252,9 @@ export const LaporanStok: React.FC = () => {
         {/* Metric 1 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Estimasi Nilai Aset</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
+              {lang === 'en' ? 'Est Asset Value' : 'Estimasi Nilai Aset'}
+            </span>
             <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(totalAsetVal)}</span>
           </div>
           <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
@@ -265,8 +265,12 @@ export const LaporanStok: React.FC = () => {
         {/* Metric 2 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-rose-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Stok Kritis (&lt; 2)</span>
-            <span className="text-xl font-extrabold text-rose-600 block mt-0.5 font-mono">{criticalCount} SKU</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Critical Stock (< 2)' : 'Stok Kritis (< 2)'}
+            </span>
+            <span className="text-xl font-extrabold text-rose-600 block mt-0.5 font-mono">
+              {criticalCount} SKU
+            </span>
           </div>
           <div className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl">
             <AlertTriangle size={20} />
@@ -276,8 +280,12 @@ export const LaporanStok: React.FC = () => {
         {/* Metric 3 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total SKU Terdaftar</span>
-            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{products.length} Barang</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
+              {lang === 'en' ? 'Total Registered SKUs' : 'Total SKU Terdaftar'}
+            </span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">
+              {products.length} {lang === 'en' ? 'Items' : 'Barang'}
+            </span>
           </div>
           <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
             <Layers size={20} />
@@ -289,13 +297,15 @@ export const LaporanStok: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Cari Barang / Kode SKU (F1)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Item / SKU Code (F1)' : 'Cari Barang / Kode SKU (F1)'}
+          </label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Ketik nama atau SKU produk..."
+              placeholder={lang === 'en' ? 'Type product name or SKU...' : 'Ketik nama atau SKU produk...'}
               value={searchQuery}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), statusFilterRef.current?.focus())}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -306,7 +316,9 @@ export const LaporanStok: React.FC = () => {
 
         {/* Filter Stock */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Filter Status Stok (F2)</label>
+          <label className="block text-[10px] text-slate-505 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Filter Stock Status (F2)' : 'Filter Status Stok (F2)'}
+          </label>
           <div
             ref={statusFilterRef}
             tabIndex={0}
@@ -336,7 +348,7 @@ export const LaporanStok: React.FC = () => {
                 stockStatus === 'all' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Semua
+              {lang === 'en' ? 'All' : 'Semua'}
             </button>
             <button
               type="button"
@@ -346,7 +358,7 @@ export const LaporanStok: React.FC = () => {
                 stockStatus === 'critical' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-855'
               }`}
             >
-              Kritis
+              {lang === 'en' ? 'Critical' : 'Kritis'}
             </button>
             <button
               type="button"
@@ -356,15 +368,23 @@ export const LaporanStok: React.FC = () => {
                 stockStatus === 'safe' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-855'
               }`}
             >
-              Aman
+              {lang === 'en' ? 'Safe' : 'Aman'}
             </button>
           </div>
         </div>
 
         {/* Hints */}
-        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-550 leading-relaxed">
-          <p>Estimasi aset didasarkan pada harga beli terendah dari supplier.</p>
-          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge text-[9px]">F1</kbd> cari produk, <kbd className="shortcut-badge text-[9px]">F2</kbd> filter status, <kbd className="shortcut-badge text-[9px]">F10</kbd> ekspor Excel.</p>
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-550 leading-relaxed font-semibold">
+          <p>
+            {lang === 'en'
+              ? 'Asset estimation is based on the lowest purchase price from suppliers.'
+              : 'Estimasi aset didasarkan pada harga beli terendah dari supplier.'}
+          </p>
+          <p className="mt-0.5 font-semibold text-slate-400">
+            {lang === 'en'
+              ? 'Shortcuts: F1 search product, F2 filter status, F10 export Excel.'
+              : 'Pintasan: F1 cari produk, F2 filter status, F10 ekspor Excel.'}
+          </p>
         </div>
       </div>
 
@@ -378,25 +398,25 @@ export const LaporanStok: React.FC = () => {
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-3 w-12 text-center">Detail</th>
-              <th className="p-3 w-44">Kode SKU</th>
-              <th className="p-3">Nama Produk</th>
-              <th className="p-3">Keterangan / Deskripsi</th>
-              <th className="p-3 text-right">Kuantitas Stok</th>
-              <th className="p-3 text-right">Nilai Aset Estimasi</th>
+              <th className="p-3 w-12 text-center">{lang === 'en' ? 'Detail' : 'Detail'}</th>
+              <th className="p-3 w-44">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+              <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+              <th className="p-3">{lang === 'en' ? 'Description' : 'Keterangan / Deskripsi'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Stock Quantity' : 'Kuantitas Stok'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Est Asset Value' : 'Nilai Aset Estimasi'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="p-8 text-center text-slate-500 italic">
-                  Sedang menghitung persediaan barang...
+                  {lang === 'en' ? 'Calculating inventory items...' : 'Sedang menghitung persediaan barang...'}
                 </td>
               </tr>
             ) : filteredProducts.length === 0 ? (
               <tr>
                 <td colSpan={6} className="p-8 text-center text-slate-400 italic">
-                  Tidak ada barang persediaan terdeteksi untuk filter ini.
+                  {lang === 'en' ? 'No inventory items detected for this filter.' : 'Tidak ada barang persediaan terdeteksi untuk filter ini.'}
                 </td>
               </tr>
             ) : (
@@ -463,7 +483,7 @@ export const LaporanStok: React.FC = () => {
                           <div className="space-y-3">
                             <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2">
                               <Package size={12} className="text-primary-600" />
-                              <span>Distribusi Stok Dan Harga Per Supplier</span>
+                              <span>{lang === 'en' ? 'Stock Distribution and Price Per Supplier' : 'Distribusi Stok Dan Harga Per Supplier'}</span>
                             </div>
 
                             {prices.length > 0 ? (
@@ -472,10 +492,10 @@ export const LaporanStok: React.FC = () => {
                                   <thead>
                                     <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[9px]">
                                       <th className="p-2 w-8 text-center">No</th>
-                                      <th className="p-2">Kode Supplier</th>
-                                      <th className="p-2">Nama Supplier</th>
-                                      <th className="p-2 text-right w-24">Stok Fisik</th>
-                                      <th className="p-2 text-right w-36">Harga Beli Supplier</th>
+                                      <th className="p-2">{lang === 'en' ? 'Supplier Code' : 'Kode Supplier'}</th>
+                                      <th className="p-2">{lang === 'en' ? 'Supplier Name' : 'Nama Supplier'}</th>
+                                      <th className="p-2 text-right w-24">{lang === 'en' ? 'Physical Stock' : 'Stok Fisik'}</th>
+                                      <th className="p-2 text-right w-36">{lang === 'en' ? 'Supplier Buy Price' : 'Harga Beli Supplier'}</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -485,14 +505,16 @@ export const LaporanStok: React.FC = () => {
                                         <td className="p-2 font-mono text-slate-555">{pr.supplier?.kode}</td>
                                         <td className="p-2 font-bold text-slate-900">{pr.supplier?.nama}</td>
                                         <td className="p-2 text-right font-semibold text-slate-800">{Number(pr.stok)}</td>
-                                        <td className="p-2 text-right font-mono text-emerald-650 font-bold">{formatCurrency(Number(pr.harga_beli))}</td>
+                                        <td className="p-2 text-right font-mono text-emerald-655 font-bold">{formatCurrency(Number(pr.harga_beli))}</td>
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
                               </div>
                             ) : (
-                              <p className="text-[10px] text-slate-500 italic">Belum ada relasi harga supplier terdaftar untuk produk ini.</p>
+                              <p className="text-[10px] text-slate-500 italic">
+                                {lang === 'en' ? 'No supplier price relations registered for this product yet.' : 'Belum ada relasi harga supplier terdaftar untuk produk ini.'}
+                              </p>
                             )}
                           </div>
                         </td>
@@ -506,7 +528,11 @@ export const LaporanStok: React.FC = () => {
         </table>
       </div>
       <div className="flex justify-end text-[10px] text-slate-400 mt-2">
-        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> detail item.</span>
+        <span>
+          {lang === 'en'
+            ? 'Use cursor or click table to focus, ↑ ↓ keys to select, Enter for item details.'
+            : 'Gunakan kursor atau klik tabel untuk fokus, tombol ↑ ↓ untuk memilih, Enter detail item.'}
+        </span>
       </div>
     </div>
   );

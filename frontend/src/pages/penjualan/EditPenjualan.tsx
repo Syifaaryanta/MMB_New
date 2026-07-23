@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, formatRupiahInput, parseRupiahInput, parseAdjustments } from '@/lib/utils';
 import { Search, Save, Printer, Trash2, X, AlertCircle, ShoppingCart, Truck, User, AlertTriangle, Calendar, CheckCircle, XCircle } from 'lucide-react';
 
@@ -40,6 +41,7 @@ interface SOItem {
 
 export const EditPenjualan: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [searchParams] = useSearchParams();
   const noOrderParam = searchParams.get('no_order');
 
@@ -246,7 +248,10 @@ export const EditPenjualan: React.FC = () => {
       setTimeout(() => customerInputRef.current?.focus(), 150);
     } catch (err) {
       console.error(err);
-      showToast('Gagal memuat detail Draft SO.', 'error');
+      showToast(
+        lang === 'en' ? 'Failed to load Draft SO details.' : 'Gagal memuat detail Draft SO.',
+        'error'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -458,7 +463,11 @@ export const EditPenjualan: React.FC = () => {
       if (selectedProd && Number(qty) > Number(selectedProd.stok)) {
         const maxStok = Number(selectedProd.stok);
         setQty(maxStok);
-        setStockAlertMsg(`Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`);
+        setStockAlertMsg(
+          lang === 'en'
+            ? `Stock of ${selectedProd.nama} is insufficient. Available: ${maxStok}. Quantity automatically adjusted to ${maxStok}.`
+            : `Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`
+        );
         setShowStockAlert(true);
         return;
       }
@@ -485,7 +494,7 @@ export const EditPenjualan: React.FC = () => {
       return;
     }
     if (!price || Number(price) <= 0) {
-      alert("Harga jual tidak boleh kosong atau 0!");
+      alert(lang === 'en' ? "Selling price cannot be empty or 0!" : "Harga jual tidak boleh kosong atau 0!");
       priceInputRef.current?.focus();
       return;
     }
@@ -493,7 +502,11 @@ export const EditPenjualan: React.FC = () => {
     if (Number(qty) > Number(selectedProd.stok)) {
       const maxStok = Number(selectedProd.stok);
       setQty(maxStok);
-      setStockAlertMsg(`Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`);
+      setStockAlertMsg(
+        lang === 'en'
+          ? `Stock of ${selectedProd.nama} is insufficient. Available: ${maxStok}. Quantity automatically adjusted to ${maxStok}.`
+          : `Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`
+      );
       setShowStockAlert(true);
       return;
     }
@@ -528,18 +541,18 @@ export const EditPenjualan: React.FC = () => {
       }
       return updated;
     });
-    showToast('Item berhasil dihapus dari daftar', 'success');
+    showToast(lang === 'en' ? 'Item successfully deleted from list' : 'Item berhasil dihapus dari daftar', 'success');
   };
 
   const addAdjustmentToTable = () => {
     if (!tempAdjustmentDesc.trim()) {
-      showToast('Penjelasan penyesuaian tidak boleh kosong', 'error');
+      showToast(lang === 'en' ? 'Adjustment description cannot be empty' : 'Penjelasan penyesuaian tidak boleh kosong', 'error');
       return;
     }
     const val = tempAdjustmentAmountInput;
     const parsed = parseRupiahInput(val);
     if (parsed === 0) {
-      showToast('Nilai penyesuaian tidak boleh 0', 'error');
+      showToast(lang === 'en' ? 'Adjustment value cannot be 0' : 'Nilai penyesuaian tidak boleh 0', 'error');
       return;
     }
 
@@ -557,7 +570,7 @@ export const EditPenjualan: React.FC = () => {
     setTempAdjustmentDesc('');
     setTempAdjustmentAmountInput('');
     adjustmentDescRef.current?.focus();
-    showToast('Penyesuaian berhasil dimasukkan', 'success');
+    showToast(lang === 'en' ? 'Adjustment successfully added' : 'Penyesuaian berhasil dimasukkan', 'success');
   };
 
   const handleUpdateSO = async (isFinal: boolean, toDraftPage?: boolean) => {
@@ -590,14 +603,14 @@ export const EditPenjualan: React.FC = () => {
         const printRes = await api.patch(`/sales/${activeSo.id}/print`);
         setCompletedSo(printRes.data);
         setCompletedSoId(activeSo.id);
-        showToast('Order SO berhasil disimpan', 'success');
+        showToast(lang === 'en' ? 'Sales Order successfully saved' : 'Order SO berhasil disimpan', 'success');
         setShowConfirmPrintModal(false);
         setTimeout(() => {
           window.print();
           navigate('/penjualan');
         }, 300);
       } else {
-        showToast('Draft SO berhasil disimpan', 'success');
+        showToast(lang === 'en' ? 'Draft SO successfully saved' : 'Draft SO berhasil disimpan', 'success');
         setShowDraftConfirmModal(false);
         if (toDraftPage) {
           navigate('/penjualan/draft');
@@ -606,7 +619,13 @@ export const EditPenjualan: React.FC = () => {
         }
       }
     } catch (err: any) {
-      showToast(err.response?.data?.error || (isFinal ? 'Gagal menyimpan order SO' : 'Gagal menyimpan draft SO'), 'error');
+      showToast(
+        err.response?.data?.error ||
+        (isFinal
+          ? (lang === 'en' ? 'Failed to save sales order' : 'Gagal menyimpan order SO')
+          : (lang === 'en' ? 'Failed to save draft SO' : 'Gagal menyimpan draft SO')),
+        'error'
+      );
     } finally {
       setIsSaving(false);
     }
@@ -855,8 +874,12 @@ export const EditPenjualan: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Edit Nota SO</h1>
-            <p className="text-slate-400">Modifikasi isi order SO draft aktif</p>
+            <h1 className="text-2xl font-extrabold text-white">
+              {lang === 'en' ? 'Edit SO Invoice' : 'Edit Nota SO'}
+            </h1>
+            <p className="text-slate-400">
+              {lang === 'en' ? 'Modify the content of active draft SO order' : 'Modifikasi isi order SO draft aktif'}
+            </p>
           </div>
         </div>
 
@@ -867,18 +890,20 @@ export const EditPenjualan: React.FC = () => {
             <div className="md:col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                 <Search size={18} className="text-primary-600" />
-                <span>Cari Draft Penjualan</span>
+                <span>{lang === 'en' ? 'Search Sales Draft' : 'Cari Draft Penjualan'}</span>
               </h3>
               <form onSubmit={handleSoSearchSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nomor SO Draft</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Draft SO Number' : 'Nomor SO Draft'}
+                  </label>
                   <input
                     ref={soSearchInputRef}
                     type="text"
                     required
                     value={soQuery}
                     onChange={(e) => setSoQuery(e.target.value)}
-                    placeholder="Contoh: 260001"
+                    placeholder={lang === 'en' ? 'Example: 260001' : 'Contoh: 260001'}
                     className="input-field font-mono uppercase w-full py-2.5 text-xs text-slate-800 border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
                   />
                 </div>
@@ -887,7 +912,7 @@ export const EditPenjualan: React.FC = () => {
                   disabled={isLoading}
                   className="w-full py-2.5 rounded-lg bg-primary-600 hover:bg-primary-500 !text-white font-bold text-xs transition-all shadow-md shadow-primary-500/10 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {isLoading ? 'Memuat...' : 'Cari & Edit'}
+                  {isLoading ? (lang === 'en' ? 'Loading...' : 'Memuat...') : (lang === 'en' ? 'Search & Edit' : 'Cari & Edit')}
                 </button>
               </form>
             </div>
@@ -895,15 +920,31 @@ export const EditPenjualan: React.FC = () => {
             {/* Guide Card */}
             <div className="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm space-y-4 text-xs text-slate-605 flex flex-col justify-between">
               <div className="space-y-3">
-                <h4 className="font-bold text-slate-800 uppercase tracking-wider">Petunjuk Edit SO</h4>
+                <h4 className="font-bold text-slate-800 uppercase tracking-wider">
+                  {lang === 'en' ? 'SO Edit Instructions' : 'Petunjuk Edit SO'}
+                </h4>
                 <ul className="space-y-2 list-decimal list-inside text-slate-500 leading-relaxed">
-                  <li>Cari nomor order SO bertipe <strong>Draft</strong> untuk melakukan perubahan.</li>
-                  <li>Masukkan nomor order lengkap atau cari di menu <strong>Draft Order</strong>.</li>
-                  <li>Modul ini memungkinkan penambahan barang, koreksi qty, diskon, dan catatan pengiriman sebelum faktur dicetak.</li>
+                  <li>
+                    {lang === 'en'
+                      ? 'Search for draft SO order number to make changes.'
+                      : 'Cari nomor order SO bertipe Draft untuk melakukan perubahan.'}
+                  </li>
+                  <li>
+                    {lang === 'en'
+                      ? 'Enter the full order number or search in the Draft Order menu.'
+                      : 'Masukkan nomor order lengkap atau cari di menu Draft Order.'}
+                  </li>
+                  <li>
+                    {lang === 'en'
+                      ? 'This module allows adding items, correcting qty, discounts, and delivery notes before invoice printing.'
+                      : 'Modul ini memungkinkan penambahan barang, koreksi qty, diskon, dan catatan pengiriman sebelum faktur dicetak.'}
+                  </li>
                 </ul>
               </div>
               <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-400 font-mono">
-                Tekan <kbd className="shortcut-badge">Esc</kbd> untuk kembali ke menu Penjualan.
+                {lang === 'en'
+                  ? 'Press Esc to return to Sales menu.'
+                  : 'Tekan Esc untuk kembali ke menu Penjualan.'}
               </div>
             </div>
           </div>
@@ -920,7 +961,9 @@ export const EditPenjualan: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* SO Number (Read-Only) */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Nomor SO (Read-Only)</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                        {lang === 'en' ? 'SO Number (Read-Only)' : 'Nomor SO (Read-Only)'}
+                      </label>
                       <input
                         type="text"
                         readOnly
@@ -931,7 +974,9 @@ export const EditPenjualan: React.FC = () => {
 
                     {/* Customer Selection */}
                     <div className="relative">
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Pelanggan (F1)</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                        {lang === 'en' ? 'Customer (F1)' : 'Pelanggan (F1)'}
+                      </label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                           <User size={14} />
@@ -945,7 +990,7 @@ export const EditPenjualan: React.FC = () => {
                             setActiveStep('customer');
                           }}
                           onKeyDown={handleCustomerKeyDown}
-                          placeholder="Cari nama pelanggan..."
+                          placeholder={lang === 'en' ? 'Search customer name...' : 'Cari nama pelanggan...'}
                           className={`input-field pl-9 py-2 text-xs w-full ${activeStep === 'customer' ? 'border-primary-500 ring-2 ring-primary-500/20' : ''}`}
                         />
                       </div>
@@ -955,7 +1000,9 @@ export const EditPenjualan: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Delivery Method */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Metode Pengiriman</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                        {lang === 'en' ? 'Delivery Method' : 'Metode Pengiriman'}
+                      </label>
                       <div
                         ref={deliverySelectRef}
                         tabIndex={0}
@@ -976,7 +1023,7 @@ export const EditPenjualan: React.FC = () => {
                             }`}
                         >
                           <Truck size={14} />
-                          <span>Diantar</span>
+                          <span>{lang === 'en' ? 'Delivered' : 'Diantar'}</span>
                         </button>
                         <button
                           type="button"
@@ -990,14 +1037,16 @@ export const EditPenjualan: React.FC = () => {
                             }`}
                         >
                           <User size={14} />
-                          <span>Diambil</span>
+                          <span>{lang === 'en' ? 'Picked Up' : 'Diambil'}</span>
                         </button>
                       </div>
                     </div>
 
                     {/* Terms / Limit Bulan */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Termin Pembayaran</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                        {lang === 'en' ? 'Payment Terms' : 'Termin Pembayaran'}
+                      </label>
                       <div
                         ref={termsSelectRef}
                         tabIndex={0}
@@ -1007,10 +1056,10 @@ export const EditPenjualan: React.FC = () => {
                           }`}
                       >
                         {[
-                          { val: 0, label: 'Tunai' },
-                          { val: 1, label: '1 Bulan' },
-                          { val: 2, label: '2 Bulan' },
-                          { val: 3, label: '3 Bulan' },
+                          { val: 0, label: lang === 'en' ? 'Cash' : 'Tunai' },
+                          { val: 1, label: lang === 'en' ? '1 Month' : '1 Bulan' },
+                          { val: 2, label: lang === 'en' ? '2 Months' : '2 Bulan' },
+                          { val: 3, label: lang === 'en' ? '3 Months' : '3 Bulan' },
                         ].map((opt) => (
                           <button
                             key={opt.val}
@@ -1037,11 +1086,13 @@ export const EditPenjualan: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Product Search */}
                     <div className="md:col-span-2 relative">
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Cari Produk (F2)</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        {lang === 'en' ? 'Search Product (F2)' : 'Cari Produk (F2)'}
+                      </label>
                       <input
                         ref={searchInputRef}
                         type="text"
-                        placeholder="Ketik kode atau nama produk..."
+                        placeholder={lang === 'en' ? 'Type code or product name...' : 'Ketik kode atau nama produk...'}
                         value={prodQuery}
                         onChange={(e) => setProdQuery(e.target.value)}
                         onFocus={() => {
@@ -1059,7 +1110,7 @@ export const EditPenjualan: React.FC = () => {
                         ref={qtyInputRef}
                         type="number"
                         min="1"
-                        placeholder="Kuantitas"
+                        placeholder={lang === 'en' ? 'Quantity' : 'Kuantitas'}
                         value={qty}
                         onChange={(e) => setQty(e.target.value ? Number(e.target.value) : '')}
                         onFocus={() => setActiveStep('qty')}
@@ -1067,7 +1118,11 @@ export const EditPenjualan: React.FC = () => {
                           if (selectedProd && qty && Number(qty) > Number(selectedProd.stok)) {
                             const maxStok = Number(selectedProd.stok);
                             setQty(maxStok);
-                            setStockAlertMsg(`Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`);
+                            setStockAlertMsg(
+                              lang === 'en'
+                                ? `Stock of ${selectedProd.nama} is insufficient. Available: ${maxStok}. Quantity automatically adjusted to ${maxStok}.`
+                                : `Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`
+                            );
                             setShowStockAlert(true);
                           }
                         }}
@@ -1078,11 +1133,13 @@ export const EditPenjualan: React.FC = () => {
 
                     {/* Price */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Harga Jual</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                        {lang === 'en' ? 'Selling Price' : 'Harga Jual'}
+                      </label>
                       <input
                         ref={priceInputRef}
                         type="text"
-                        placeholder="Harga Jual"
+                        placeholder={lang === 'en' ? 'Selling Price' : 'Harga Jual'}
                         value={formatRupiahInput(price)}
                         onChange={(e) => setPrice(e.target.value ? parseRupiahInput(e.target.value) : '')}
                         onFocus={() => setActiveStep('price')}
@@ -1095,8 +1152,14 @@ export const EditPenjualan: React.FC = () => {
                   {selectedProd && (
                     <div className="p-3 bg-surface-900 border border-surface-700/50 rounded-lg flex items-center justify-between text-xs animate-scale-in">
                       <div className="flex gap-4">
-                        <span className="text-slate-400">Barang Terpilih: <strong className="text-slate-200">{selectedProd.nama}</strong></span>
-                        <span className="text-slate-400">Ketersediaan Stok: <strong className="text-emerald-400">{selectedProd.stok} {selectedProd.satuan}</strong></span>
+                        <span className="text-slate-400">
+                          {lang === 'en' ? 'Selected Product:' : 'Barang Terpilih:'}{' '}
+                          <strong className="text-slate-200">{selectedProd.nama}</strong>
+                        </span>
+                        <span className="text-slate-400">
+                          {lang === 'en' ? 'Available Stock:' : 'Ketersediaan Stok:'}{' '}
+                          <strong className="text-emerald-400">{selectedProd.stok} {selectedProd.satuan}</strong>
+                        </span>
                       </div>
                       <button onClick={() => { setSelectedProd(null); setProductHistoryData(null); }} className="text-slate-400 hover:text-white">
                         <X size={14} />
@@ -1116,10 +1179,10 @@ export const EditPenjualan: React.FC = () => {
                     <thead>
                       <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
                         <th className="p-4 w-12 text-center">No</th>
-                        <th className="p-4">Kode SKU</th>
-                        <th className="p-4">Nama Barang</th>
+                        <th className="p-4">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+                        <th className="p-4">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                         <th className="p-4 text-right">Qty</th>
-                        <th className="p-4 text-right">Harga Satuan</th>
+                        <th className="p-4 text-right">{lang === 'en' ? 'Unit Price' : 'Harga Satuan'}</th>
                         <th className="p-4 text-right">Subtotal</th>
                       </tr>
                     </thead>
@@ -1132,7 +1195,7 @@ export const EditPenjualan: React.FC = () => {
                           const getTdClass = (pos: 'first' | 'middle' | 'last') => {
                             let base = "p-4 transition-all duration-150 border-b ";
                             if (isFocused) {
-                              base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                              base += "bg-blue-100 text-primary-955 font-bold border-blue-300 ";
                               if (pos === 'first') base += "border-l-4 border-primary-600 ";
                             } else if (idx === selectedRowIdx) {
                               base += "bg-slate-50 text-slate-800 border-slate-200 ";
@@ -1154,7 +1217,7 @@ export const EditPenjualan: React.FC = () => {
                             const getAdjTdClass = (pos: 'first' | 'middle' | 'last') => {
                               let base = "p-4 transition-all duration-150 border-b ";
                               if (isFocused) {
-                                base += "bg-blue-100 text-primary-950 font-bold border-blue-300 ";
+                                base += "bg-blue-100 text-primary-955 font-bold border-blue-300 ";
                                 if (pos === 'first') base += "border-l-4 border-primary-600 ";
                               } else if (idx === selectedRowIdx) {
                                 base += "bg-amber-500/10 text-amber-900 border-amber-250 ";
@@ -1216,7 +1279,9 @@ export const EditPenjualan: React.FC = () => {
                       ) : (
                         <tr>
                           <td colSpan={6} className="p-8 text-center text-slate-500 text-xs italic">
-                            Belum ada item belanja ditambahkan. Cari barang di atas atau tekan F2.
+                            {lang === 'en'
+                              ? 'No shopping items added yet. Search products above or press F2.'
+                              : 'Belum ada item belanja ditambahkan. Cari barang di atas atau tekan F2.'}
                           </td>
                         </tr>
                       )}
@@ -1229,11 +1294,13 @@ export const EditPenjualan: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pr-4">
                   {/* Bottom Left: Note / Keterangan */}
                   <div className="flex flex-col space-y-1.5">
-                    <label className="text-xs text-slate-400 font-semibold">Keterangan (F6)</label>
+                    <label className="text-xs text-slate-400 font-semibold">
+                      {lang === 'en' ? 'Notes (F6)' : 'Keterangan (F6)'}
+                    </label>
                     <input
                       ref={noteInputRef}
                       type="text"
-                      placeholder="Input Keterangan..."
+                      placeholder={lang === 'en' ? 'Enter notes...' : 'Input Keterangan...'}
                       value={senderNote}
                       onChange={(e) => setSenderNote(e.target.value)}
                       onFocus={() => setActiveStep('adjust')}
@@ -1245,12 +1312,16 @@ export const EditPenjualan: React.FC = () => {
                   <div className="flex justify-end items-start">
                     <div className="flex flex-col text-right space-y-1.5 min-w-[280px]">
                       <div className="flex justify-between items-center text-xs gap-4">
-                        <span className="text-slate-400 font-medium">Subtotal Belanja:</span>
+                        <span className="text-slate-400 font-medium">
+                          {lang === 'en' ? 'Cart Subtotal:' : 'Subtotal Belanja:'}
+                        </span>
                         <span className="font-semibold text-slate-200 currency">{formatCurrency(itemsSubtotal)}</span>
                       </div>
                       {adjustmentAmount !== 0 && (
                         <div className="flex justify-between items-center text-xs gap-4">
-                          <span className="text-slate-400 font-medium">Penyesuaian ({adjustmentDesc || 'F3'}):</span>
+                          <span className="text-slate-400 font-medium">
+                            {lang === 'en' ? 'Adjustment' : 'Penyesuaian'} ({adjustmentDesc || 'F3'}):
+                          </span>
                           <span className={`font-semibold currency ${adjustmentAmount < 0 ? 'text-danger-400' : 'text-emerald-400'}`}>
                             {adjustmentAmount < 0 ? '-' : '+'}{formatCurrency(Math.abs(adjustmentAmount))}
                           </span>
@@ -1274,26 +1345,30 @@ export const EditPenjualan: React.FC = () => {
                     <div className="border-b border-surface-700 pb-3">
                       <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
                         <ShoppingCart size={16} className="text-primary-400" />
-                        <span>Analisis Riwayat Harga</span>
+                        <span>
+                          {lang === 'en' ? 'Price History Analysis' : 'Analisis Riwayat Harga'}
+                        </span>
                       </h4>
                       <p className="text-[10px] text-slate-400 mt-0.5">{selectedProd?.nama}</p>
                     </div>
 
                     <div className="space-y-1.5">
-                      <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Harga Terakhir Customer Ini</span>
+                      <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">
+                        {lang === 'en' ? "This Customer's Last Price" : 'Harga Terakhir Customer Ini'}
+                      </span>
                       <div className="p-3 bg-surface-900 border border-blue-500/30 rounded-lg space-y-1">
                         {productHistoryData.last_sale ? (
                           <>
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-slate-400">Harga Terakhir:</span>
+                              <span className="text-slate-400">{lang === 'en' ? 'Last Price:' : 'Harga Terakhir:'}</span>
                               <span className="font-extrabold text-primary-400">
                                 {formatCurrency(productHistoryData.last_sale.unit_price)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-slate-400">Terakhir Order:</span>
+                              <span className="text-slate-400">{lang === 'en' ? 'Last Ordered:' : 'Terakhir Order:'}</span>
                               <span className="font-bold text-slate-200">
-                                {new Date(productHistoryData.last_sale.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {new Date(productHistoryData.last_sale.order_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </span>
                             </div>
                             <div className="flex justify-between items-center text-[9px] text-slate-500 font-mono pt-0.5 border-t border-surface-800">
@@ -1304,11 +1379,11 @@ export const EditPenjualan: React.FC = () => {
                         ) : (
                           <>
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-slate-450">Harga Terakhir:</span>
-                              <span className="font-semibold text-slate-550">-</span>
+                              <span className="text-slate-450">{lang === 'en' ? 'Last Price:' : 'Harga Terakhir:'}</span>
+                              <span className="font-semibold text-slate-555">-</span>
                             </div>
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-slate-450">Terakhir Order:</span>
+                              <span className="text-slate-455">{lang === 'en' ? 'Last Ordered:' : 'Terakhir Order:'}</span>
                               <span className="font-bold text-slate-500">0</span>
                             </div>
                           </>
@@ -1317,7 +1392,9 @@ export const EditPenjualan: React.FC = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Harga Modal Supplier (Terkini & Sebelumnya)</span>
+                      <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">
+                        {lang === 'en' ? 'Supplier Cost Price (Current & Previous)' : 'Harga Modal Supplier (Terkini & Sebelumnya)'}
+                      </span>
                       {productHistoryData.purchase_history && productHistoryData.purchase_history.length > 0 ? (
                         <div className="space-y-2">
                           {productHistoryData.purchase_history.map((item: any, idx: number) => (
@@ -1326,7 +1403,7 @@ export const EditPenjualan: React.FC = () => {
                                 <div>
                                   <span className="font-bold text-slate-200 block text-xs truncate max-w-[140px]">{item.supplier_name}</span>
                                   <span className="text-[9px] text-slate-500 block">
-                                    Tanggal: {new Date(item.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {lang === 'en' ? 'Date:' : 'Tanggal:'} {new Date(item.order_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                   </span>
                                 </div>
                                 <div>
@@ -1352,7 +1429,7 @@ export const EditPenjualan: React.FC = () => {
                         </div>
                       ) : (
                         <div className="p-3 bg-surface-900 border border-surface-700/50 rounded-lg text-slate-500 text-xs">
-                          Belum ada riwayat pembelian modal dari supplier.
+                          {lang === 'en' ? 'No cost purchase history from suppliers yet.' : 'Belum ada riwayat pembelian modal dari supplier.'}
                         </div>
                       )}
                     </div>
@@ -1362,33 +1439,57 @@ export const EditPenjualan: React.FC = () => {
                 {/* Panduan Pintasan */}
                 {!(activeStep === 'price' && productHistoryData) && (
                   <div className="card card-hovered p-6 space-y-4 animate-scale-in">
-                    <h4 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Panduan Pintasan</h4>
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">
+                      {lang === 'en' ? 'Shortcut Guide' : 'Panduan Pintasan'}
+                    </h4>
                     <ul className="text-xs text-slate-450 space-y-2.5 list-disc list-inside">
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk cari pelanggan</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk cari produk</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F3</kbd> untuk Penyesuaian (Adj)</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk fokus ke baris tabel</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F6</kbd> untuk menuju kolom Keterangan</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">↑ ↓</kbd> untuk navigasi baris tabel</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk simpan draft</li>
-                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal edit SO</li>
+                      <li>
+                        {lang === 'en' ? 'Press F1 to search customer' : 'Tekan F1 untuk cari pelanggan'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press F2 to search product' : 'Tekan F2 untuk cari produk'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press F3 for Adjustment (Adj)' : 'Tekan F3 untuk Penyesuaian (Adj)'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press F4 to focus on table rows' : 'Tekan F4 untuk fokus ke baris tabel'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press F6 to go to Notes column' : 'Tekan F6 untuk menuju kolom Keterangan'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press Ã¢â€ â€˜ Ã¢â€ â€œ to navigate table rows' : 'Tekan Ã¢â€ â€˜ Ã¢â€ â€œ untuk navigasi baris tabel'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press Delete to delete selected row' : 'Tekan Delete untuk menghapus baris terpilih'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press F10 to save draft' : 'Tekan F10 untuk simpan draft'}
+                      </li>
+                      <li>
+                        {lang === 'en' ? 'Press Esc to cancel SO edit' : 'Tekan Esc untuk batal edit SO'}
+                      </li>
                     </ul>
                   </div>
                 )}
 
                 {/* Adjustment Panel */}
                 <div className="card card-hovered p-6 space-y-6 border border-surface-700 animate-scale-in">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Penyesuaian (Adjustment)</h3>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">
+                    {lang === 'en' ? 'Adjustment' : 'Penyesuaian (Adjustment)'}
+                  </h3>
 
                   {/* Adjustments */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1.5 font-semibold">Penjelasan Penyesuaian (F3)</label>
+                      <label className="block text-xs text-slate-400 mb-1.5 font-semibold">
+                        {lang === 'en' ? 'Adjustment Description (F3)' : 'Penjelasan Penyesuaian (F3)'}
+                      </label>
                       <input
                         ref={adjustmentDescRef}
                         type="text"
-                        placeholder="Diskon khusus / Ongkos kirim..."
+                        placeholder={lang === 'en' ? 'Special discount / Shipping cost...' : 'Diskon khusus / Ongkos kirim...'}
                         value={tempAdjustmentDesc}
                         onChange={(e) => setTempAdjustmentDesc(e.target.value)}
                         onFocus={() => setActiveStep('adjust')}
@@ -1397,11 +1498,13 @@ export const EditPenjualan: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1.5 font-semibold">Jumlah Penyesuaian (Rp)</label>
+                      <label className="block text-xs text-slate-400 mb-1.5 font-semibold">
+                        {lang === 'en' ? 'Adjustment Amount (Rp)' : 'Jumlah Penyesuaian (Rp)'}
+                      </label>
                       <input
                         ref={adjustmentAmountRef}
                         type="text"
-                        placeholder="Gunakan minus untuk diskon"
+                        placeholder={lang === 'en' ? 'Use minus for discount' : 'Gunakan minus untuk diskon'}
                         value={tempAdjustmentAmountInput}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -1433,11 +1536,15 @@ export const EditPenjualan: React.FC = () => {
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
               <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Kuantitas Kosong!</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Quantity Empty!' : 'Kuantitas Kosong!'}
+                </h3>
               </div>
               <div className="p-6 text-center">
                 <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                  Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.
+                  {lang === 'en'
+                    ? 'Quantity (Qty) cannot be empty or 0. Please fill in quantity first.'
+                    : 'Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.'}
                 </p>
                 <div className="flex justify-center pt-4 border-t border-slate-100">
                   <button
@@ -1451,7 +1558,7 @@ export const EditPenjualan: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
                   >
-                    Tutup (Enter)
+                    {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1467,11 +1574,15 @@ export const EditPenjualan: React.FC = () => {
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
               <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertTriangle size={24} className="shrink-0 text-white" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Draft SO Tidak Ditemukan</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Draft SO Not Found' : 'Draft SO Tidak Ditemukan'}
+                </h3>
               </div>
               <div className="p-6 text-center">
-                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                  Nomor draft SO yang dicari tidak ditemukan. Pastikan status SO masih berupa <strong>Draft</strong>.
+                <p className="text-xs text-slate-655 leading-relaxed mb-6 font-medium">
+                  {lang === 'en'
+                    ? 'The searched draft SO number was not found. Make sure the SO status is still Draft.'
+                    : 'Nomor draft SO yang dicari tidak ditemukan. Pastikan status SO masih berupa Draft.'}
                 </p>
                 <div className="flex justify-center pt-4 border-t border-slate-100">
                   <button
@@ -1485,7 +1596,7 @@ export const EditPenjualan: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
                   >
-                    Tutup (Enter)
+                    {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1514,10 +1625,12 @@ export const EditPenjualan: React.FC = () => {
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
               <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertCircle size={24} className="shrink-0 text-white" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Tidak Mencukupi</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Insufficient Stock' : 'Stok Tidak Mencukupi'}
+                </h3>
               </div>
               <div className="p-6 text-center">
-                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
+                <p className="text-xs text-slate-655 leading-relaxed mb-6 font-medium">
                   {stockAlertMsg}
                 </p>
                 <div className="flex justify-center pt-4 border-t border-slate-100">
@@ -1532,7 +1645,7 @@ export const EditPenjualan: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
                   >
-                    Tutup (Enter)
+                    {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1548,11 +1661,21 @@ export const EditPenjualan: React.FC = () => {
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
               <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertTriangle size={24} className="shrink-0 text-white" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Kosong!</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Out of Stock!' : 'Stok Kosong!'}
+                </h3>
               </div>
               <div className="p-6 text-center">
-                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                  Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
+                <p className="text-xs text-slate-655 leading-relaxed mb-6 font-medium">
+                  {lang === 'en' ? (
+                    <>
+                      Warehouse stock for product <strong>{zeroStockProduct.nama}</strong> is empty (0). You cannot perform transactions for this product.
+                    </>
+                  ) : (
+                    <>
+                      Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
+                    </>
+                  )}
                 </p>
                 <div className="flex justify-center pt-4 border-t border-slate-100">
                   <button
@@ -1567,7 +1690,7 @@ export const EditPenjualan: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
                   >
-                    Tutup (Enter)
+                    {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1589,7 +1712,7 @@ export const EditPenjualan: React.FC = () => {
               <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Printer size={18} className="text-primary-600" />
-                  <span>Konfirmasi Cetak Nota</span>
+                  <span>{lang === 'en' ? 'Confirm Invoice Printing' : 'Konfirmasi Cetak Nota'}</span>
                 </h3>
                 <button
                   onClick={() => setShowConfirmPrintModal(false)}
@@ -1601,55 +1724,35 @@ export const EditPenjualan: React.FC = () => {
 
               {/* Subtitle */}
               <p className="text-xs text-slate-500 mt-4 font-medium">
-                Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
+                {lang === 'en'
+                  ? 'Select item sorting option, then choose action: Save as Draft (Enter) or Print (P).'
+                  : 'Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).'}
               </p>
 
               {/* Sorting Pills */}
               <div className="flex gap-2.5 mt-4">
-                <button
-                  ref={btnAsliRef}
-                  type="button"
-                  onClick={() => setSortOption('asli')}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'asli'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                  Urutan Asli
-                </button>
-                <button
-                  ref={btnAbjadRef}
-                  type="button"
-                  onClick={() => setSortOption('abjad')}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'abjad'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                  Abjad (A-Z)
-                </button>
-                <button
-                  ref={btnQtyRef}
-                  type="button"
-                  onClick={() => setSortOption('qty')}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'qty'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                  Qty Terbanyak
-                </button>
-                <button
-                  ref={btnHargaRef}
-                  type="button"
-                  onClick={() => setSortOption('harga')}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === 'harga'
-                    ? 'bg-primary-600 text-white border-primary-500 shadow-md'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                  Harga Tertinggi
-                </button>
+                {(['asli', 'abjad', 'qty', 'harga'] as const).map((opt) => {
+                  const labelMap = {
+                    asli: lang === 'en' ? 'Original Order' : 'Urutan Asli',
+                    abjad: lang === 'en' ? 'Alphabetical (A-Z)' : 'Abjad (A-Z)',
+                    qty: lang === 'en' ? 'Highest Qty' : 'Qty Terbanyak',
+                    harga: lang === 'en' ? 'Highest Price' : 'Harga Tertinggi',
+                  };
+                  return (
+                    <button
+                      key={opt}
+                      ref={opt === 'asli' ? btnAsliRef : opt === 'abjad' ? btnAbjadRef : opt === 'qty' ? btnQtyRef : btnHargaRef}
+                      type="button"
+                      onClick={() => setSortOption(opt)}
+                      className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${sortOption === opt
+                        ? 'bg-primary-600 text-white border-primary-500 shadow-md'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                      {labelMap[opt]}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Preview items table */}
@@ -1657,10 +1760,10 @@ export const EditPenjualan: React.FC = () => {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-250 text-slate-700 font-bold">
-                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="p-3 text-right w-20">Qty</th>
-                      <th className="p-3 text-right w-32">Harga</th>
-                      <th className="p-3 text-right w-32">Jumlah</th>
+                      <th className="p-3 text-right w-32">{lang === 'en' ? 'Price' : 'Harga'}</th>
+                      <th className="p-3 text-right w-32">{lang === 'en' ? 'Amount' : 'Jumlah'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-150">
@@ -1681,16 +1784,16 @@ export const EditPenjualan: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPrintModal(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleUpdateSO(false)}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
                 >
-                  Simpan Draft (Enter)
+                  {lang === 'en' ? 'Save Draft (Enter)' : 'Simpan Draft (Enter)'}
                 </button>
                 <button
                   type="button"
@@ -1717,10 +1820,14 @@ export const EditPenjualan: React.FC = () => {
             >
               <div className="flex flex-col items-center justify-center gap-2 text-danger-600 border-b border-slate-100 pb-3 mb-4 text-center">
                 <AlertTriangle size={28} />
-                <h3 className="text-lg font-bold text-slate-900">Batal Edit SO</h3>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {lang === 'en' ? 'Cancel SO Edit' : 'Batal Edit SO'}
+                </h3>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
-                Keluar dari pengeditan draft SO? Seluruh perubahan yang belum disimpan akan hilang sepenuhnya.
+                {lang === 'en'
+                  ? 'Exit draft SO editing? All unsaved changes will be completely lost.'
+                  : 'Keluar dari pengeditan draft SO? Seluruh perubahan yang belum disimpan akan hilang sepenuhnya.'}
               </p>
               <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
                 <button
@@ -1729,9 +1836,9 @@ export const EditPenjualan: React.FC = () => {
                     setShowCancelConfirmModal(false);
                     setTimeout(() => searchInputRef.current?.focus(), 50);
                   }}
-                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-655 hover:bg-slate-50 transition-all bg-white"
                 >
-                  Kembali (Esc)
+                  {lang === 'en' ? 'Go Back (Esc)' : 'Kembali (Esc)'}
                 </button>
                 <button
                   type="button"
@@ -1741,7 +1848,7 @@ export const EditPenjualan: React.FC = () => {
                   }}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-danger-600 hover:bg-danger-700 text-white transition-all shadow-md shadow-danger-500/10"
                 >
-                  Keluar (Enter)
+                  {lang === 'en' ? 'Exit (Enter)' : 'Keluar (Enter)'}
                 </button>
               </div>
             </div>
@@ -1761,11 +1868,20 @@ export const EditPenjualan: React.FC = () => {
             >
               <div className="flex flex-col items-center justify-center gap-2 text-amber-600 border-b border-slate-100 pb-3 mb-4 text-center">
                 <Save size={28} className="text-amber-600" />
-                <h3 className="text-lg font-bold text-slate-900">Simpan sebagai Draft</h3>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {lang === 'en' ? 'Save as Draft' : 'Simpan sebagai Draft'}
+                </h3>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
-                Order penjualan ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>.
-                Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
+                {lang === 'en' ? (
+                  <>
+                    This sales order will be saved as <strong className="text-slate-900 font-bold">Draft</strong>. Inventory stock will still be reduced based on the items entered.
+                  </>
+                ) : (
+                  <>
+                    Order penjualan ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>. Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
+                  </>
+                )}
               </p>
               <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
                 <button
@@ -1774,9 +1890,9 @@ export const EditPenjualan: React.FC = () => {
                     setShowDraftConfirmModal(false);
                     setTimeout(() => searchInputRef.current?.focus(), 50);
                   }}
-                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                  className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-655 hover:bg-slate-50 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
@@ -1786,7 +1902,7 @@ export const EditPenjualan: React.FC = () => {
                   }}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/10"
                 >
-                  Simpan & Ke Draft (Enter)
+                  {lang === 'en' ? 'Save & Go to Draft (Enter)' : 'Simpan & Ke Draft (Enter)'}
                 </button>
               </div>
             </div>
@@ -1810,7 +1926,7 @@ export const EditPenjualan: React.FC = () => {
               <div className="bg-primary-600 px-6 py-4 flex items-center justify-between text-white border-b border-primary-700/80 rounded-t-xl">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Search size={18} className="text-white" />
-                  <span>Pilih Pelanggan</span>
+                  <span>{lang === 'en' ? 'Select Customer' : 'Pilih Pelanggan'}</span>
                 </h3>
                 <button onClick={() => setShowCustomerPopup(false)} className="text-white hover:text-white/80 transition-colors">
                   <X size={18} />
@@ -1840,15 +1956,23 @@ export const EditPenjualan: React.FC = () => {
                   ))
                 ) : (
                   <div className="text-center py-8 text-slate-500 text-sm">
-                    Tidak ada pelanggan yang cocok dengan "{customerQuery}".
+                    {lang === 'en'
+                      ? `No customer matches found for "${customerQuery}".`
+                      : `Tidak ada pelanggan yang cocok dengan "${customerQuery}".`}
                   </div>
                 )}
               </div>
 
               {/* Footer */}
               <div className="bg-slate-100 border-t border-slate-200 px-6 py-3 flex justify-between text-[11px] text-slate-500 rounded-b-xl">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+                <span>
+                  {lang === 'en' ? 'Use Ã¢â€ â€˜ Ã¢â€ â€œ to choose' : 'Gunakan Ã¢â€ â€˜ Ã¢â€ â€œ untuk memilih'}
+                </span>
+                <span>
+                  {lang === 'en'
+                    ? 'Enter to confirm, Esc to cancel'
+                    : 'Enter untuk konfirmasi, Esc batal'}
+                </span>
               </div>
             </div>
           </div>
@@ -1869,7 +1993,7 @@ export const EditPenjualan: React.FC = () => {
               <div className="bg-primary-600 px-6 py-4 flex items-center justify-between text-white border-b border-primary-700/80 rounded-t-xl">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Search size={18} className="text-white" />
-                  <span>Pilih Produk</span>
+                  <span>{lang === 'en' ? 'Select Product' : 'Pilih Produk'}</span>
                 </h3>
                 <button onClick={() => setShowProductPopup(false)} className="text-white hover:text-white/80 transition-colors">
                   <X size={18} />
@@ -1896,21 +2020,31 @@ export const EditPenjualan: React.FC = () => {
                         <p className="text-xs text-slate-500 font-mono mt-0.5">{p.kode}</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-slate-500 font-bold">Stok: {p.stok} {p.satuan}</span>
+                        <span className="text-xs text-slate-500 font-bold">
+                          {lang === 'en' ? 'Stock:' : 'Stok:'} {p.stok} {p.satuan}
+                        </span>
                       </div>
                     </button>
                   ))
                 ) : (
                   <div className="text-center py-8 text-slate-500 text-sm">
-                    Tidak ada produk yang cocok dengan "{prodQuery}".
+                    {lang === 'en'
+                      ? `No products match "${prodQuery}".`
+                      : `Tidak ada produk yang cocok dengan "${prodQuery}".`}
                   </div>
                 )}
               </div>
 
               {/* Footer */}
               <div className="bg-slate-100 border-t border-slate-200 px-6 py-3 flex justify-between text-[11px] text-slate-500 rounded-b-xl">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+                <span>
+                  {lang === 'en' ? 'Use Ã¢â€ â€˜ Ã¢â€ â€œ to choose' : 'Gunakan Ã¢â€ â€˜ Ã¢â€ â€œ untuk memilih'}
+                </span>
+                <span>
+                  {lang === 'en'
+                    ? 'Enter to confirm, Esc to cancel'
+                    : 'Enter untuk konfirmasi, Esc batal'}
+                </span>
               </div>
             </div>
           </div>
@@ -1940,12 +2074,24 @@ export const EditPenjualan: React.FC = () => {
                   <p className="border-t border-dashed border-black my-1.5"></p>
                 </div>
                 <div className="space-y-0.5">
-                  <p>No. Faktur: {completedSo.no_faktur || completedSo.no_order}</p>
-                  <p>Tanggal: {formatDate(completedSo.order_date)}</p>
-                  <p>Pelanggan: {completedSo.customer_nama}</p>
-                  <p>Termin: {completedSo.limit_bulan > 0 ? `Kredit (${completedSo.limit_bulan} Bulan)` : 'Tunai'}</p>
-                  <p>Status: {completedSo.limit_bulan > 0 ? 'BELUM LUNAS (KREDIT J.TEMPO)' : 'LUNAS'}</p>
-                  {completedSo.sender_note && <p>Keterangan: {completedSo.sender_note}</p>}
+                  <p>{lang === 'en' ? 'Invoice No.:' : 'No. Faktur:'} {completedSo.no_faktur || completedSo.no_order}</p>
+                  <p>{lang === 'en' ? 'Date:' : 'Tanggal:'} {formatDate(completedSo.order_date)}</p>
+                  <p>{lang === 'en' ? 'Customer:' : 'Pelanggan:'} {completedSo.customer_nama}</p>
+                  <p>
+                    {lang === 'en' ? 'Terms:' : 'Termin:'}{' '}
+                    {completedSo.limit_bulan > 0
+                      ? (lang === 'en' ? `Credit (${completedSo.limit_bulan} Month(s))` : `Kredit (${completedSo.limit_bulan} Bulan)`)
+                      : (lang === 'en' ? 'Cash' : 'Tunai')}
+                  </p>
+                  <p>
+                    Status:{' '}
+                    {completedSo.limit_bulan > 0
+                      ? (lang === 'en' ? 'UNPAID (CREDIT DUE)' : 'BELUM LUNAS (KREDIT J.TEMPO)')
+                      : (lang === 'en' ? 'PAID' : 'LUNAS')}
+                  </p>
+                  {completedSo.sender_note && (
+                    <p>{lang === 'en' ? 'Notes:' : 'Keterangan:'} {completedSo.sender_note}</p>
+                  )}
                   <p className="border-t border-dashed border-black my-1.5"></p>
                 </div>
                 <div className="space-y-1">
@@ -1961,15 +2107,15 @@ export const EditPenjualan: React.FC = () => {
                   <p className="border-t border-dashed border-black my-1.5"></p>
                 </div>
                 <div className="space-y-0.5 text-right font-semibold">
-                  <p>Subtotal: {formatCurrency(itemsSubtotal)}</p>
+                  <p>{lang === 'en' ? 'Subtotal:' : 'Subtotal:'} {formatCurrency(itemsSubtotal)}</p>
                   {parseAdjustments(completedSo.extra_charge_desc, completedSo.extra_charge_amount).map((adj, index) => (
                     <p key={index}>{adj.product_nama}: {adj.total < 0 ? '' : '+'}{formatCurrency(adj.total)}</p>
                   ))}
-                  <p className="font-bold text-xs">Total: {formatCurrency(Number(completedSo.subtotal))}</p>
+                  <p className="font-bold text-xs">{lang === 'en' ? 'Total:' : 'Total:'} {formatCurrency(Number(completedSo.subtotal))}</p>
                 </div>
                 <div className="text-center text-[10px] mt-4 pt-2 border-t border-dashed border-black">
-                  <p>Terima Kasih</p>
-                  <p>Barang yang sudah dibeli tidak dapat ditukar/dikembalikan</p>
+                  <p>{lang === 'en' ? 'Thank You' : 'Terima Kasih'}</p>
+                  <p>{lang === 'en' ? 'Purchased goods cannot be returned/exchanged' : 'Barang yang sudah dibeli tidak dapat ditukar/dikembalikan'}</p>
                 </div>
               </div>
             ) : (
@@ -1983,24 +2129,38 @@ export const EditPenjualan: React.FC = () => {
                     <p className="text-xs text-slate-500">Telp: 021-89876543 | Fax: 021-89876544</p>
                   </div>
                   <div className="text-right">
-                    <h1 className="font-black text-2xl uppercase tracking-wider text-slate-800">Faktur Penjualan</h1>
-                    <p className="font-mono text-sm font-bold text-slate-700 mt-1">No. Faktur: {completedSo.no_faktur || completedSo.no_order}</p>
+                    <h1 className="font-black text-2xl uppercase tracking-wider text-slate-800">
+                      {lang === 'en' ? 'Sales Invoice' : 'Faktur Penjualan'}
+                    </h1>
+                    <p className="font-mono text-sm font-bold text-slate-700 mt-1">
+                      {lang === 'en' ? 'Invoice No.:' : 'No. Faktur:'} {completedSo.no_faktur || completedSo.no_order}
+                    </p>
                   </div>
                 </div>
 
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-8 text-xs">
                   <div className="space-y-1">
-                    <p className="font-bold uppercase text-slate-500">Kepada Yth:</p>
+                    <p className="font-bold uppercase text-slate-500">{lang === 'en' ? 'To:' : 'Kepada Yth:'}</p>
                     <p className="font-bold text-slate-900 text-sm">{completedSo.customer_nama}</p>
-                    <p className="text-slate-600">Alamat: {completedSo.customer_alamat || '-'}</p>
-                    <p className="text-slate-600">Telp: {completedSo.customer_telp || '-'}</p>
+                    <p className="text-slate-600">{lang === 'en' ? 'Address:' : 'Alamat:'} {completedSo.customer_alamat || '-'}</p>
+                    <p className="text-slate-600">{lang === 'en' ? 'Phone:' : 'Telp:'} {completedSo.customer_telp || '-'}</p>
                   </div>
                   <div className="space-y-1 text-right">
-                    <p className="font-bold uppercase text-slate-500">Detail Transaksi:</p>
-                    <p className="font-semibold">Tanggal Order: {formatDate(completedSo.order_date)}</p>
-                    <p className="font-semibold">Jatuh Tempo: {completedSo.limit_bulan > 0 ? `${completedSo.limit_bulan} Bulan` : 'Tunai'}</p>
-                    <p className="font-bold text-slate-800">Status Pembayaran: {completedSo.limit_bulan > 0 ? 'Kredit (Belum Lunas)' : 'Lunas (Cash)'}</p>
+                    <p className="font-bold uppercase text-slate-500">{lang === 'en' ? 'Transaction Details:' : 'Detail Transaksi:'}</p>
+                    <p className="font-semibold">{lang === 'en' ? 'Order Date:' : 'Tanggal Order:'} {formatDate(completedSo.order_date)}</p>
+                    <p className="font-semibold">
+                      {lang === 'en' ? 'Due Date:' : 'Jatuh Tempo:'}{' '}
+                      {completedSo.limit_bulan > 0
+                        ? (lang === 'en' ? `${completedSo.limit_bulan} Month(s)` : `${completedSo.limit_bulan} Bulan`)
+                        : (lang === 'en' ? 'Cash' : 'Tunai')}
+                    </p>
+                    <p className="font-bold text-slate-800">
+                      {lang === 'en' ? 'Payment Status:' : 'Status Pembayaran:'}{' '}
+                      {completedSo.limit_bulan > 0
+                        ? (lang === 'en' ? 'Credit (Unpaid)' : 'Kredit (Belum Lunas)')
+                        : (lang === 'en' ? 'Paid (Cash)' : 'Lunas (Cash)')}
+                    </p>
                   </div>
                 </div>
 
@@ -2009,11 +2169,11 @@ export const EditPenjualan: React.FC = () => {
                   <thead>
                     <tr className="border-y-2 border-black bg-slate-50 text-slate-800 uppercase font-bold text-[10px]">
                       <th className="p-2 w-12 text-center">No</th>
-                      <th className="p-2">Kode Barang</th>
-                      <th className="p-2">Nama Barang</th>
+                      <th className="p-2">{lang === 'en' ? 'Product Code' : 'Kode Barang'}</th>
+                      <th className="p-2">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="p-2 text-right w-20">Qty</th>
-                      <th className="p-2 text-right w-32">Harga Satuan</th>
-                      <th className="p-2 text-right w-32">Jumlah</th>
+                      <th className="p-2 text-right w-32">{lang === 'en' ? 'Unit Price' : 'Harga Satuan'}</th>
+                      <th className="p-2 text-right w-32">{lang === 'en' ? 'Amount' : 'Jumlah'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -2034,8 +2194,12 @@ export const EditPenjualan: React.FC = () => {
                 <div className="grid grid-cols-12 gap-4 border-t-2 border-black pt-4">
                   <div className="col-span-7 text-xs space-y-3">
                     <div>
-                      <p className="font-bold uppercase text-slate-500">Pengiriman & Catatan:</p>
-                      <p className="font-semibold">{completedSo.diantar ? '🚚 DIANTAR SOPIR' : '🚶 DIAMBIL SENDIRI'}</p>
+                      <p className="font-bold uppercase text-slate-500">{lang === 'en' ? 'Delivery & Notes:' : 'Pengiriman & Catatan:'}</p>
+                      <p className="font-semibold">
+                        {completedSo.diantar
+                          ? (lang === 'en' ? 'Ã°Å¸Å¡Å¡ DELIVERED BY DRIVER' : 'Ã°Å¸Å¡Å¡ DIANTAR SOPIR')
+                          : (lang === 'en' ? 'Ã°Å¸Å¡Â¶ SELF PICKUP' : 'Ã°Å¸Å¡Â¶ DIAMBIL SENDIRI')}
+                      </p>
                       {completedSo.sender_note && <p className="italic mt-1">"{completedSo.sender_note}"</p>}
                     </div>
                   </div>
@@ -2043,7 +2207,9 @@ export const EditPenjualan: React.FC = () => {
                     <table className="w-full text-xs border-collapse">
                       <tbody>
                         <tr>
-                          <td className="p-1.5 text-right font-bold text-slate-600 uppercase">Subtotal Belanja:</td>
+                          <td className="p-1.5 text-right font-bold text-slate-600 uppercase">
+                            {lang === 'en' ? 'Cart Subtotal:' : 'Subtotal Belanja:'}
+                          </td>
                           <td className="p-1.5 text-right font-bold w-36">{formatCurrency(itemsSubtotal)}</td>
                         </tr>
                         {parseAdjustments(completedSo.extra_charge_desc, completedSo.extra_charge_amount).map((adj, index) => (
@@ -2068,15 +2234,15 @@ export const EditPenjualan: React.FC = () => {
                 {/* Signature boxes */}
                 <div className="grid grid-cols-3 gap-4 text-center text-xs pt-12">
                   <div className="space-y-12">
-                    <p>Penerima / Customer,</p>
+                    <p>{lang === 'en' ? 'Recipient / Customer,' : 'Penerima / Customer,'}</p>
                     <p className="font-bold border-b border-slate-400 w-36 mx-auto pb-1">( __________________ )</p>
                   </div>
                   <div className="space-y-12">
-                    <p>Sopir / Pengirim,</p>
+                    <p>{lang === 'en' ? 'Driver / Shipper,' : 'Sopir / Pengirim,'}</p>
                     <p className="font-bold border-b border-slate-400 w-36 mx-auto pb-1">( __________________ )</p>
                   </div>
                   <div className="space-y-12">
-                    <p>Hormat Kami,</p>
+                    <p>{lang === 'en' ? 'Sincerely,' : 'Hormat Kami,'}</p>
                     <p className="font-bold border-b border-slate-400 w-36 mx-auto pb-1">( __________________ )</p>
                   </div>
                 </div>

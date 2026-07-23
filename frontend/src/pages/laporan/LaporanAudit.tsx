@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   ShieldAlert, 
@@ -35,6 +36,7 @@ interface AuditLog {
 
 export const LaporanAudit: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -148,47 +150,34 @@ export const LaporanAudit: React.FC = () => {
     if (logs.length === 0) return;
     const excelRows = filteredLogs.map((log) => {
       return {
-        'Tanggal Penyesuaian': formatDate(log.adjustment_date),
-        'Nama Produk': log.product?.nama || 'Barang Terhapus',
-        'SKU': log.product?.kode || '-',
-        'Stok Awal': Number(log.stock_before),
-        'Stok Akhir': Number(log.stock_after),
-        'Selisih Stok (Delta)': Number(log.qty_delta),
-        'Staff Auditor': log.staff_nama || 'System',
-        'Alasan Penyesuaian': log.alasan,
-        'Waktu Audit': new Date(log.created_at).toLocaleString('id-ID'),
+        [lang === 'en' ? 'Adjustment Date' : 'Tanggal Penyesuaian']: formatDate(log.adjustment_date),
+        [lang === 'en' ? 'Product Name' : 'Nama Produk']: log.product?.nama || (lang === 'en' ? 'Deleted Product' : 'Barang Terhapus'),
+        [lang === 'en' ? 'SKU' : 'SKU']: log.product?.kode || '-',
+        [lang === 'en' ? 'Initial Stock' : 'Stok Awal']: Number(log.stock_before),
+        [lang === 'en' ? 'Final Stock' : 'Stok Akhir']: Number(log.stock_after),
+        [lang === 'en' ? 'Stock Delta' : 'Selisih Stok (Delta)']: Number(log.qty_delta),
+        [lang === 'en' ? 'Audit Staff' : 'Staff Auditor']: log.staff_nama || 'System',
+        [lang === 'en' ? 'Adjustment Reason' : 'Alasan Penyesuaian']: log.alasan,
+        [lang === 'en' ? 'Audit Time' : 'Waktu Audit']: new Date(log.created_at).toLocaleString(lang === 'en' ? 'en-US' : 'id-ID'),
       };
     });
 
     exportStyledExcel(
       excelRows,
       `Laporan_Audit_Aktivitas_${fromDate}_to_${toDate}.xlsx`,
-      'Laporan Audit Aktivitas Gudang',
-      ['Stok Awal', 'Stok Akhir', 'Selisih Stok (Delta)'],
-      ['Tanggal Penyesuaian', 'SKU', 'Waktu Audit'],
+      lang === 'en' ? 'Warehouse Activity Audit Report' : 'Laporan Audit Aktivitas Gudang',
+      [lang === 'en' ? 'Initial Stock' : 'Stok Awal', lang === 'en' ? 'Final Stock' : 'Stok Akhir', lang === 'en' ? 'Stock Delta' : 'Selisih Stok (Delta)'],
+      [lang === 'en' ? 'Adjustment Date' : 'Tanggal Penyesuaian', 'SKU', lang === 'en' ? 'Audit Time' : 'Waktu Audit'],
       []
     );
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
-  };
-
-  const handleFilterEnter = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (filteredLogs.length > 0) {
-        setIsTableFocused(true);
-        setSelectedIdx(0);
-        if (e.currentTarget instanceof HTMLElement) {
-          e.currentTarget.blur();
-        }
-      }
-    }
   };
 
   return (
@@ -200,10 +189,16 @@ export const LaporanAudit: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Audit Aktivitas</h1>
-          <p className="text-slate-550 text-xs mt-1">Lacak rekam jejak histori perubahan stok manual gudang dan audit operasional logistik.</p>
+          <h1 className="text-2xl font-extrabold text-slate-955">
+            {lang === 'en' ? 'Activity Audit Report' : 'Laporan Audit Aktivitas'}
+          </h1>
+          <p className="text-slate-550 text-xs mt-1">
+            {lang === 'en'
+              ? 'Track manual stock adjustments history and logistics operational audit logs.'
+              : 'Lacak rekam jejak histori perubahan stok manual gudang dan audit operasional logistik.'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -213,7 +208,7 @@ export const LaporanAudit: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -222,13 +217,15 @@ export const LaporanAudit: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Search */}
         <div className="col-span-1 md:col-span-2">
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Cari Staff / Barang / Alasan (F1)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Staff / Item / Reason (F1)' : 'Cari Staff / Barang / Alasan (F1)'}
+          </label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Nama staff, SKU, nama barang, alasan audit..."
+              placeholder={lang === 'en' ? 'Staff name, SKU, product name, audit reason...' : 'Nama staff, SKU, nama barang, alasan audit...'}
               value={searchQuery}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), fromDateRef.current?.focus())}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -239,7 +236,9 @@ export const LaporanAudit: React.FC = () => {
 
         {/* Date From */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F2)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Start Date (F2)' : 'Tanggal Awal (F2)'}
+          </label>
           <input
             ref={fromDateRef}
             type="date"
@@ -252,7 +251,9 @@ export const LaporanAudit: React.FC = () => {
 
         {/* Date To */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+          </label>
           <input
             ref={toDateRef}
             type="date"
@@ -284,26 +285,28 @@ export const LaporanAudit: React.FC = () => {
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
               <th className="p-3 w-12 text-center">No</th>
-              <th className="p-3 w-32">Waktu Audit</th>
-              <th className="p-3">SKU / Nama Produk</th>
-              <th className="p-3 text-center">Stok Awal</th>
-              <th className="p-3 text-center">Stok Akhir</th>
-              <th className="p-3 text-center">Selisih</th>
-              <th className="p-3">Staff Auditor</th>
-              <th className="p-3">Alasan Penyesuaian</th>
+              <th className="p-3 w-32">{lang === 'en' ? 'Audit Time' : 'Waktu Audit'}</th>
+              <th className="p-3">{lang === 'en' ? 'SKU / Product Name' : 'SKU / Nama Produk'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Initial Stock' : 'Stok Awal'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Final Stock' : 'Stok Akhir'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Delta' : 'Selisih'}</th>
+              <th className="p-3">{lang === 'en' ? 'Auditor Staff' : 'Staff Auditor'}</th>
+              <th className="p-3">{lang === 'en' ? 'Adjustment Reason' : 'Alasan Penyesuaian'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-500 italic">
-                  Sedang mengambil log aktivitas audit...
+                  {lang === 'en' ? 'Fetching audit activity logs...' : 'Sedang mengambil log aktivitas audit...'}
                 </td>
               </tr>
             ) : filteredLogs.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-400 italic">
-                  Tidak ada data aktivitas audit dalam periode filter ini.
+                  {lang === 'en'
+                    ? 'No audit activity data found within this filter period.'
+                    : 'Tidak ada data aktivitas audit dalam periode filter ini.'}
                 </td>
               </tr>
             ) : (
@@ -337,7 +340,7 @@ export const LaporanAudit: React.FC = () => {
                   >
                     <td className={getTdClass('first') + " text-center text-slate-400"}>{idx + 1}</td>
                     <td className={getTdClass('middle') + " font-mono text-[10px]"}>
-                      {new Date(log.created_at).toLocaleString('id-ID', {
+                      {new Date(log.created_at).toLocaleString(lang === 'en' ? 'en-US' : 'id-ID', {
                         day: 'numeric',
                         month: 'short',
                         hour: '2-digit',
@@ -351,7 +354,9 @@ export const LaporanAudit: React.FC = () => {
                           <div className="text-[10px] font-mono text-slate-500 font-normal">{log.product.kode}</div>
                         </>
                       ) : (
-                        <span className="italic text-slate-400 font-normal">Barang Terhapus</span>
+                        <span className="italic text-slate-400 font-normal">
+                          {lang === 'en' ? 'Deleted Product' : 'Barang Terhapus'}
+                        </span>
                       )}
                     </td>
                     <td className={getTdClass('middle') + " text-center font-mono"}>{Number(log.stock_before)}</td>
@@ -379,7 +384,11 @@ export const LaporanAudit: React.FC = () => {
         </table>
       </div>
       <div className="flex justify-end text-[10px] text-slate-400 mt-2">
-        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih.</span>
+        <span>
+          {lang === 'en'
+            ? 'Use cursor or click table to focus, ↑ ↓ keys to select.'
+            : 'Gunakan kursor atau klik tabel untuk fokus, tombol ↑ ↓ untuk memilih.'}
+        </span>
       </div>
     </div>
   );

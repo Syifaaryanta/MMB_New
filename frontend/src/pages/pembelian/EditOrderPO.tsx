@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, formatRupiahInput, parseRupiahInput } from '@/lib/utils';
 import { Search, Save, CheckSquare, Plus, Trash2, X, AlertCircle, ShoppingCart, User, AlertTriangle, Calendar, CheckCircle, XCircle } from 'lucide-react';
 
@@ -53,6 +54,7 @@ interface PriceHistoryItem {
 
 export const EditOrderPO: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [searchParams] = useSearchParams();
   const noOrderParam = searchParams.get('no_order');
 
@@ -269,7 +271,12 @@ export const EditOrderPO: React.FC = () => {
       }
 
       if (match.status === 'received') {
-        showToast('PO ini sudah divalidasi/diterima di gudang dan tidak dapat diedit lagi', 'error');
+        showToast(
+          lang === 'en'
+            ? 'This PO has already been validated/received in the warehouse and cannot be edited anymore'
+            : 'PO ini sudah divalidasi/diterima di gudang dan tidak dapat diedit lagi',
+          'error'
+        );
         setIsLoading(false);
         return;
       }
@@ -299,7 +306,10 @@ export const EditOrderPO: React.FC = () => {
       }, 150);
     } catch (err) {
       console.error(err);
-      showToast('Gagal memuat detail draft PO', 'error');
+      showToast(
+        lang === 'en' ? 'Failed to load draft PO details' : 'Gagal memuat detail draft PO',
+        'error'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -497,11 +507,19 @@ export const EditOrderPO: React.FC = () => {
         await api.patch(`/purchases/${activePo.id}/complete`);
       }
 
-      showToast(`PO draft berhasil diperbarui ${isFinal ? 'dan diselesaikan' : ''}`, 'success');
+      showToast(
+        lang === 'en'
+          ? `Draft PO successfully updated ${isFinal ? 'and completed' : ''}`
+          : `PO draft berhasil diperbarui ${isFinal ? 'dan diselesaikan' : ''}`,
+        'success'
+      );
       navigate('/pembelian');
     } catch (err) {
       console.error(err);
-      showToast('Gagal memperbarui Purchase Order', 'error');
+      showToast(
+        lang === 'en' ? 'Failed to update Purchase Order' : 'Gagal memperbarui Purchase Order',
+        'error'
+      );
     } finally {
       setIsSaving(false);
     }
@@ -693,14 +711,20 @@ export const EditOrderPO: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Edit Order PO</h1>
-          <p className="text-slate-400">Ubah data Purchase Order yang berstatus Draft atau Belum Diterima</p>
+          <h1 className="text-2xl font-extrabold text-white">
+            {lang === 'en' ? 'Edit PO Order' : 'Edit Order PO'}
+          </h1>
+          <p className="text-slate-400">
+            {lang === 'en'
+              ? 'Modify Purchase Order with Draft status or Not Received'
+              : 'Ubah data Purchase Order yang berstatus Draft atau Belum Diterima'}
+          </p>
         </div>
         {activePo && (
           <div className="flex gap-2">
             <button onClick={() => setShowCompleteConfirmModal(true)} className="btn-primary" disabled={isSaving || items.length === 0}>
               <CheckSquare size={16} />
-              <span>Selesaikan PO (F10)</span>
+              <span>{lang === 'en' ? 'Complete PO (F10)' : 'Selesaikan PO (F10)'}</span>
             </button>
           </div>
         )}
@@ -713,18 +737,20 @@ export const EditOrderPO: React.FC = () => {
           <div className="md:col-span-3 h-full bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center space-y-4">
             <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
               <Search size={18} className="text-primary-600" />
-              <span>Cari PO</span>
+              <span>{lang === 'en' ? 'Search PO' : 'Cari PO'}</span>
             </h3>
             <form onSubmit={handlePoSearchSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-405 mb-1.5 font-semibold">Nomor PO (Ketik lengkap)</label>
+                <label className="block text-xs text-slate-405 mb-1.5 font-semibold">
+                  {lang === 'en' ? 'PO Number (Type complete)' : 'Nomor PO (Ketik lengkap)'}
+                </label>
                 <input
                   ref={poSearchInputRef}
                   type="text"
                   required
                   value={poQuery}
                   onChange={(e) => setPoQuery(e.target.value)}
-                  placeholder="Contoh: PO260001"
+                  placeholder={lang === 'en' ? 'Example: PO260001' : 'Contoh: PO260001'}
                   className="input-field font-mono uppercase w-full py-2.5 text-xs text-slate-800 border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
                 />
               </div>
@@ -733,7 +759,7 @@ export const EditOrderPO: React.FC = () => {
                 disabled={isLoading}
                 className="w-full py-2.5 rounded-lg bg-primary-600 hover:bg-primary-500 !text-white font-bold text-xs transition-all shadow-md shadow-primary-500/10 flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {isLoading ? 'Memuat...' : 'Cari & Edit'}
+                {isLoading ? (lang === 'en' ? 'Loading...' : 'Memuat...') : (lang === 'en' ? 'Search & Edit' : 'Cari & Edit')}
               </button>
             </form>
           </div>
@@ -741,15 +767,27 @@ export const EditOrderPO: React.FC = () => {
           {/* Guide Card */}
           <div className="md:col-span-2 h-full bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm space-y-4 text-xs text-slate-600 flex flex-col justify-between">
             <div className="space-y-3">
-              <h4 className="font-bold text-slate-800 uppercase tracking-wider">Petunjuk Edit PO</h4>
+              <h4 className="font-bold text-slate-800 uppercase tracking-wider">
+                {lang === 'en' ? 'PO Edit Guide' : 'Petunjuk Edit PO'}
+              </h4>
               <ul className="space-y-2 list-decimal list-inside text-slate-500 leading-relaxed">
-                <li>Cari nomor order PO bertipe <strong>Draft</strong> atau <strong>Belum Diterima</strong> untuk melakukan perubahan.</li>
-                <li>Masukkan nomor order lengkap atau cari di menu <strong>Draft Order</strong>.</li>
-                <li>Modul ini memungkinkan penambahan barang, koreksi qty, harga beli, dan termin pembayaran sebelum order diselesaikan.</li>
+                {lang === 'en' ? (
+                  <>
+                    <li>Search for PO order numbers of type <strong>Draft</strong> or <strong>Not Received</strong> to make changes.</li>
+                    <li>Enter the complete order number or search in the <strong>Draft Order</strong> menu.</li>
+                    <li>This module allows adding items, correcting qty, purchase prices, and payment terms before the order is completed.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Cari nomor order PO bertipe <strong>Draft</strong> atau <strong>Belum Diterima</strong> untuk melakukan perubahan.</li>
+                    <li>Masukkan nomor order lengkap atau cari di menu <strong>Draft Order</strong>.</li>
+                    <li>Modul ini memungkinkan penambahan barang, koreksi qty, harga beli, dan termin pembayaran sebelum order diselesaikan.</li>
+                  </>
+                )}
               </ul>
             </div>
             <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-400 font-mono">
-              Tekan <kbd className="shortcut-badge">Esc</kbd> untuk kembali ke menu Pembelian.
+              {lang === 'en' ? 'Press Esc to return to the Purchases menu.' : 'Tekan Esc untuk kembali ke menu Pembelian.'}
             </div>
           </div>
         </div>
@@ -761,7 +799,9 @@ export const EditOrderPO: React.FC = () => {
             {/* Supplier / Date Meta Info Card */}
             <div className="card p-4 grid grid-cols-1 sm:grid-cols-4 gap-4 bg-surface-800 border-surface-700/80">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Nomor PO (Read-Only)</label>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  {lang === 'en' ? 'PO Number (Read-Only)' : 'Nomor PO (Read-Only)'}
+                </label>
                 <input
                   type="text"
                   readOnly
@@ -771,7 +811,9 @@ export const EditOrderPO: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Tanggal Order</label>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  {lang === 'en' ? 'Order Date' : 'Tanggal Order'}
+                </label>
                 <input
                   type="date"
                   required
@@ -797,7 +839,7 @@ export const EditOrderPO: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Termin</label>
+                <label className="block text-[11px] text-slate-400 mb-1">{lang === 'en' ? 'Terms' : 'Termin'}</label>
                 <div
                   ref={termsSelectRef}
                   tabIndex={0}
@@ -808,10 +850,10 @@ export const EditOrderPO: React.FC = () => {
                   }`}
                 >
                   {[
-                    { val: 'tunai', label: 'Tunai' },
-                    { val: '1', label: '1 Bulan' },
-                    { val: '2', label: '2 Bulan' },
-                    { val: '3', label: '3 Bulan' },
+                    { val: 'tunai', label: lang === 'en' ? 'Cash' : 'Tunai' },
+                    { val: '1', label: lang === 'en' ? '1 Month' : '1 Bulan' },
+                    { val: '2', label: lang === 'en' ? '2 Months' : '2 Bulan' },
+                    { val: '3', label: lang === 'en' ? '3 Months' : '3 Bulan' },
                   ].map((opt) => (
                     <button
                       key={opt.val}
@@ -836,7 +878,9 @@ export const EditOrderPO: React.FC = () => {
             {/* Quick Row Inputs */}
             <div className="card p-4 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end bg-surface-800 border-surface-700/80">
               <div className="relative sm:col-span-2">
-                <label className="block text-[11px] text-slate-400 mb-1">Cari Produk (F2)</label>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  {lang === 'en' ? 'Search Product (F2)' : 'Cari Produk (F2)'}
+                </label>
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -844,13 +888,15 @@ export const EditOrderPO: React.FC = () => {
                   onChange={(e) => setProdQuery(e.target.value)}
                   onKeyDown={handleProductKeyDown}
                   onFocus={() => setActiveStep('search')}
-                  placeholder="Tekan Enter untuk membuka pencarian produk..."
+                  placeholder={lang === 'en' ? 'Press Enter to open product search...' : 'Tekan Enter untuk membuka pencarian produk...'}
                   className="input-field py-2 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Kuantitas</label>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  {lang === 'en' ? 'Quantity' : 'Kuantitas'}
+                </label>
                 <input
                   ref={qtyInputRef}
                   type="number"
@@ -864,7 +910,9 @@ export const EditOrderPO: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Harga Beli</label>
+                <label className="block text-[11px] text-slate-400 mb-1">
+                  {lang === 'en' ? 'Purchase Price' : 'Harga Beli'}
+                </label>
                 <input
                   ref={priceInputRef}
                   type="text"
@@ -882,8 +930,12 @@ export const EditOrderPO: React.FC = () => {
             {selectedProd && (
               <div className="p-3 bg-surface-900 border border-surface-700/50 rounded-lg flex items-center justify-between text-xs animate-scale-in">
                 <div className="flex gap-4">
-                  <span className="text-slate-400">Barang Terpilih: <strong className="text-slate-200">{selectedProd.nama}</strong></span>
-                  <span className="text-slate-400">Ketersediaan Stok: <strong className="text-emerald-400">{selectedProd.stok} {selectedProd.satuan}</strong></span>
+                  <span className="text-slate-400">
+                    {lang === 'en' ? 'Selected Product: ' : 'Barang Terpilih: '}<strong className="text-slate-200">{selectedProd.nama}</strong>
+                  </span>
+                  <span className="text-slate-400">
+                    {lang === 'en' ? 'Available Stock: ' : 'Ketersediaan Stok: '}<strong className="text-emerald-400">{selectedProd.stok} {selectedProd.satuan}</strong>
+                  </span>
                 </div>
                 <button onClick={() => setSelectedProd(null)} className="text-slate-400 hover:text-white">
                   <X size={14} />
@@ -902,10 +954,10 @@ export const EditOrderPO: React.FC = () => {
                   <thead>
                     <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
                       <th className="p-4 w-12 text-center">No</th>
-                      <th className="p-4">Kode Barang</th>
-                      <th className="p-4">Nama Barang</th>
+                      <th className="p-4">{lang === 'en' ? 'Item Code' : 'Kode Barang'}</th>
+                      <th className="p-4">{lang === 'en' ? 'Item Name' : 'Nama Barang'}</th>
                       <th className="p-4 text-right">Qty</th>
-                      <th className="p-4 text-right">Harga Satuan</th>
+                      <th className="p-4 text-right">{lang === 'en' ? 'Unit Price' : 'Harga Satuan'}</th>
                       <th className="p-4 text-right">Subtotal</th>
                     </tr>
                   </thead>
@@ -956,7 +1008,9 @@ export const EditOrderPO: React.FC = () => {
                     ) : (
                       <tr>
                         <td colSpan={6} className="p-8 text-center text-slate-500 text-xs italic">
-                          Belum ada item ditambahkan. Cari produk di atas atau tekan F2.
+                          {lang === 'en'
+                            ? 'No items added yet. Search products above or press F2.'
+                            : 'Belum ada item ditambahkan. Cari produk di atas atau tekan F2.'}
                         </td>
                       </tr>
                     )}
@@ -967,7 +1021,9 @@ export const EditOrderPO: React.FC = () => {
               {/* Total Footer */}
               <div className="flex justify-between items-center p-4 bg-surface-800/50 border-t border-surface-700">
                 <div className="text-xs text-slate-500">
-                  {items.length} items. Tekan <kbd className="shortcut-badge text-[10px]">F4</kbd> ke tabel, <kbd className="shortcut-badge text-[10px]">Delete</kbd> untuk hapus baris.
+                  {lang === 'en'
+                    ? `${items.length} item(s). Press F4 to table, Delete to remove row.`
+                    : `${items.length} items. Tekan F4 ke tabel, Delete untuk hapus baris.`}
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-400 uppercase tracking-wider block">Grand Total PO</span>
@@ -977,11 +1033,13 @@ export const EditOrderPO: React.FC = () => {
 
               {/* Keterangan Field */}
               <div className="px-4 pb-4 pt-2 bg-surface-800/30 border-t border-surface-700/50">
-                <label className="block text-[11px] text-slate-400 mb-1 font-semibold">Keterangan / Catatan (F6)</label>
+                <label className="block text-[11px] text-slate-400 mb-1 font-semibold">
+                  {lang === 'en' ? 'Notes / Remarks (F6)' : 'Keterangan / Catatan (F6)'}
+                </label>
                 <input
                   ref={noteInputRef}
                   type="text"
-                  placeholder="Input keterangan atau catatan PO..."
+                  placeholder={lang === 'en' ? 'Enter PO remarks or notes...' : 'Input keterangan atau catatan PO...'}
                   value={catatan}
                   onChange={(e) => setCatatan(e.target.value)}
                   onFocus={() => setActiveStep('search')}
@@ -999,14 +1057,16 @@ export const EditOrderPO: React.FC = () => {
                 <div className="border-b border-surface-700 pb-3">
                   <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
                     <ShoppingCart size={16} className="text-primary-400" />
-                    <span>Analisis Riwayat Harga Beli</span>
+                    <span>{lang === 'en' ? 'Purchase Price History Analysis' : 'Analisis Riwayat Harga Beli'}</span>
                   </h4>
                   <p className="text-[10px] text-slate-400 mt-0.5">{selectedProd.nama}</p>
                 </div>
 
                 {/* This Supplier Price History */}
                 <div className="space-y-1.5">
-                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Harga Terakhir Supplier Ini</span>
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">
+                    {lang === 'en' ? 'Last Price From This Supplier' : 'Harga Terakhir Supplier Ini'}
+                  </span>
                   <div
                     onClick={() => thisSupplierHistory && setPrice(thisSupplierHistory.harga_beli)}
                     className={`p-3 bg-surface-900 border border-blue-500/30 rounded-lg space-y-1 ${thisSupplierHistory ? 'cursor-pointer hover:bg-surface-850' : ''}`}
@@ -1014,11 +1074,11 @@ export const EditOrderPO: React.FC = () => {
                     {thisSupplierHistory ? (
                       <>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-400">Harga Terakhir:</span>
+                          <span className="text-slate-400">{lang === 'en' ? 'Last Price:' : 'Harga Terakhir:'}</span>
                           <span className="font-extrabold text-primary-400">{formatCurrency(thisSupplierHistory.harga_beli)}</span>
                         </div>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-400">Tanggal:</span>
+                          <span className="text-slate-400">{lang === 'en' ? 'Date:' : 'Tanggal:'}</span>
                           <span className="font-bold text-slate-200">{formatDate(thisSupplierHistory.purchase.order_date)}</span>
                         </div>
                         <div className="flex justify-between items-center text-[9px] text-slate-500 font-mono pt-0.5 border-t border-surface-800">
@@ -1027,14 +1087,18 @@ export const EditOrderPO: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      <div className="text-slate-500 text-xs italic">Belum pernah beli dari supplier ini.</div>
+                      <div className="text-slate-500 text-xs italic">
+                        {lang === 'en' ? 'Never purchased from this supplier.' : 'Belum pernah beli dari supplier ini.'}
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* Other Suppliers Price History */}
                 <div className="space-y-1.5">
-                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Riwayat dari Supplier Lainnya</span>
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">
+                    {lang === 'en' ? 'History from Other Suppliers' : 'Riwayat dari Supplier Lainnya'}
+                  </span>
                   {otherSuppliersHistory.length > 0 ? (
                     <div className="space-y-2">
                       {otherSuppliersHistory.map((item, index) => (
@@ -1048,7 +1112,9 @@ export const EditOrderPO: React.FC = () => {
                               <span className="font-bold text-slate-200 block text-xs truncate max-w-[120px]" title={item.purchase.supplier.nama}>
                                 {item.purchase.supplier.nama}
                               </span>
-                              <span className="text-[9px] text-slate-500 block">Tanggal: {formatDate(item.purchase.order_date)}</span>
+                              <span className="text-[9px] text-slate-500 block">
+                                {lang === 'en' ? 'Date' : 'Tanggal'}: {formatDate(item.purchase.order_date)}
+                              </span>
                             </div>
                             <div className="text-right">
                               <span className="font-extrabold text-emerald-400 text-xs">{formatCurrency(item.harga_beli)}</span>
@@ -1062,7 +1128,9 @@ export const EditOrderPO: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-slate-500 text-xs italic">Tidak ada riwayat dari supplier lainnya.</div>
+                    <div className="text-slate-500 text-xs italic">
+                      {lang === 'en' ? 'No history from other suppliers.' : 'Tidak ada riwayat dari supplier lainnya.'}
+                    </div>
                   )}
                 </div>
               </div>
@@ -1070,19 +1138,39 @@ export const EditOrderPO: React.FC = () => {
               /* Shortcut Guide */
               <div className="card p-6 space-y-4 animate-scale-in">
                 <div className="border-b border-surface-700 pb-3">
-                  <h4 className="text-sm font-extrabold text-white">Panduan Pintasan PO</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Navigasi keyboard cepat</p>
+                  <h4 className="text-sm font-extrabold text-white">
+                    {lang === 'en' ? 'PO Shortcuts Guide' : 'Panduan Pintasan PO'}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {lang === 'en' ? 'Fast keyboard navigation' : 'Navigasi keyboard cepat'}
+                  </p>
                 </div>
                 <ul className="space-y-2 text-xs text-slate-300">
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk cari supplier</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk cari produk</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk fokus ke baris tabel</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">↑ ↓</kbd> untuk navigasi baris tabel</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F6</kbd> untuk menuju kolom Keterangan</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk menyelesaikan PO</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> untuk konfirmasi field / tambah item</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal / simpan draft</li>
+                  {lang === 'en' ? (
+                    <>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F1</kbd> to search supplier</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F2</kbd> to search product</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F4</kbd> to focus table row</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">↑ ↓</kbd> to navigate table rows</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">Delete</kbd> to delete highlighted row</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F6</kbd> to go to Notes column</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F10</kbd> to complete PO</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">Enter</kbd> to confirm field / add item</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">Esc</kbd> to cancel / save draft</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk cari supplier</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk cari produk</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk fokus ke baris tabel</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">↑ ↓</kbd> untuk navigasi baris tabel</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F6</kbd> untuk menuju kolom Keterangan</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk menyelesaikan PO</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> untuk konfirmasi field / tambah item</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal / simpan draft</li>
+                    </>
+                  )}
                 </ul>
               </div>
             )}
@@ -1103,7 +1191,7 @@ export const EditOrderPO: React.FC = () => {
             <div className="flex justify-between items-center w-full">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Search size={18} />
-                <span>Pilih Supplier</span>
+                <span>{lang === 'en' ? 'Select Supplier' : 'Pilih Supplier'}</span>
               </h3>
               <button onClick={() => setShowSupplierPopup(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
@@ -1112,7 +1200,7 @@ export const EditOrderPO: React.FC = () => {
             <div className="mt-4">
               <input
                 type="text"
-                placeholder="Cari berdasarkan nama supplier..."
+                placeholder={lang === 'en' ? 'Search by supplier name...' : 'Cari berdasarkan nama supplier...'}
                 value={supplierQuery}
                 onChange={(e) => setSupplierQuery(e.target.value)}
                 className="input-field py-2 text-xs w-full"
@@ -1141,13 +1229,16 @@ export const EditOrderPO: React.FC = () => {
                 ))
               ) : (
                 <div className="text-center py-8 text-slate-500 text-sm">
-                  Tidak ada supplier yang cocok dengan "{supplierQuery}".
+                  {lang === 'en' ? `No supplier matches "${supplierQuery}".` : `Tidak ada supplier yang cocok dengan "${supplierQuery}".`}
                 </div>
               )}
             </div>
             <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+              <span>
+                <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
+                <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+              </span>
             </div>
           </div>
         </div>
@@ -1167,7 +1258,7 @@ export const EditOrderPO: React.FC = () => {
             <div className="flex justify-between items-center w-full">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Search size={18} />
-                <span>Pilih Produk</span>
+                <span>{lang === 'en' ? 'Select Product' : 'Pilih Produk'}</span>
               </h3>
               <button onClick={() => setShowProductPopup(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
@@ -1192,19 +1283,22 @@ export const EditOrderPO: React.FC = () => {
                       <p className="text-xs text-slate-500 font-mono mt-0.5">{p.kode}</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs text-slate-400">Stok: {Number(p.stok)} {p.satuan}</span>
+                      <span className="text-xs text-slate-400">{lang === 'en' ? 'Stock' : 'Stok'}: {Number(p.stok)} {p.satuan}</span>
                     </div>
                   </button>
                 ))
               ) : (
                 <div className="text-center py-8 text-slate-500 text-sm">
-                  Tidak ada produk yang cocok dengan "{prodQuery}".
+                  {lang === 'en' ? `No product matches "${prodQuery}".` : `Tidak ada produk yang cocok dengan "${prodQuery}".`}
                 </div>
               )}
             </div>
             <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+              <span>
+                <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
+                <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+              </span>
             </div>
           </div>
         </div>
@@ -1223,10 +1317,14 @@ export const EditOrderPO: React.FC = () => {
           >
             <div className="flex flex-col items-center justify-center gap-2 text-danger-600 border-b border-slate-100 pb-3 mb-4 text-center">
               <AlertTriangle size={28} />
-              <h3 className="text-lg font-bold text-slate-900">Konfirmasi Batal PO</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {lang === 'en' ? 'Confirm Cancel PO' : 'Konfirmasi Batal PO'}
+              </h3>
             </div>
             <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
-              PO belum di-input. Jika Anda membatalkan, seluruh data order pembelian ini akan terhapus sepenuhnya.
+              {lang === 'en'
+                ? 'PO items have not been saved. If you cancel, all this purchase order metadata will be permanently deleted.'
+                : 'PO belum di-input. Jika Anda membatalkan, seluruh data order pembelian ini akan terhapus sepenuhnya.'}
             </p>
             <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
               <button
@@ -1237,7 +1335,7 @@ export const EditOrderPO: React.FC = () => {
                 }}
                 className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
               >
-                Kembali (Esc)
+                {lang === 'en' ? 'Back (Esc)' : 'Kembali (Esc)'}
               </button>
               <button
                 type="button"
@@ -1247,7 +1345,7 @@ export const EditOrderPO: React.FC = () => {
                 }}
                 className="px-4 py-2 text-xs font-bold rounded-lg bg-danger-600 hover:bg-danger-700 text-white transition-all shadow-md shadow-danger-500/10"
               >
-                Konfirmasi & Keluar (Enter)
+                {lang === 'en' ? 'Confirm & Exit (Enter)' : 'Konfirmasi & Keluar (Enter)'}
               </button>
             </div>
           </div>
@@ -1267,11 +1365,14 @@ export const EditOrderPO: React.FC = () => {
           >
             <div className="flex flex-col items-center justify-center gap-2 text-amber-600 border-b border-slate-100 pb-3 mb-4 text-center">
               <Save size={28} className="text-amber-600" />
-              <h3 className="text-lg font-bold text-slate-900">Simpan sebagai Draft</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {lang === 'en' ? 'Save as Draft' : 'Simpan sebagai Draft'}
+              </h3>
             </div>
             <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
-              PO ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>.
-              Stok di gudang tidak akan berubah sampai barang ini secara resmi diterima (Receiving).
+              {lang === 'en'
+                ? 'This PO will be saved as Draft. Warehouse stock will not change until the physical items are officially received (Receiving).'
+                : 'PO ini akan disimpan sebagai Draft. Stok di gudang tidak akan berubah sampai barang ini secara resmi diterima (Receiving).'}
             </p>
             <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
               <button
@@ -1282,7 +1383,7 @@ export const EditOrderPO: React.FC = () => {
                 }}
                 className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
               >
-                Batal (Esc)
+                {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
               </button>
               <button
                 type="button"
@@ -1292,7 +1393,7 @@ export const EditOrderPO: React.FC = () => {
                 }}
                 className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/10"
               >
-                Simpan & Ke Draft (Enter)
+                {lang === 'en' ? 'Save & Go to Draft (Enter)' : 'Simpan & Ke Draft (Enter)'}
               </button>
             </div>
           </div>
@@ -1310,13 +1411,16 @@ export const EditOrderPO: React.FC = () => {
             onKeyDown={handleCompleteConfirmModalKeyDown}
             className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col text-slate-800"
           >
-            <div className="flex flex-col items-center justify-center gap-2 text-emerald-600 border-b border-slate-200 pb-3 mb-4 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 text-emerald-650 border-b border-slate-200 pb-3 mb-4 text-center">
               <CheckSquare size={28} className="text-emerald-500" />
-              <h3 className="text-lg font-bold text-slate-900">Selesaikan Purchase Order</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {lang === 'en' ? 'Complete Purchase Order' : 'Selesaikan Purchase Order'}
+              </h3>
             </div>
             <p className="text-xs text-slate-700 leading-relaxed mb-6 font-medium text-center">
-              PO ini akan diselesaikan dan datanya akan masuk ke antrean <strong className="text-slate-900">Menu Receiving</strong>.
-              Stok di gudang tidak akan bertambah sebelum barang fisik secara resmi diterima.
+              {lang === 'en'
+                ? 'This PO will be completed and sent to the Receiving Menu queue. Warehouse stock will not increase until physical items are officially received.'
+                : 'PO ini akan diselesaikan dan datanya akan masuk ke antrean Menu Receiving. Stok di gudang tidak akan bertambah sebelum barang fisik secara resmi diterima.'}
             </p>
             <div className="flex justify-center gap-3 border-t border-slate-200 pt-4">
               <button
@@ -1327,7 +1431,7 @@ export const EditOrderPO: React.FC = () => {
                 }}
                 className="py-2 px-4 text-xs font-bold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all"
               >
-                Batal (Esc)
+                {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
               </button>
               <button
                 type="button"
@@ -1337,7 +1441,7 @@ export const EditOrderPO: React.FC = () => {
                 }}
                 className="btn-primary py-2 px-4 text-xs bg-emerald-500 hover:bg-emerald-600 font-bold text-black"
               >
-                Konfirmasi & Masuk Receiving (Y)
+                {lang === 'en' ? 'Confirm & Enter Receiving (Y)' : 'Konfirmasi & Masuk Receiving (Y)'}
               </button>
             </div>
           </div>
@@ -1352,11 +1456,15 @@ export const EditOrderPO: React.FC = () => {
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Kuantitas Kosong!</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                {lang === 'en' ? 'Quantity Empty!' : 'Kuantitas Kosong!'}
+              </h3>
             </div>
             <div className="p-6 text-center">
               <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.
+                {lang === 'en'
+                  ? 'Quantity (Qty) cannot be empty or 0. Please fill in the quantity first.'
+                  : 'Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.'}
               </p>
               <div className="flex justify-center pt-4 border-t border-slate-100">
                 <button
@@ -1370,7 +1478,7 @@ export const EditOrderPO: React.FC = () => {
                   }}
                   className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
                 >
-                  Tutup (Enter)
+                  {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                 </button>
               </div>
             </div>
@@ -1386,11 +1494,15 @@ export const EditOrderPO: React.FC = () => {
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
               <AlertTriangle size={24} className="shrink-0 text-white" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center">Draft PO Tidak Ditemukan</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                {lang === 'en' ? 'Draft PO Not Found' : 'Draft PO Tidak Ditemukan'}
+              </h3>
             </div>
             <div className="p-6 text-center">
-              <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                Nomor draft PO yang dicari tidak ditemukan. Pastikan status PO masih berupa <strong>Draft</strong>.
+              <p className="text-xs text-slate-655 leading-relaxed mb-6 font-medium">
+                {lang === 'en'
+                  ? 'The searched draft PO number was not found. Make sure the PO status is still Draft.'
+                  : 'Nomor draft PO yang dicari tidak ditemukan. Pastikan status PO masih berupa Draft.'}
               </p>
               <div className="flex justify-center pt-4 border-t border-slate-100">
                 <button
@@ -1404,7 +1516,7 @@ export const EditOrderPO: React.FC = () => {
                   }}
                   className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
                 >
-                  Tutup (Enter)
+                  {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                 </button>
               </div>
             </div>

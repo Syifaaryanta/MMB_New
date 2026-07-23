@@ -70,6 +70,15 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
     };
   }, []);
 
+  // Collapse sidebar when navigating to menu pages, expand when on dashboard
+  useEffect(() => {
+    if (location.pathname === '/dashboard') {
+      setIsCollapsed(false);
+    } else {
+      setIsCollapsed(true);
+    }
+  }, [location.pathname, navigate]);
+
   // Define navigation items based on User Role and selected language
   const navItems = [
     {
@@ -157,17 +166,18 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
     return () => clearInterval(interval);
   }, [checkSessionExpiration, navigate]);
 
-  // Global Keyboard Shortcuts
-  // Escape: Hanya untuk menutup mobile drawer jika sedang terbuka
-  // Sidebar desktop dikontrol lewat tombol chevron (bukan Esc)
-  // Setiap halaman bebas menggunakan Esc untuk kebutuhan masing-masing (reset filter, tutup modal, dll)
+  // Escape: Close mobile drawer or return to dashboard (sidebar will automatically expand)
   useHotkeys('esc', (e) => {
     if (isMobileOpen) {
       e.preventDefault();
       setIsMobileOpen(false);
+      return;
     }
-    // Jika mobile drawer tidak terbuka, biarkan halaman menangani Esc sendiri
-  }, { enableOnFormTags: true });
+    if (location.pathname !== '/dashboard') {
+      e.preventDefault();
+      navigate('/dashboard');
+    }
+  }, { enableOnFormTags: false }, [location.pathname]);
 
   // Ctrl+P / Cmd+P: Navigate to User Profile
   useHotkeys('ctrl+p, cmd+p', (e) => {
@@ -210,9 +220,9 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const sidebarContent = (
     <div className="flex flex-col h-full bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 border-r border-blue-600/20 text-blue-100">
       {/* Brand Logo Header */}
-      <div className="flex items-center justify-between p-4 border-b border-blue-600/30">
+      <div className={`flex items-center p-4 border-b border-blue-600/30 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-blue-700 shadow-md">
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-blue-700 shadow-md shrink-0">
             M
           </div>
           {!isCollapsed && (
@@ -221,18 +231,10 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
             </span>
           )}
         </div>
-        {/* Toggle Collapse Desktop button */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden md:flex p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors"
-          title="Toggle Sidebar (klik tombol ini)"
-        >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className={`flex-1 py-4 space-y-2 overflow-y-auto ${isCollapsed ? 'px-0' : 'px-3'}`}>
         {allowedNavItems.map((item, idx) => {
           const Icon = item.icon;
           const isActive = location.pathname.startsWith(item.path);
@@ -242,8 +244,11 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center px-0' : ''} ${isFocused ? 'border-2 border-white bg-white/10 shadow-lg shadow-white/5 ring-1 ring-white/30' : ''
-                }`}
+              className={`nav-item ${isActive ? 'active' : ''} ${
+                isCollapsed 
+                  ? 'w-10 h-10 !p-0 rounded-xl mx-auto justify-center' 
+                  : ''
+              } ${isFocused ? 'border-2 border-white bg-white/10 shadow-lg shadow-white/5 ring-1 ring-white/30' : ''}`}
               title={isCollapsed ? item.label : undefined}
               onClick={() => setIsMobileOpen(false)}
             >
@@ -255,32 +260,49 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       </nav>
 
       {/* Footer Profile & Logout */}
-      <div className="p-4 border-t border-blue-600/30 flex flex-col gap-2">
-        <Link
-          to="/profile"
-          className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 text-blue-100 transition-colors ${isCollapsed ? 'justify-center' : ''
-            }`}
-          title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
-        >
-          <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-sm font-semibold text-white">
-            {getInitials(user.username || user.nama)}
-          </div>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user.username || user.nama}</p>
-              <p className="text-xs text-blue-300 truncate capitalize">{user.role.replace('_', ' ')}</p>
-            </div>
-          )}
-        </Link>
-        <button
-          onClick={handleLogout}
-          className={`flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/20 hover:text-red-200 text-blue-200 transition-colors ${isCollapsed ? 'justify-center' : ''
-            }`}
-          title={language === 'id' ? 'Keluar' : 'Logout'}
-        >
-          <LogOut size={20} />
-          {!isCollapsed && <span className="font-medium text-sm">{language === 'id' ? 'Keluar' : 'Logout'}</span>}
-        </button>
+      <div className={`p-4 border-t border-blue-600/30 flex flex-col gap-3 ${isCollapsed ? 'items-center px-0' : ''}`}>
+        {isCollapsed ? (
+          <>
+            <Link
+              to="/profile"
+              className="w-10 h-10 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-xs font-bold text-white hover:bg-white/25 transition-all shadow-md shrink-0"
+              title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
+            >
+              {getInitials(user.username || user.nama).toUpperCase()}
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:text-red-200 text-blue-200 flex items-center justify-center transition-all shrink-0"
+              title={language === 'id' ? 'Keluar' : 'Logout'}
+            >
+              <LogOut size={20} />
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 text-blue-100 transition-colors"
+              title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
+            >
+              <div className="w-9 h-9 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                {getInitials(user.username || user.nama).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{user.username || user.nama}</p>
+                <p className="text-xs text-blue-300 truncate capitalize">{user.role.replace('_', ' ')}</p>
+              </div>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-red-500/20 hover:text-red-200 text-blue-200 transition-colors"
+              title={language === 'id' ? 'Keluar' : 'Logout'}
+            >
+              <LogOut size={20} />
+              <span className="font-medium text-sm">{language === 'id' ? 'Keluar' : 'Logout'}</span>
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

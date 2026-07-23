@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   ShoppingBag, 
@@ -46,6 +47,7 @@ interface Purchase {
 
 export const LaporanPembelian: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -186,23 +188,29 @@ export const LaporanPembelian: React.FC = () => {
     if (filteredPurchases.length === 0) return;
     const excelRows = filteredPurchases.map((p) => {
       return {
-        'No. Order PO': p.no_order,
-        'Tanggal Order': formatDate(p.order_date),
-        'Nama Supplier': p.supplier?.nama || '-',
-        'Termin': p.terms,
-        'Status': p.status,
-        'Tanggal Diterima': p.received_at ? formatDate(p.received_at) : '-',
-        'Nilai Transaksi': Number(p.subtotal),
+        [lang === 'en' ? 'PO Order No.' : 'No. Order PO']: p.no_order,
+        [lang === 'en' ? 'Order Date' : 'Tanggal Order']: formatDate(p.order_date),
+        [lang === 'en' ? 'Supplier Name' : 'Nama Supplier']: p.supplier?.nama || '-',
+        [lang === 'en' ? 'Term' : 'Termin']: p.terms === 'tunai' ? (lang === 'en' ? 'Cash' : 'Tunai') : `${p.terms} ${lang === 'en' ? 'Months' : 'Bulan'}`,
+        [lang === 'en' ? 'Status' : 'Status']: p.status,
+        [lang === 'en' ? 'Received Date' : 'Tanggal Diterima']: p.received_at ? formatDate(p.received_at) : '-',
+        [lang === 'en' ? 'Transaction Value' : 'Nilai Transaksi']: Number(p.subtotal),
       };
     });
 
     exportStyledExcel(
       excelRows,
       `Laporan_Pembelian_Detail_${fromDate}_to_${toDate}.xlsx`,
-      'Laporan Detail Pembelian',
+      lang === 'en' ? 'Purchase Details Report' : 'Laporan Detail Pembelian',
       [],
-      ['No. Order PO', 'Tanggal Order', 'Termin', 'Status', 'Tanggal Diterima'],
-      ['Nilai Transaksi']
+      [
+        lang === 'en' ? 'PO Order No.' : 'No. Order PO',
+        lang === 'en' ? 'Order Date' : 'Tanggal Order',
+        lang === 'en' ? 'Term' : 'Termin',
+        lang === 'en' ? 'Status' : 'Status',
+        lang === 'en' ? 'Received Date' : 'Tanggal Diterima'
+      ],
+      [lang === 'en' ? 'Transaction Value' : 'Nilai Transaksi']
     );
   };
 
@@ -215,7 +223,7 @@ export const LaporanPembelian: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -250,23 +258,33 @@ export const LaporanPembelian: React.FC = () => {
               onClick={() => navigate('/laporan')}
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
             >
-              <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+              <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
             </button>
-            <h1 className="text-2xl font-extrabold text-slate-950">Laporan Pembelian Detail</h1>
-            <p className="text-slate-550 text-xs mt-1">Rekapitulasi transaksi pembelian barang masuk dari supplier.</p>
+            <h1 className="text-2xl font-extrabold text-slate-950">
+              {lang === 'en' ? 'Purchase Details Report' : 'Laporan Pembelian Detail'}
+            </h1>
+            <p className="text-slate-550 text-xs mt-1">
+              {lang === 'en'
+                ? 'Summary of incoming goods purchase transactions from suppliers.'
+                : 'Rekapitulasi transaksi pembelian barang masuk dari supplier.'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-850 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-855 overflow-hidden">
             <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Laporan Pembelian</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                {lang === 'en' ? 'Purchase Report Filter' : 'Filter Laporan Pembelian'}
+              </h3>
             </div>
 
             <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <label className="block text-xs font-semibold text-slate-505 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Start Date' : 'Tanggal Awal'}
+                  </label>
                   <input
                     ref={fromDateRef}
                     type="date"
@@ -278,7 +296,9 @@ export const LaporanPembelian: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <label className="block text-xs font-semibold text-slate-505 mb-1.5 uppercase">
+                    {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+                  </label>
                   <input
                     ref={toDateRef}
                     type="date"
@@ -291,11 +311,13 @@ export const LaporanPembelian: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nama / Kode Supplier</label>
+                <label className="block text-xs font-semibold text-slate-505 mb-1.5 uppercase">
+                  {lang === 'en' ? 'Supplier Name / Code' : 'Nama / Kode Supplier'}
+                </label>
                 <input
                   ref={supplierSearchRef}
                   type="text"
-                  placeholder="Semua / Ketik Nama atau Kode"
+                  placeholder={lang === 'en' ? 'All / Type Name or Code' : 'Semua / Ketik Nama atau Kode'}
                   value={supplierSearch}
                   onChange={(e) => setSupplierSearch(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
@@ -309,13 +331,13 @@ export const LaporanPembelian: React.FC = () => {
                   onClick={() => navigate('/laporan')}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
                 >
-                  Tampilkan Laporan (Enter)
+                  {lang === 'en' ? 'Show Report (Enter)' : 'Tampilkan Laporan (Enter)'}
                 </button>
               </div>
             </form>
@@ -334,10 +356,16 @@ export const LaporanPembelian: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Pembelian Detail</h1>
-          <p className="text-slate-550 text-xs mt-1">Rekapitulasi transaksi pembelian barang masuk dari supplier.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">
+            {lang === 'en' ? 'Purchase Details Report' : 'Laporan Pembelian Detail'}
+          </h1>
+          <p className="text-slate-550 text-xs mt-1">
+            {lang === 'en'
+              ? 'Summary of incoming goods purchase transactions from suppliers.'
+              : 'Rekapitulasi transaksi pembelian barang masuk dari supplier.'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -347,7 +375,7 @@ export const LaporanPembelian: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -357,7 +385,9 @@ export const LaporanPembelian: React.FC = () => {
         {/* Metric 1 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total Pengeluaran Beli</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Total Purchase Expenditure' : 'Total Pengeluaran Beli'}
+            </span>
             <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(totalPurchasesVal)}</span>
           </div>
           <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
@@ -368,8 +398,12 @@ export const LaporanPembelian: React.FC = () => {
         {/* Metric 2 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Banyak Transaksi PO</span>
-            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{totalTransCount} Nota</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Total PO Transactions' : 'Banyak Transaksi PO'}
+            </span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">
+              {totalTransCount} {lang === 'en' ? 'PO Invoices' : 'Nota'}
+            </span>
           </div>
           <div className="p-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
             <ShoppingBag size={20} />
@@ -381,7 +415,9 @@ export const LaporanPembelian: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Date From */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F1)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Start Date (F1)' : 'Tanggal Awal (F1)'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -397,7 +433,9 @@ export const LaporanPembelian: React.FC = () => {
 
         {/* Date To */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -413,13 +451,15 @@ export const LaporanPembelian: React.FC = () => {
 
         {/* Supplier Search Bar */}
         <div>
-          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">Cari Supplier (F2)</label>
+          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Supplier (F2)' : 'Cari Supplier (F2)'}
+          </label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={supplierMainSearchRef}
               type="text"
-              placeholder="Ketik nama / kode..."
+              placeholder={lang === 'en' ? 'Type name / code...' : 'Ketik nama / kode...'}
               value={supplierSearch}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -438,9 +478,17 @@ export const LaporanPembelian: React.FC = () => {
         </div>
 
         {/* Info */}
-        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed">
-          <p>Saring riwayat PO berdasarkan pemasok dan filter tanggal.</p>
-          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge">F1</kbd> filter tanggal, <kbd className="shortcut-badge">F2</kbd> cari supplier, <kbd className="shortcut-badge">F10</kbd> ekspor Excel.</p>
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed font-semibold">
+          <p>
+            {lang === 'en'
+              ? 'Filter PO history based on supplier and date filters.'
+              : 'Saring riwayat PO berdasarkan pemasok dan filter tanggal.'}
+          </p>
+          <p className="mt-0.5 font-semibold text-slate-400">
+            {lang === 'en'
+              ? 'Shortcuts: F1 date filter, F2 search supplier, F10 export Excel.'
+              : 'Pintasan: F1 filter tanggal, F2 cari supplier, F10 ekspor Excel.'}
+          </p>
         </div>
       </div>
 
@@ -454,27 +502,29 @@ export const LaporanPembelian: React.FC = () => {
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-3 w-12 text-center">Detail</th>
-              <th className="p-3">No. Order PO</th>
-              <th className="p-3">Tanggal Order</th>
-              <th className="p-3">Nama Supplier</th>
-              <th className="p-3 text-center">Termin</th>
-              <th className="p-3 text-center">Status</th>
-              <th className="p-3">Tgl Terima</th>
-              <th className="p-3 text-right">Nilai Pembelian</th>
+              <th className="p-3 w-12 text-center">{lang === 'en' ? 'Detail' : 'Detail'}</th>
+              <th className="p-3">{lang === 'en' ? 'PO Order No.' : 'No. Order PO'}</th>
+              <th className="p-3">{lang === 'en' ? 'Order Date' : 'Tanggal Order'}</th>
+              <th className="p-3">{lang === 'en' ? 'Supplier Name' : 'Nama Supplier'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Term' : 'Termin'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Status' : 'Status'}</th>
+              <th className="p-3">{lang === 'en' ? 'Received Date' : 'Tgl Terima'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Purchase Value' : 'Nilai Pembelian'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-500 italic">
-                  Sedang mengambil log pembelian detail...
+                  {lang === 'en' ? 'Fetching purchase detail logs...' : 'Sedang mengambil log pembelian detail...'}
                 </td>
               </tr>
             ) : filteredPurchases.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-400 italic">
-                  Tidak ada transaksi pembelian terdeteksi pada periode filter ini.
+                  {lang === 'en'
+                    ? 'No purchase transactions detected in this filter period.'
+                    : 'Tidak ada transaksi pembelian terdeteksi pada periode filter ini.'}
                 </td>
               </tr>
             ) : (
@@ -521,7 +571,7 @@ export const LaporanPembelian: React.FC = () => {
                         </div>
                       </td>
                       <td className={getTdClass('middle') + " text-center font-semibold capitalize text-slate-500"}>
-                        {purchase.terms}
+                        {purchase.terms === 'tunai' ? (lang === 'en' ? 'Cash' : 'Tunai') : `${purchase.terms} ${lang === 'en' ? 'Months' : 'Bln'}`}
                       </td>
                       <td className={getTdClass('middle') + " text-center"}>
                         <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
@@ -545,7 +595,7 @@ export const LaporanPembelian: React.FC = () => {
                           <div className="space-y-3">
                             <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2">
                               <FileText size={12} className="text-primary-600" />
-                              <span>Rincian Barang & Kuantitas PO</span>
+                              <span>{lang === 'en' ? 'Items Details & PO Quantities' : 'Rincian Barang & Kuantitas PO'}</span>
                             </div>
 
                             <div className="border border-slate-200 rounded-lg overflow-hidden max-w-4xl bg-white shadow-xs">
@@ -553,11 +603,11 @@ export const LaporanPembelian: React.FC = () => {
                                 <thead>
                                   <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[9px]">
                                     <th className="p-2 w-8 text-center">No</th>
-                                    <th className="p-2">Kode SKU</th>
-                                    <th className="p-2">Nama Produk</th>
-                                    <th className="p-2 text-right w-20">Kuantitas</th>
-                                    <th className="p-2 text-right w-28">Harga Beli</th>
-                                    <th className="p-2 text-right w-28">Subtotal</th>
+                                    <th className="p-2">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+                                    <th className="p-2">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                                    <th className="p-2 text-right w-20">{lang === 'en' ? 'Quantity' : 'Kuantitas'}</th>
+                                    <th className="p-2 text-right w-28">{lang === 'en' ? 'Purchase Price' : 'Harga Beli'}</th>
+                                    <th className="p-2 text-right w-28">{lang === 'en' ? 'Subtotal' : 'Subtotal'}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -586,7 +636,11 @@ export const LaporanPembelian: React.FC = () => {
         </table>
       </div>
       <div className="flex justify-end text-[10px] text-slate-400 mt-2">
-        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> detail item.</span>
+        <span>
+          {lang === 'en'
+            ? 'Use cursor or click table to focus, ↑ ↓ keys to select, Enter for item details.'
+            : 'Gunakan kursor atau klik tabel untuk fokus, tombol ↑ ↓ untuk memilih, Enter detail item.'}
+        </span>
       </div>
     </div>
   );

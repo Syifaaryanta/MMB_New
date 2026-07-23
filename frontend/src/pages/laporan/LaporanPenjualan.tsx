@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   TrendingUp, 
@@ -46,6 +47,7 @@ interface Sale {
 
 export const LaporanPenjualan: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -188,23 +190,31 @@ export const LaporanPenjualan: React.FC = () => {
       const totalPaid = sale.sales_payments.reduce((acc, p) => acc + Number(p.amount), 0);
       const sisaPiutang = Number(sale.subtotal) - totalPaid;
       return {
-        'No. Faktur': sale.no_faktur || sale.no_order,
-        'Tanggal Jual': formatDate(sale.order_date),
-        'Nama Pelanggan': sale.customer_nama,
-        'Jenis Pembayaran': sale.limit_bulan > 0 ? `Kredit (${sale.limit_bulan + 1} Bulan)` : 'Tunai',
-        'Total Invoice': Number(sale.subtotal),
-        'Total Terbayar': totalPaid,
-        'Sisa Piutang': sisaPiutang,
+        [lang === 'en' ? 'Invoice No.' : 'No. Faktur']: sale.no_faktur || sale.no_order,
+        [lang === 'en' ? 'Sales Date' : 'Tanggal Jual']: formatDate(sale.order_date),
+        [lang === 'en' ? 'Customer Name' : 'Nama Pelanggan']: sale.customer_nama,
+        [lang === 'en' ? 'Payment Method' : 'Jenis Pembayaran']: sale.limit_bulan > 0 ? (lang === 'en' ? `Credit (${sale.limit_bulan + 1} Months)` : `Kredit (${sale.limit_bulan + 1} Bulan)`) : (lang === 'en' ? 'Cash' : 'Tunai'),
+        [lang === 'en' ? 'Invoice Total' : 'Total Invoice']: Number(sale.subtotal),
+        [lang === 'en' ? 'Total Paid' : 'Total Terbayar']: totalPaid,
+        [lang === 'en' ? 'Remaining Receivable' : 'Sisa Piutang']: sisaPiutang,
       };
     });
 
     exportStyledExcel(
       excelRows,
       `Laporan_Penjualan_Detail_${fromDate}_to_${toDate}.xlsx`,
-      'Laporan Detail Penjualan',
+      lang === 'en' ? 'Sales Details Report' : 'Laporan Detail Penjualan',
       [],
-      ['No. Faktur', 'Tanggal Jual', 'Jenis Pembayaran'],
-      ['Total Invoice', 'Total Terbayar', 'Sisa Piutang']
+      [
+        lang === 'en' ? 'Invoice No.' : 'No. Faktur',
+        lang === 'en' ? 'Sales Date' : 'Tanggal Jual',
+        lang === 'en' ? 'Payment Method' : 'Jenis Pembayaran'
+      ],
+      [
+        lang === 'en' ? 'Invoice Total' : 'Total Invoice',
+        lang === 'en' ? 'Total Paid' : 'Total Terbayar',
+        lang === 'en' ? 'Remaining Receivable' : 'Sisa Piutang'
+      ]
     );
   };
 
@@ -217,25 +227,11 @@ export const LaporanPenjualan: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
-  };
-
-  const handleFilterEnter = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (sales.length > 0) {
-        setIsTableFocused(true);
-        setSelectedIdx(0);
-        // blur current target if possible
-        if (e.currentTarget instanceof HTMLElement) {
-          e.currentTarget.blur();
-        }
-      }
-    }
   };
 
   const handleFilterSubmit = (e: React.FormEvent) => {
@@ -253,23 +249,33 @@ export const LaporanPenjualan: React.FC = () => {
               onClick={() => navigate('/laporan')}
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
             >
-              <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+              <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
             </button>
-            <h1 className="text-2xl font-extrabold text-slate-950">Laporan Penjualan Detail</h1>
-            <p className="text-slate-550 text-xs mt-1">Log transaksi barang terjual, nominal omzet, dan sisa penagihan.</p>
+            <h1 className="text-2xl font-extrabold text-slate-950">
+              {lang === 'en' ? 'Sales Details Report' : 'Laporan Penjualan Detail'}
+            </h1>
+            <p className="text-slate-550 text-xs mt-1">
+              {lang === 'en'
+                ? 'Log of sold items transaction, total revenue, and outstanding billing.'
+                : 'Log transaksi barang terjual, nominal omzet, dan sisa penagihan.'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-850 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-855 overflow-hidden">
             <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Laporan Penjualan</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                {lang === 'en' ? 'Sales Report Filter' : 'Filter Laporan Penjualan'}
+              </h3>
             </div>
 
             <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <label className="block text-xs font-semibold text-slate-505 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Start Date' : 'Tanggal Awal'}
+                  </label>
                   <input
                     ref={fromDateRef}
                     type="date"
@@ -281,24 +287,28 @@ export const LaporanPenjualan: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <label className="block text-xs font-semibold text-slate-505 mb-1.5 uppercase">
+                    {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+                  </label>
                   <input
                     ref={toDateRef}
                     type="date"
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), customerSelectRef.current?.focus())}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), customerSearchRef.current?.focus())}
                     className="input-field w-full py-2 text-xs text-slate-800 border border-slate-350 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-lg bg-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nama / Kode Pelanggan</label>
+                <label className="block text-xs font-semibold text-slate-505 mb-1.5 uppercase">
+                  {lang === 'en' ? 'Customer Name / Code' : 'Nama / Kode Pelanggan'}
+                </label>
                 <input
                   ref={customerSearchRef}
                   type="text"
-                  placeholder="Semua / Ketik Nama atau Kode"
+                  placeholder={lang === 'en' ? 'All / Type Name or Code' : 'Semua / Ketik Nama atau Kode'}
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
@@ -312,13 +322,13 @@ export const LaporanPenjualan: React.FC = () => {
                   onClick={() => navigate('/laporan')}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-650 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
                 >
-                  Tampilkan Laporan (Enter)
+                  {lang === 'en' ? 'Show Report (Enter)' : 'Tampilkan Laporan (Enter)'}
                 </button>
               </div>
             </form>
@@ -337,10 +347,16 @@ export const LaporanPenjualan: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Penjualan Detail</h1>
-          <p className="text-slate-550 text-xs mt-1">Log transaksi barang terjual, nominal omzet, dan sisa penagihan.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">
+            {lang === 'en' ? 'Sales Details Report' : 'Laporan Penjualan Detail'}
+          </h1>
+          <p className="text-slate-550 text-xs mt-1">
+            {lang === 'en'
+              ? 'Log of sold items transaction, total revenue, and outstanding billing.'
+              : 'Log transaksi barang terjual, nominal omzet, dan sisa penagihan.'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -350,7 +366,7 @@ export const LaporanPenjualan: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -360,7 +376,9 @@ export const LaporanPenjualan: React.FC = () => {
         {/* Metric 1 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Total Omzet Terjual</span>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
+              {lang === 'en' ? 'Total Sales Revenue' : 'Total Omzet Terjual'}
+            </span>
             <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(totalSalesVal)}</span>
           </div>
           <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
@@ -371,8 +389,12 @@ export const LaporanPenjualan: React.FC = () => {
         {/* Metric 2 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Banyak Transaksi Sukses</span>
-            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{totalTransCount} Nota</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Total Successful Transactions' : 'Banyak Transaksi Sukses'}
+            </span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">
+              {totalTransCount} {lang === 'en' ? 'Invoices' : 'Nota'}
+            </span>
           </div>
           <div className="p-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
             <TrendingUp size={20} />
@@ -384,7 +406,9 @@ export const LaporanPenjualan: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Date From */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Awal (F1)</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Start Date (F1)' : 'Tanggal Awal (F1)'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -400,7 +424,9 @@ export const LaporanPenjualan: React.FC = () => {
 
         {/* Date To */}
         <div>
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Tanggal Akhir</label>
+          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+          </label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
@@ -416,13 +442,15 @@ export const LaporanPenjualan: React.FC = () => {
 
         {/* Customer Search Bar */}
         <div>
-          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">Cari Pelanggan (F2)</label>
+          <label className="block text-[10px] text-slate-550 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Customer (F2)' : 'Cari Pelanggan (F2)'}
+          </label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={customerMainSearchRef}
               type="text"
-              placeholder="Ketik nama / kode..."
+              placeholder={lang === 'en' ? 'Type name / code...' : 'Ketik nama / kode...'}
               value={customerSearch}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -441,9 +469,17 @@ export const LaporanPenjualan: React.FC = () => {
         </div>
 
         {/* Info */}
-        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed">
-          <p>Pilih range tanggal atau pelanggan tertentu untuk menyaring log.</p>
-          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge">F1</kbd> filter tanggal, <kbd className="shortcut-badge">F2</kbd> cari pelanggan, <kbd className="shortcut-badge">F10</kbd> ekspor Excel.</p>
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed font-semibold">
+          <p>
+            {lang === 'en'
+              ? 'Select date range or specific customer to filter logs.'
+              : 'Pilih range tanggal atau pelanggan tertentu untuk menyaring log.'}
+          </p>
+          <p className="mt-0.5 font-semibold text-slate-400">
+            {lang === 'en'
+              ? 'Shortcuts: F1 date filter, F2 search customer, F10 export Excel.'
+              : 'Pintasan: F1 filter tanggal, F2 cari pelanggan, F10 ekspor Excel.'}
+          </p>
         </div>
       </div>
 
@@ -457,27 +493,29 @@ export const LaporanPenjualan: React.FC = () => {
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-3 w-12 text-center">Detail</th>
-              <th className="p-3">No. Faktur</th>
-              <th className="p-3">Tanggal Jual</th>
-              <th className="p-3">Nama Pelanggan</th>
-              <th className="p-3 text-center">Jenis Bayar</th>
-              <th className="p-3 text-right">Terbayar</th>
-              <th className="p-3 text-right">Sisa Piutang</th>
-              <th className="p-3 text-right">Nilai Belanja</th>
+              <th className="p-3 w-12 text-center">{lang === 'en' ? 'Detail' : 'Detail'}</th>
+              <th className="p-3">{lang === 'en' ? 'Invoice No.' : 'No. Faktur'}</th>
+              <th className="p-3">{lang === 'en' ? 'Sales Date' : 'Tanggal Jual'}</th>
+              <th className="p-3">{lang === 'en' ? 'Customer Name' : 'Nama Pelanggan'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Pay Type' : 'Jenis Bayar'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Paid' : 'Terbayar'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Remaining' : 'Sisa Piutang'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Amount' : 'Nilai Belanja'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-500 italic">
-                  Sedang mengambil log penjualan detail...
+                  {lang === 'en' ? 'Fetching sales detail logs...' : 'Sedang mengambil log penjualan detail...'}
                 </td>
               </tr>
             ) : filteredSales.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-400 italic">
-                  Tidak ada transaksi penjualan terdeteksi pada periode filter ini.
+                  {lang === 'en'
+                    ? 'No sales transactions detected in this filter period.'
+                    : 'Tidak ada transaksi penjualan terdeteksi pada periode filter ini.'}
                 </td>
               </tr>
             ) : (
@@ -531,7 +569,9 @@ export const LaporanPenjualan: React.FC = () => {
                             ? 'bg-rose-100 text-rose-800 border border-rose-200' 
                             : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                         }`}>
-                          {sale.limit_bulan > 0 ? `Kredit (${sale.limit_bulan + 1} Bln)` : 'Tunai'}
+                          {sale.limit_bulan > 0 
+                            ? (lang === 'en' ? `Credit (${sale.limit_bulan + 1} Mos)` : `Kredit (${sale.limit_bulan + 1} Bln)`) 
+                            : (lang === 'en' ? 'Cash' : 'Tunai')}
                         </span>
                       </td>
                       <td className={getTdClass('middle') + " text-right font-mono text-emerald-600 font-semibold"}>{formatCurrency(totalPaid)}</td>
@@ -550,7 +590,7 @@ export const LaporanPenjualan: React.FC = () => {
                           <div className="space-y-3">
                             <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2">
                               <FileText size={12} className="text-primary-600" />
-                              <span>Rincian Barang & Kuantitas Belanja</span>
+                              <span>{lang === 'en' ? 'Items Details & Purchased Quantities' : 'Rincian Barang & Kuantitas Belanja'}</span>
                             </div>
 
                             <div className="border border-slate-200 rounded-lg overflow-hidden max-w-4xl bg-white shadow-xs">
@@ -558,11 +598,11 @@ export const LaporanPenjualan: React.FC = () => {
                                 <thead>
                                   <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[9px]">
                                     <th className="p-2 w-8 text-center">No</th>
-                                    <th className="p-2">Kode SKU</th>
-                                    <th className="p-2">Nama Produk</th>
-                                    <th className="p-2 text-right w-20">Kuantitas</th>
-                                    <th className="p-2 text-right w-28">Harga Jual</th>
-                                    <th className="p-2 text-right w-28">Subtotal</th>
+                                    <th className="p-2">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+                                    <th className="p-2">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                                    <th className="p-2 text-right w-20">{lang === 'en' ? 'Quantity' : 'Kuantitas'}</th>
+                                    <th className="p-2 text-right w-28">{lang === 'en' ? 'Unit Price' : 'Harga Jual'}</th>
+                                    <th className="p-2 text-right w-28">{lang === 'en' ? 'Subtotal' : 'Subtotal'}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -591,7 +631,11 @@ export const LaporanPenjualan: React.FC = () => {
         </table>
       </div>
       <div className="flex justify-end text-[10px] text-slate-400 mt-2">
-        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih, <kbd className="shortcut-badge">Enter</kbd> detail item.</span>
+        <span>
+          {lang === 'en'
+            ? 'Use cursor or click table to focus, ↑ ↓ keys to select, Enter for item details.'
+            : 'Gunakan kursor atau klik tabel untuk fokus, tombol ↑ ↓ untuk memilih, Enter detail item.'}
+        </span>
       </div>
     </div>
   );

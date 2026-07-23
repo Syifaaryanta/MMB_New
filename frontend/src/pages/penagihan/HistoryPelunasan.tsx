@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/lib/i18n';
 import {
   Search,
   Calendar,
@@ -65,6 +66,7 @@ const getStoredState = <T,>(key: string, defaultValue: T): T => {
 
 export const HistoryPelunasan: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [searchParams] = useSearchParams();
   const fromHistory = searchParams.get('from') === 'history';
   const { user } = useAuthStore();
@@ -105,8 +107,8 @@ export const HistoryPelunasan: React.FC = () => {
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
 
   const filterOptions = [
-    { key: 'all', label: 'Semua Data' },
-    { key: 'unpaid', label: 'Belum Lunas' }
+    { key: 'all', label: lang === 'en' ? 'All Data' : 'Semua Data' },
+    { key: 'unpaid', label: lang === 'en' ? 'Unpaid' : 'Belum Lunas' }
   ] as const;
 
   // Auto scroll focused row
@@ -397,7 +399,7 @@ export const HistoryPelunasan: React.FC = () => {
       fetchSessions();
     } catch (err) {
       console.error(err);
-      alert('Gagal melakukan rollback transaksi');
+      alert(lang === 'en' ? 'Failed to rollback transaction' : 'Gagal melakukan rollback transaksi');
     } finally {
       setIsRollingBack(false);
     }
@@ -412,7 +414,7 @@ export const HistoryPelunasan: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -425,15 +427,23 @@ export const HistoryPelunasan: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">History Pelunasan Supplier</h1>
-            <p className="text-slate-500 text-sm">Buku log histori pencatatan pembayaran PO supplier (AP).</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+              {lang === 'en' ? 'Supplier Settlement History' : 'History Pelunasan Supplier'}
+            </h1>
+            <p className="text-slate-500 text-sm">
+              {lang === 'en'
+                ? 'Audit log of PO supplier payment records (AP).'
+                : 'Buku log histori pencatatan pembayaran PO supplier (AP).'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pencarian Log</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                {lang === 'en' ? 'Log Search Filter' : 'Filter Pencarian Log'}
+              </h3>
             </div>
 
             <form
@@ -445,7 +455,9 @@ export const HistoryPelunasan: React.FC = () => {
             >
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Start Date' : 'Tanggal Awal'}
+                  </label>
                   <input
                     ref={fromDatePopupRef}
                     type="date"
@@ -458,11 +470,13 @@ export const HistoryPelunasan: React.FC = () => {
                         toDatePopupRef.current?.select();
                       }
                     }}
-                    className="input-field w-full py-2 text-xs text-slate-850 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                    className="input-field w-full py-2 text-xs text-slate-855 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+                  </label>
                   <input
                     ref={toDatePopupRef}
                     type="date"
@@ -475,19 +489,19 @@ export const HistoryPelunasan: React.FC = () => {
                         nameFilterPopupRef.current?.select();
                       }
                     }}
-                    className="input-field w-full py-2 text-xs text-slate-850 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                    className="input-field w-full py-2 text-xs text-slate-855 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">
-                  Nama Supplier (Opsional)
+                  {lang === 'en' ? 'Supplier Name (Optional)' : 'Nama Supplier (Opsional)'}
                 </label>
                 <input
                   ref={nameFilterPopupRef}
                   type="text"
-                  placeholder="Semua / Ketik Nama"
+                  placeholder={lang === 'en' ? 'All / Type Name' : 'Semua / Ketik Nama'}
                   value={tempSearchQuery}
                   onChange={(e) => setTempSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
@@ -506,13 +520,13 @@ export const HistoryPelunasan: React.FC = () => {
                   onClick={() => navigate('/penagihan')}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs hover:bg-slate-55 transition-all cursor-pointer font-bold"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-primary-600 hover:bg-primary-550 text-white text-xs rounded-lg transition-all shadow-md shadow-primary-500/10 cursor-pointer font-bold"
                 >
-                  Tampilkan (Enter)
+                  {lang === 'en' ? 'Show (Enter)' : 'Tampilkan (Enter)'}
                 </button>
               </div>
             </form>
@@ -528,8 +542,14 @@ export const HistoryPelunasan: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">History Pelunasan Supplier (AP)</h1>
-          <p className="text-slate-500 text-sm">Buku log histori pencatatan pembayaran PO supplier (AP).</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+            {lang === 'en' ? 'Supplier Settlement History (AP)' : 'History Pelunasan Supplier (AP)'}
+          </h1>
+          <p className="text-slate-500 text-sm">
+            {lang === 'en'
+              ? 'Audit log of PO supplier payment records (AP).'
+              : 'Buku log histori pencatatan pembayaran PO supplier (AP).'}
+          </p>
         </div>
       </div>
 
@@ -538,13 +558,19 @@ export const HistoryPelunasan: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Search bar */}
           <div className="flex-1 w-full relative">
-            <label className="text-xs font-semibold text-slate-500 block mb-1">Cari Transaksi</label>
+            <label className="text-xs font-semibold text-slate-500 block mb-1">
+              {lang === 'en' ? 'Search Transactions' : 'Cari Transaksi'}
+            </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Cari nama supplier, no PO, catatan, atau metode... (F1)"
+                placeholder={
+                  lang === 'en'
+                    ? 'Search supplier name, PO number, note, or method... (F1)'
+                    : 'Cari nama supplier, no PO, catatan, atau metode... (F1)'
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -564,11 +590,13 @@ export const HistoryPelunasan: React.FC = () => {
 
           {/* Period (Read-only) */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-500 block">Periode Tanggal</span>
+            <span className="text-xs font-semibold text-slate-500 block">
+              {lang === 'en' ? 'Date Period' : 'Periode Tanggal'}
+            </span>
             <div
               onClick={() => setShowPopup(true)}
               className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-mono text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors h-[38px] shadow-sm"
-              title="Klik untuk mengubah tanggal filter"
+              title={lang === 'en' ? 'Click to change date filter' : 'Klik untuk mengubah tanggal filter'}
             >
               <Calendar size={14} className="text-slate-400" />
               <span>{fromDate ? formatDate(fromDate) : '-'} s/d {toDate ? formatDate(toDate) : '-'}</span>
@@ -577,7 +605,9 @@ export const HistoryPelunasan: React.FC = () => {
 
           {/* Status filters buttons */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-500 block">Status Pelunasan</span>
+            <span className="text-xs font-semibold text-slate-500 block">
+              {lang === 'en' ? 'Settlement Status' : 'Status Pelunasan'}
+            </span>
             <div className="flex items-center gap-2">
               <div className="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 h-[38px]">
                 {filterOptions.map((opt, idx) => {
@@ -621,8 +651,14 @@ export const HistoryPelunasan: React.FC = () => {
       ) : filteredSessions.length === 0 ? (
         <div className="card p-12 text-center text-slate-500 bg-white border border-slate-200">
           <FileText className="mx-auto mb-4 text-slate-400" size={48} />
-          <p className="text-lg font-bold">Tidak ada log transaksi</p>
-          <p className="text-sm">Tidak ditemukan riwayat pelunasan pada rentang tanggal atau pencarian terpilih.</p>
+          <p className="text-lg font-bold">
+            {lang === 'en' ? 'No transaction logs' : 'Tidak ada log transaksi'}
+          </p>
+          <p className="text-sm">
+            {lang === 'en'
+              ? 'No settlement history found for the selected date range or search query.'
+              : 'Tidak ditemukan riwayat pelunasan pada rentang tanggal atau pencarian terpilih.'}
+          </p>
         </div>
       ) : (
         <div className="card bg-white border border-slate-200 overflow-hidden shadow-sm">
@@ -630,12 +666,12 @@ export const HistoryPelunasan: React.FC = () => {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                  <th className="p-4 pl-6">Tanggal</th>
+                  <th className="p-4 pl-6">{lang === 'en' ? 'Date' : 'Tanggal'}</th>
                   <th className="p-4">Supplier</th>
-                  <th className="p-4 text-center">Metode</th>
-                  <th className="p-4">Total Bayar</th>
-                  <th className="p-4">Sisa Tagihan</th>
-                  <th className="p-4">Catatan</th>
+                  <th className="p-4 text-center">{lang === 'en' ? 'Method' : 'Metode'}</th>
+                  <th className="p-4">{lang === 'en' ? 'Total Paid' : 'Total Bayar'}</th>
+                  <th className="p-4">{lang === 'en' ? 'Remaining' : 'Sisa Tagihan'}</th>
+                  <th className="p-4">{lang === 'en' ? 'Notes' : 'Catatan'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -649,7 +685,7 @@ export const HistoryPelunasan: React.FC = () => {
                   const getTdClass = (pos: 'first' | 'middle' | 'last') => {
                     let base = "p-4 transition-all duration-150 border-b border-slate-150 ";
                     if (isFocused) {
-                      base += "bg-blue-100/90 text-primary-950 font-bold border-blue-300 ";
+                      base += "bg-blue-100/90 text-primary-955 font-bold border-blue-300 ";
                       if (pos === 'first') base += "border-l-4 border-primary-600 ";
                     } else if (isSelectedInactive) {
                       base += "bg-blue-50/40 text-slate-900 border-blue-200 ";
@@ -710,7 +746,11 @@ export const HistoryPelunasan: React.FC = () => {
                           <td colSpan={6} className="p-0 bg-slate-50/50 border-t border-b border-slate-200">
                             <div className="p-5 pl-10 space-y-3 bg-slate-50/30">
                               <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Rincian Alokasi PO ({session.allocations.length})</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-505">
+                                  {lang === 'en'
+                                    ? `PO Allocation Details (${session.allocations.length})`
+                                    : `Rincian Alokasi PO (${session.allocations.length})`}
+                                </h4>
                                 <div className="flex gap-2">
                                   {isAdmin && (
                                     <button
@@ -719,10 +759,10 @@ export const HistoryPelunasan: React.FC = () => {
                                         setShowRollbackModal(true);
                                       }}
                                       className="btn py-1 px-3 text-xs flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-semibold cursor-pointer rounded-lg shadow-sm"
-                                      title="Rollback / Batalkan (Shortcut: Delete)"
+                                      title={lang === 'en' ? 'Rollback / Cancel (Shortcut: Delete)' : 'Rollback / Batalkan (Shortcut: Delete)'}
                                     >
                                       <Trash2 size={12} />
-                                      <span>Rollback (Del)</span>
+                                      <span>{lang === 'en' ? 'Rollback (Del)' : 'Rollback (Del)'}</span>
                                     </button>
                                   )}
                                 </div>
@@ -743,22 +783,22 @@ export const HistoryPelunasan: React.FC = () => {
                                           </div>
                                           {alloc.is_full_payment ? (
                                             <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-                                              Lunas
+                                              {lang === 'en' ? 'Settled' : 'Lunas'}
                                             </span>
                                           ) : (
                                             <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-                                              Belum Lunas
+                                              {lang === 'en' ? 'Unpaid' : 'Belum Lunas'}
                                             </span>
                                           )}
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
                                           <div>
-                                            <span className="text-slate-500 block">Alokasi Bayar</span>
+                                            <span className="text-slate-550 block">{lang === 'en' ? 'Payment Allocation' : 'Alokasi Bayar'}</span>
                                             <span className="font-bold text-slate-900 font-mono">{formatCurrency(alloc.allocated_amount)}</span>
                                           </div>
                                           <div>
-                                            <span className="text-slate-500 block">Sisa Tagihan</span>
+                                            <span className="text-slate-550 block">{lang === 'en' ? 'Remaining' : 'Sisa Tagihan'}</span>
                                             <span className="font-bold text-slate-700 font-mono">{formatCurrency(alloc.remaining_after)}</span>
                                           </div>
                                         </div>
@@ -786,19 +826,25 @@ export const HistoryPelunasan: React.FC = () => {
           <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in overflow-hidden border border-danger-200/60">
             <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2 border-b border-danger-700/80">
               <AlertOctagon size={24} className="shrink-0 text-white animate-bounce" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Konfirmasi Rollback</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">
+                {lang === 'en' ? 'Confirm Rollback' : 'Konfirmasi Rollback'}
+              </h3>
             </div>
             <div className="p-6 text-center">
               <p className="text-xs text-slate-655 leading-relaxed mb-4 font-medium">
-                Apakah Anda yakin ingin membatalkan (rollback) sesi transaksi pembayaran ini?
+                {lang === 'en'
+                  ? 'Are you sure you want to cancel (rollback) this payment transaction session?'
+                  : 'Apakah Anda yakin ingin membatalkan (rollback) sesi transaksi pembayaran ini?'}
               </p>
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1 font-mono text-[10px] text-left mb-4 text-slate-700">
                 <div>Target: {rollbackTarget.target_nama}</div>
-                <div>Nilai: {formatCurrency(rollbackTarget.total_amount)}</div>
-                <div>Tanggal: {formatDate(rollbackTarget.session_date)}</div>
+                <div>{lang === 'en' ? 'Amount:' : 'Nilai:'} {formatCurrency(rollbackTarget.total_amount)}</div>
+                <div>{lang === 'en' ? 'Date:' : 'Tanggal:'} {formatDate(rollbackTarget.session_date)}</div>
               </div>
               <p className="text-rose-600 font-bold text-[10px] leading-normal mb-6">
-                🚨 Tindakan ini akan menghapus sesi pembayaran dari log kasir dan mengembalikan saldo tagihan nota ke posisi semula.
+                {lang === 'en'
+                  ? '🚨 This action will delete the payment session from cashier log and restore invoice remaining balances.'
+                  : '🚨 Tindakan ini akan menghapus sesi pembayaran dari log kasir dan mengembalikan saldo tagihan nota ke posisi semula.'}
               </p>
               <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
                 <button
@@ -810,7 +856,7 @@ export const HistoryPelunasan: React.FC = () => {
                   disabled={isRollingBack}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer focus:ring-2 focus:ring-slate-500/20"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
@@ -818,7 +864,7 @@ export const HistoryPelunasan: React.FC = () => {
                   disabled={isRollingBack}
                   className="px-4 py-2 rounded-lg bg-danger-600 hover:bg-danger-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer focus:ring-2 focus:ring-danger-500/20"
                 >
-                  {isRollingBack ? 'Proses...' : 'Ya, Rollback (Y)'}
+                  {isRollingBack ? (lang === 'en' ? 'Processing...' : 'Proses...') : (lang === 'en' ? 'Yes, Rollback (Y)' : 'Ya, Rollback (Y)')}
                 </button>
               </div>
             </div>

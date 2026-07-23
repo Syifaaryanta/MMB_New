@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import {
   UserCheck,
   UserPlus,
@@ -38,6 +39,7 @@ const roleOptions: Array<{ id: RoleType; label: string; desc: string }> = [
 ];
 
 export const KelolaUser: React.FC = () => {
+  const { lang } = useTranslation();
   const { user: currentUser } = useAuthStore();
   const [users, setUsers] = useState<ProfileData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +75,7 @@ export const KelolaUser: React.FC = () => {
       setUsers(res.data || []);
     } catch (err: any) {
       console.error(err);
-      showToast('error', 'Gagal memuat data pegawai');
+      showToast('error', lang === 'en' ? 'Failed to load employee data' : 'Gagal memuat data pegawai');
     } finally {
       setIsLoading(false);
     }
@@ -226,12 +228,12 @@ export const KelolaUser: React.FC = () => {
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      setFormError('Username wajib diisi');
+      setFormError(lang === 'en' ? 'Username is required' : 'Username wajib diisi');
       return;
     }
 
     if (!editTarget && !password.trim()) {
-      setFormError('Password wajib diisi untuk user baru');
+      setFormError(lang === 'en' ? 'Password is required for new users' : 'Password wajib diisi untuk user baru');
       return;
     }
 
@@ -246,7 +248,7 @@ export const KelolaUser: React.FC = () => {
           role,
           password: password.trim() || undefined,
         });
-        showToast('success', `Data user ${username.trim()} berhasil diperbarui`);
+        showToast('success', lang === 'en' ? `User data ${username.trim()} successfully updated` : `Data user ${username.trim()} berhasil diperbarui`);
         setEditTarget(null);
       } else {
         // Create user
@@ -255,13 +257,13 @@ export const KelolaUser: React.FC = () => {
           password: password.trim(),
           role,
         });
-        showToast('success', `User baru ${username.trim()} berhasil ditambahkan`);
+        showToast('success', lang === 'en' ? `New user ${username.trim()} successfully added` : `User baru ${username.trim()} berhasil ditambahkan`);
         setShowAddModal(false);
       }
       resetForm();
       fetchUsers();
     } catch (err: any) {
-      setFormError(err.response?.data?.error || 'Gagal menyimpan data user');
+      setFormError(err.response?.data?.error || (lang === 'en' ? 'Failed to save user data' : 'Gagal menyimpan data user'));
     } finally {
       setIsSubmitting(false);
     }
@@ -272,11 +274,11 @@ export const KelolaUser: React.FC = () => {
     setIsSubmitting(true);
     try {
       await api.delete(`/profiles/${deleteTarget.id}`);
-      showToast('success', `User ${deleteTarget.username} berhasil dihapus`);
+      showToast('success', lang === 'en' ? `User ${deleteTarget.username} successfully deleted` : `User ${deleteTarget.username} berhasil dihapus`);
       setDeleteTarget(null);
       fetchUsers();
     } catch (err: any) {
-      showToast('error', err.response?.data?.error || 'Gagal menghapus user');
+      showToast('error', err.response?.data?.error || (lang === 'en' ? 'Failed to delete user' : 'Gagal menghapus user'));
     } finally {
       setIsSubmitting(false);
     }
@@ -333,13 +335,24 @@ export const KelolaUser: React.FC = () => {
   };
 
   const formatRoleLabel = (r: string) => {
-    switch (r) {
-      case 'super_admin': return 'Super Admin';
-      case 'admin': return 'Admin';
-      case 'staff_gudang': return 'Staff Gudang';
-      case 'staff_kantor': return 'Staff Kantor';
-      case 'sales': return 'Sales';
-      default: return r;
+    if (lang === 'en') {
+      switch (r) {
+        case 'super_admin': return 'Super Admin';
+        case 'admin': return 'Admin';
+        case 'staff_gudang': return 'Warehouse Staff';
+        case 'staff_kantor': return 'Office Staff';
+        case 'sales': return 'Sales';
+        default: return r;
+      }
+    } else {
+      switch (r) {
+        case 'super_admin': return 'Super Admin';
+        case 'admin': return 'Admin';
+        case 'staff_gudang': return 'Staff Gudang';
+        case 'staff_kantor': return 'Staff Kantor';
+        case 'sales': return 'Sales';
+        default: return r;
+      }
     }
   };
 
@@ -365,16 +378,16 @@ export const KelolaUser: React.FC = () => {
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2">
             <UserCheck className="text-slate-700 w-6 h-6" />
-            <span>Kelola Hak Akses & Pegawai</span>
+            <span>{lang === 'en' ? 'Manage Permissions & Employees' : 'Kelola Hak Akses & Pegawai'}</span>
           </h1>
           <p className="text-slate-500 text-xs mt-0.5">
-            Manajemen akun username pegawai dan pembagian role hak akses (Khusus Super Admin)
+            {lang === 'en' ? 'Employee account username management and role permissions mapping (Super Admin Only)' : 'Manajemen akun username pegawai dan pembagian role hak akses (Khusus Super Admin)'}
           </p>
         </div>
 
         <button onClick={handleOpenAddModal} className="btn-primary shrink-0">
           <UserPlus size={16} className="mr-1.5" />
-          <span>Tambah User Pegawai (F2)</span>
+          <span>{lang === 'en' ? 'Add Employee User (F2)' : 'Tambah User Pegawai (F2)'}</span>
         </button>
       </div>
 
@@ -390,7 +403,7 @@ export const KelolaUser: React.FC = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari berdasarkan username atau role... (Tekan F1)"
+              placeholder={lang === 'en' ? 'Search by username or role... (Press F1)' : 'Cari berdasarkan username atau role... (Tekan F1)'}
               className="input-field pl-10 w-full bg-white text-slate-800"
               autoComplete="off"
             />
@@ -401,19 +414,19 @@ export const KelolaUser: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
           <span className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 rounded text-slate-700 shadow-xs">F1</kbd>
-            <span>Cari</span>
+            <span>{lang === 'en' ? 'Search' : 'Cari'}</span>
           </span>
           <span className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 rounded text-slate-700 shadow-xs">F2</kbd>
-            <span>Tambah</span>
+            <span>{lang === 'en' ? 'Add' : 'Tambah'}</span>
           </span>
           <span className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 rounded text-slate-700 shadow-xs">F3</kbd>
-            <span>Baris Pertama</span>
+            <span>{lang === 'en' ? 'First Row' : 'Baris Pertama'}</span>
           </span>
           <span className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 rounded text-slate-700 shadow-xs">↑ / ↓</kbd>
-            <span>Pilih Baris</span>
+            <span>{lang === 'en' ? 'Select Row' : 'Pilih Baris'}</span>
           </span>
           <span className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 rounded text-slate-700 shadow-xs">Enter</kbd>
@@ -421,7 +434,7 @@ export const KelolaUser: React.FC = () => {
           </span>
           <span className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 rounded text-slate-700 shadow-xs">Del</kbd>
-            <span>Hapus</span>
+            <span>{lang === 'en' ? 'Delete' : 'Hapus'}</span>
           </span>
         </div>
       </div>
@@ -432,9 +445,9 @@ export const KelolaUser: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase font-semibold">
               <tr>
-                <th className="p-4">Username Pegawai</th>
-                <th className="p-4">Role Hak Akses</th>
-                <th className="p-4 text-center">Aksi</th>
+                <th className="p-4">{lang === 'en' ? 'Employee Username' : 'Username Pegawai'}</th>
+                <th className="p-4">{lang === 'en' ? 'Access Role' : 'Role Hak Akses'}</th>
+                <th className="p-4 text-center">{lang === 'en' ? 'Action' : 'Aksi'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -442,13 +455,13 @@ export const KelolaUser: React.FC = () => {
                 <tr>
                   <td colSpan={3} className="p-8 text-center text-slate-400">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-500" />
-                    <span>Memuat daftar pegawai...</span>
+                    <span>{lang === 'en' ? 'Loading employee list...' : 'Memuat daftar pegawai...'}</span>
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="p-8 text-center text-slate-400">
-                    Tidak ada pegawai ditemukan.
+                    {lang === 'en' ? 'No employees found.' : 'Tidak ada pegawai ditemukan.'}
                   </td>
                 </tr>
               ) : (
@@ -487,7 +500,7 @@ export const KelolaUser: React.FC = () => {
                             <span>{u.username}</span>
                             {isCurrent && (
                               <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${isSelected ? 'bg-blue-200 text-blue-900' : 'bg-emerald-100 text-emerald-800'}`}>
-                                Akun Anda
+                                <span>{lang === 'en' ? 'Your Account' : 'Akun Anda'}</span>
                               </span>
                             )}
                           </div>
@@ -510,7 +523,7 @@ export const KelolaUser: React.FC = () => {
                               handleOpenEditModal(u);
                             }}
                             className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'text-blue-700 hover:bg-blue-200/80' : 'text-slate-600 hover:bg-slate-100'}`}
-                            title="Edit Role / Password (Enter)"
+                            title={lang === 'en' ? 'Edit Role / Password (Enter)' : 'Edit Role / Password (Enter)'}
                           >
                             <Edit2 size={16} />
                           </button>
@@ -521,7 +534,7 @@ export const KelolaUser: React.FC = () => {
                                 setDeleteTarget(u);
                               }}
                               className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'text-red-700 hover:bg-red-200/80' : 'text-red-600 hover:bg-red-50'}`}
-                              title="Hapus Akun User (Del)"
+                              title={lang === 'en' ? 'Delete User Account (Del)' : 'Hapus Akun User (Del)'}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -560,10 +573,10 @@ export const KelolaUser: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="font-bold text-slate-900 text-base">
-                      {editTarget ? `Edit User ${editTarget.username}` : 'Tambah User Pegawai'}
+                      {editTarget ? (lang === 'en' ? `Edit User ${editTarget.username}` : `Edit User ${editTarget.username}`) : (lang === 'en' ? 'Add Employee User' : 'Tambah User Pegawai')}
                     </h2>
                     <p className="text-xs text-slate-500">
-                      {editTarget ? 'Perbarui username, role, atau reset password' : 'Isi informasi akun user pegawai baru'}
+                      {editTarget ? (lang === 'en' ? 'Update username, role, or reset password' : 'Perbarui username, role, atau reset password') : (lang === 'en' ? 'Fill in new employee user account details' : 'Isi informasi akun user pegawai baru')}
                     </p>
                   </div>
                 </div>
@@ -612,7 +625,7 @@ export const KelolaUser: React.FC = () => {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       onKeyDown={handleUsernameKeyDown}
-                      placeholder="Masukkan username pegawai"
+                      placeholder={lang === 'en' ? 'Enter employee username' : 'Masukkan username pegawai'}
                       className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
                       disabled={isSubmitting}
                     />
@@ -622,7 +635,7 @@ export const KelolaUser: React.FC = () => {
                 {/* Password Input */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    {editTarget ? 'Password Baru (Opsional)' : 'Password'}
+                    {editTarget ? (lang === 'en' ? 'New Password (Optional)' : 'Password Baru (Opsional)') : (lang === 'en' ? 'Password' : 'Password')}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
@@ -636,7 +649,7 @@ export const KelolaUser: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={handlePasswordKeyDown}
-                      placeholder={editTarget ? '•••••••• (Kosongkan jika tidak diubah)' : 'Masukkan password'}
+                      placeholder={editTarget ? (lang === 'en' ? '•••••••• (Leave blank to keep unchanged)' : '•••••••• (Kosongkan jika tidak diubah)') : (lang === 'en' ? 'Enter password' : 'Masukkan password')}
                       className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
                       disabled={isSubmitting}
                     />
@@ -646,7 +659,7 @@ export const KelolaUser: React.FC = () => {
                 {/* Role Selection */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    Role Hak Akses
+                    {lang === 'en' ? 'Access Role' : 'Role Hak Akses'}
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {roleOptions.map((opt, idx) => {
@@ -663,9 +676,16 @@ export const KelolaUser: React.FC = () => {
                             : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                             }`}
                         >
-                          <span className="font-bold text-xs">{opt.label}</span>
+                          <span className="font-bold text-xs">
+                            {opt.id === 'staff_gudang' ? (lang === 'en' ? 'Warehouse Staff' : 'Staff Gudang') :
+                             opt.id === 'staff_kantor' ? (lang === 'en' ? 'Office Staff' : 'Staff Kantor') : opt.label}
+                          </span>
                           <span className={`text-[10px] font-normal mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                            {opt.desc}
+                            {opt.id === 'super_admin' ? (lang === 'en' ? 'All Features' : 'Semua Fitur') :
+                             opt.id === 'admin' ? (lang === 'en' ? 'Data & Reports' : 'Data & Laporan') :
+                             opt.id === 'staff_gudang' ? (lang === 'en' ? 'Stock & Purchase' : 'Stok & Pembelian') :
+                             opt.id === 'staff_kantor' ? (lang === 'en' ? 'Read-Only Reports' : 'Read-Only Laporan') :
+                             opt.id === 'sales' ? (lang === 'en' ? 'SO & AR' : 'SO & AR') : opt.desc}
                           </span>
                         </button>
                       );
@@ -684,7 +704,7 @@ export const KelolaUser: React.FC = () => {
                     }}
                     className="px-4 py-2.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
                   >
-                    Batal
+                    {lang === 'en' ? 'Cancel' : 'Batal'}
                   </button>
                   <button
                     ref={submitBtnRef}
@@ -695,10 +715,10 @@ export const KelolaUser: React.FC = () => {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Menyimpan...</span>
+                        <span>{lang === 'en' ? 'Saving...' : 'Menyimpan...'}</span>
                       </>
                     ) : (
-                      <span>{editTarget ? 'Simpan Perubahan' : 'Tambah User'}</span>
+                      <span>{editTarget ? (lang === 'en' ? 'Save Changes' : 'Simpan Perubahan') : (lang === 'en' ? 'Add User' : 'Tambah User')}</span>
                     )}
                   </button>
                 </div>
@@ -725,15 +745,15 @@ export const KelolaUser: React.FC = () => {
                   <Trash2 size={24} />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-900 text-base">Hapus Akun User Pegawai</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Tindakan ini tidak dapat dibatalkan</p>
+                  <h2 className="font-bold text-slate-900 text-base">{lang === 'en' ? 'Delete Employee User Account' : 'Hapus Akun User Pegawai'}</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">{lang === 'en' ? 'This action cannot be undone' : 'Tindakan ini tidak dapat dibatalkan'}</p>
                 </div>
               </div>
 
               {/* Message */}
               <div className="p-6 text-center text-sm text-slate-600">
                 <p>
-                  Apakah Anda yakin ingin menghapus akun pegawai{' '}
+                  {lang === 'en' ? 'Are you sure you want to delete the employee account' : 'Apakah Anda yakin ingin menghapus akun pegawai'}{' '}
                   <strong className="text-slate-900 font-bold px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">{deleteTarget.username}</strong>?
                 </p>
               </div>
@@ -745,7 +765,7 @@ export const KelolaUser: React.FC = () => {
                   onClick={() => setDeleteTarget(null)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
                 >
-                  Batal
+                  {lang === 'en' ? 'Cancel' : 'Batal'}
                 </button>
                 <button
                   type="button"
@@ -756,10 +776,10 @@ export const KelolaUser: React.FC = () => {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Menghapus...</span>
+                      <span>{lang === 'en' ? 'Deleting...' : 'Menghapus...'}</span>
                     </>
                   ) : (
-                    <span>Ya, Hapus Akun (Y / Enter)</span>
+                    <span>{lang === 'en' ? 'Yes, Delete Account (Y / Enter)' : 'Ya, Hapus Akun (Y / Enter)'}</span>
                   )}
                 </button>
               </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatExtraChargeDesc } from '@/lib/utils';
 import {
   Search,
@@ -76,6 +77,7 @@ const getStoredState = <T,>(key: string, defaultValue: T): T => {
 
 export const PelangganLunas: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [groups, setGroups] = useState<CustomerLunasGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<CustomerLunasGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -377,15 +379,23 @@ export const PelangganLunas: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Pelanggan Lunas & Rincian Nota</h1>
-            <p className="text-slate-500 text-sm">Daftar pelanggan yang telah menyelesaikan kewajiban pembayarannya (lunas) beserta detail nota penjualan.</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+              {lang === 'en' ? 'Settled Customers & Invoice Details' : 'Pelanggan Lunas & Rincian Nota'}
+            </h1>
+            <p className="text-slate-500 text-sm">
+              {lang === 'en'
+                ? 'List of customers who have completed their payment obligations (settled) along with sales invoice details.'
+                : 'Daftar pelanggan yang telah menyelesaikan kewajiban pembayarannya (lunas) beserta detail nota penjualan.'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pencarian Nota Lunas</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                {lang === 'en' ? 'Settled Invoice Search Filter' : 'Filter Pencarian Nota Lunas'}
+              </h3>
             </div>
 
             <form
@@ -402,7 +412,9 @@ export const PelangganLunas: React.FC = () => {
             >
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Start Date' : 'Tanggal Awal'}
+                  </label>
                   <input
                     ref={fromDatePopupRef}
                     type="date"
@@ -418,11 +430,13 @@ export const PelangganLunas: React.FC = () => {
                         navigate('/penagihan');
                       }
                     }}
-                    className="input-field w-full py-2 text-xs text-slate-850 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                    className="input-field w-full py-2 text-xs text-slate-855 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+                  </label>
                   <input
                     ref={toDatePopupRef}
                     type="date"
@@ -438,19 +452,19 @@ export const PelangganLunas: React.FC = () => {
                         navigate('/penagihan');
                       }
                     }}
-                    className="input-field w-full py-2 text-xs text-slate-850 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                    className="input-field w-full py-2 text-xs text-slate-855 border border-slate-200 rounded-lg bg-white font-mono focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">
-                  Nama Customer (Opsional)
+                  {lang === 'en' ? 'Customer Name (Optional)' : 'Nama Customer (Opsional)'}
                 </label>
                 <input
                   ref={nameFilterPopupRef}
                   type="text"
-                  placeholder="Semua / Ketik Nama"
+                  placeholder={lang === 'en' ? 'All / Type Name' : 'Semua / Ketik Nama'}
                   value={tempSearchQuery}
                   onChange={(e) => setTempSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
@@ -462,7 +476,7 @@ export const PelangganLunas: React.FC = () => {
                       navigate('/penagihan');
                     }
                   }}
-                  className="input-field w-full py-2 text-xs text-slate-850 border border-slate-200 rounded-lg bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                  className="input-field w-full py-2 text-xs text-slate-855 border border-slate-200 rounded-lg bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>
 
@@ -470,15 +484,15 @@ export const PelangganLunas: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/penagihan')}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs hover:bg-slate-50 transition-all cursor-pointer font-bold"
+                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs hover:bg-slate-50 transition-all cursor-pointer font-bold"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-primary-600 hover:bg-primary-550 text-white text-xs rounded-lg transition-all shadow-md shadow-primary-500/10 cursor-pointer font-bold"
                 >
-                  Tampilkan (Enter)
+                  {lang === 'en' ? 'Show (Enter)' : 'Tampilkan (Enter)'}
                 </button>
               </div>
             </form>
@@ -493,14 +507,20 @@ export const PelangganLunas: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Pelanggan Lunas & Rincian Nota</h1>
-          <p className="text-slate-500 text-sm">Daftar pelanggan yang telah menyelesaikan kewajiban pembayarannya (lunas) beserta detail nota penjualan.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+            {lang === 'en' ? 'Settled Customers & Invoice Details' : 'Pelanggan Lunas & Rincian Nota'}
+          </h1>
+          <p className="text-slate-500 text-sm">
+            {lang === 'en'
+              ? 'List of customers who have completed their payment obligations (settled) along with sales invoice details.'
+              : 'Daftar pelanggan yang telah menyelesaikan kewajiban pembayarannya (lunas) beserta detail nota penjualan.'}
+          </p>
         </div>
         <button
           onClick={() => navigate('/penagihan')}
-          className="btn btn-secondary self-start md:self-auto flex items-center gap-2"
+          className="btn btn-secondary self-start md:self-auto flex items-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg px-4 py-2 cursor-pointer shadow-sm"
         >
-          Kembali (Esc)
+          {lang === 'en' ? 'Back (Esc)' : 'Kembali (Esc)'}
         </button>
       </div>
 
@@ -511,7 +531,11 @@ export const PelangganLunas: React.FC = () => {
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Cari nama pelanggan, kode, atau no order... (F1)"
+            placeholder={
+              lang === 'en'
+                ? 'Search customer name, code, or order number... (F1)'
+                : 'Cari nama pelanggan, kode, atau no order... (F1)'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field w-full pl-10"
@@ -519,9 +543,9 @@ export const PelangganLunas: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 shrink-0">
           <Calendar size={14} className="text-slate-400" />
-          <span>Periode:</span>
+          <span>{lang === 'en' ? 'Period:' : 'Periode:'}</span>
           <span className="text-slate-800 font-mono font-black">{formatDate(fromDate)}</span>
-          <span className="text-slate-400 font-normal">s/d</span>
+          <span className="text-slate-400 font-normal">{lang === 'en' ? 'to' : 's/d'}</span>
           <span className="text-slate-800 font-mono font-black">{formatDate(toDate)}</span>
         </div>
       </div>
@@ -533,10 +557,16 @@ export const PelangganLunas: React.FC = () => {
           <div className="lg:col-span-3 skeleton rounded-xl" />
         </div>
       ) : filteredGroups.length === 0 ? (
-        <div className="card p-12 text-center text-slate-500">
+        <div className="card p-12 text-center text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm">
           <FileText className="mx-auto mb-4 text-slate-400" size={48} />
-          <p className="text-lg font-bold">Tidak ada data pelanggan lunas</p>
-          <p className="text-sm">Tidak ditemukan data yang cocok dengan kriteria pencarian Anda.</p>
+          <p className="text-lg font-bold">
+            {lang === 'en' ? 'No settled customer data' : 'Tidak ada data pelanggan lunas'}
+          </p>
+          <p className="text-sm">
+            {lang === 'en'
+              ? 'No data matches your search criteria.'
+              : 'Tidak ditemukan data yang cocok dengan kriteria pencarian Anda.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -547,7 +577,9 @@ export const PelangganLunas: React.FC = () => {
             className="lg:col-span-1 space-y-3 max-h-[600px] overflow-y-auto pr-1 animate-slide-left"
           >
             <div className="flex items-center justify-between px-1">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Daftar Pelanggan ({filteredGroups.length})</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                {lang === 'en' ? `Customer List (${filteredGroups.length})` : `Daftar Pelanggan (${filteredGroups.length})`}
+              </h2>
             </div>
             {filteredGroups.map((group, idx) => {
               const isSelected = idx === selectedCustIdx;
@@ -582,12 +614,12 @@ export const PelangganLunas: React.FC = () => {
                       <span>{group.customer.nama}</span>
                     </h3>
                     <p className="text-xs text-emerald-600 font-semibold">
-                      Total Lunas: {formatCurrency(totalAmountPaid)}
+                      {lang === 'en' ? `Total Settled: ${formatCurrency(totalAmountPaid)}` : `Total Lunas: ${formatCurrency(totalAmountPaid)}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full font-bold">
-                      {group.invoices.length} Nota
+                      {group.invoices.length} {lang === 'en' ? 'Invoices' : 'Nota'}
                     </span>
                     <ChevronRight size={16} className={isSelected ? 'text-primary-600' : 'text-slate-400'} />
                   </div>
@@ -607,13 +639,19 @@ export const PelangganLunas: React.FC = () => {
                     </div>
                     <div>
                       <h2 className="text-xl font-bold text-slate-900">{activeGroup.customer.nama}</h2>
-                      <p className="text-sm text-slate-500">Kode: {activeGroup.customer.kode} | Alamat: {activeGroup.customer.alamat || '-'}</p>
+                      <p className="text-sm text-slate-500">
+                        {lang === 'en'
+                          ? `Code: ${activeGroup.customer.kode} | Address: ${activeGroup.customer.alamat || '-'}`
+                          : `Kode: ${activeGroup.customer.kode} | Alamat: ${activeGroup.customer.alamat || '-'}`}
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-slate-700">Daftar Nota Lunas</h3>
+                      <h3 className="text-sm font-bold text-slate-700">
+                        {lang === 'en' ? 'Settled Invoices List' : 'Daftar Nota Lunas'}
+                      </h3>
                     </div>
                     <div className="space-y-3">
                       {activeGroup.invoices.map((invoice, idx) => {
@@ -635,12 +673,12 @@ export const PelangganLunas: React.FC = () => {
                           >
                             {/* Invoice Header Bar */}
                             <div
-                              onClick={() => {
-                                setFocusedPanel('invoice-list');
-                                setSelectedInvoiceIdx(idx);
-                                setExpandedInvoiceId(isExpanded ? null : invoice.id);
-                              }}
-                              className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                               onClick={() => {
+                                 setFocusedPanel('invoice-list');
+                                 setSelectedInvoiceIdx(idx);
+                                 setExpandedInvoiceId(isExpanded ? null : invoice.id);
+                               }}
+                               className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-55/50 transition-colors"
                             >
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
@@ -653,17 +691,17 @@ export const PelangganLunas: React.FC = () => {
                                     </span>
                                   ) : (
                                     <span className="bg-sky-50 text-sky-700 border border-sky-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-                                      Kredit ({invoice.limit_bulan} Bln)
+                                      {lang === 'en' ? `Credit (${invoice.limit_bulan} Mos)` : `Kredit (${invoice.limit_bulan} Bln)`}
                                     </span>
                                   )}
                                 </div>
                                 <div className="text-xs text-slate-500 flex items-center gap-2">
                                   <Calendar size={12} />
-                                  <span>Tgl Order: {formatDate(invoice.order_date)}</span>
+                                  <span>{lang === 'en' ? 'Order Date:' : 'Tgl Order:'} {formatDate(invoice.order_date)}</span>
                                   {invoice.due_date && (
                                     <>
                                       <span>•</span>
-                                      <span>Jatuh Tempo: {formatDate(invoice.due_date)}</span>
+                                      <span>{lang === 'en' ? 'Due Date:' : 'Jatuh Tempo:'} {formatDate(invoice.due_date)}</span>
                                     </>
                                   )}
                                 </div>
@@ -671,21 +709,23 @@ export const PelangganLunas: React.FC = () => {
 
                               <div className="flex items-center justify-between md:justify-end gap-6">
                                 <div className="text-right">
-                                  <span className="text-xs text-slate-500 block">Total Nilai Nota</span>
+                                  <span className="text-xs text-slate-500 block">
+                                    {lang === 'en' ? 'Invoice Total' : 'Total Nilai Nota'}
+                                  </span>
                                   <span className="font-bold text-slate-900">{formatCurrency(grandTotal)}</span>
                                 </div>
 
                                 {/* Physical Nota Checks */}
                                 <div className="flex gap-2">
                                   <div
-                                    title="Nota Merah (Finance)"
+                                    title={lang === 'en' ? 'Red Copy (Finance)' : 'Nota Merah (Finance)'}
                                     className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${invoice.nota_merah ? 'bg-rose-100 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-400'
                                       }`}
                                   >
                                     M
                                   </div>
                                   <div
-                                    title="Nota Kuning (Gudang)"
+                                    title={lang === 'en' ? 'Yellow Copy (Warehouse)' : 'Nota Kuning (Gudang)'}
                                     className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${invoice.nota_kuning ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-400'
                                       }`}
                                   >
@@ -707,15 +747,17 @@ export const PelangganLunas: React.FC = () => {
 
                                 {/* Items Table */}
                                 <div className="space-y-2">
-                                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Rincian Barang</h4>
+                                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                    {lang === 'en' ? 'Item Details' : 'Rincian Barang'}
+                                  </h4>
                                   <div className="overflow-x-auto border border-slate-200 rounded-lg">
                                     <table className="w-full text-sm">
                                       <thead>
                                         <tr className="bg-slate-100 text-slate-600 text-left border-b border-slate-200">
-                                          <th className="p-2 pl-3">Barang</th>
+                                          <th className="p-2 pl-3">{lang === 'en' ? 'Product' : 'Barang'}</th>
                                           <th className="p-2 text-center">Qty</th>
-                                          <th className="p-2 text-right">Harga Satuan</th>
-                                          <th className="p-2 text-right pr-3">Total</th>
+                                          <th className="p-2 text-right">{lang === 'en' ? 'Unit Price' : 'Harga Satuan'}</th>
+                                          <th className="p-2 text-right pr-3">{lang === 'en' ? 'Total' : 'Total'}</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -732,7 +774,9 @@ export const PelangganLunas: React.FC = () => {
                                         ))}
                                         {invoice.biaya_pengiriman > 0 && (
                                           <tr className="border-b border-slate-100 text-slate-700 bg-white">
-                                            <td className="p-2 pl-3 font-semibold text-slate-500" colSpan={3}>Biaya Pengiriman</td>
+                                            <td className="p-2 pl-3 font-semibold text-slate-500" colSpan={3}>
+                                              {lang === 'en' ? 'Shipping Fee' : 'Biaya Pengiriman'}
+                                            </td>
                                             <td className="p-2 text-right font-mono pr-3 font-bold text-slate-900">{formatCurrency(invoice.biaya_pengiriman)}</td>
                                           </tr>
                                         )}
@@ -744,7 +788,9 @@ export const PelangganLunas: React.FC = () => {
                                 {/* Payments list */}
                                 {invoice.sales_payments.length > 0 && (
                                   <div className="space-y-2">
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Histori Pembayaran Cicilan</h4>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                      {lang === 'en' ? 'Installment Payment History' : 'Histori Pembayaran Cicilan'}
+                                    </h4>
                                     <div className="space-y-2">
                                       {invoice.sales_payments.map((pmt) => (
                                         <div
@@ -753,18 +799,18 @@ export const PelangganLunas: React.FC = () => {
                                         >
                                           <div className="space-y-0.5">
                                             <div className="font-semibold text-slate-900">
-                                              Setoran: {formatCurrency(pmt.amount)}
+                                              {lang === 'en' ? 'Deposit: ' : 'Setoran: '}{formatCurrency(pmt.amount)}
                                             </div>
                                             <div className="text-slate-500">
-                                              Tgl: {formatDate(pmt.payment_date)} | Metode: <span className="uppercase font-semibold">{pmt.payment_method}</span>
+                                              Tgl: {formatDate(pmt.payment_date)} | {lang === 'en' ? 'Method: ' : 'Metode: '}<span className="uppercase font-semibold">{pmt.payment_method}</span>
                                             </div>
                                             <div className="text-slate-500 italic mt-0.5">
-                                              Catatan Pelunasan: {cleanPaymentNote(pmt.note)}
+                                              {lang === 'en' ? 'Settlement Note: ' : 'Catatan Pelunasan: '}{cleanPaymentNote(pmt.note)}
                                             </div>
                                           </div>
                                           <div className="flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
                                             <Check size={12} />
-                                            <span>Selesai</span>
+                                            <span>{lang === 'en' ? 'Completed' : 'Selesai'}</span>
                                           </div>
                                         </div>
                                       ))}
@@ -776,13 +822,15 @@ export const PelangganLunas: React.FC = () => {
                                 <div className="pt-3 text-xs space-y-1 text-slate-600 border-t border-slate-200/60 mt-3">
                                   {invoice.sender_note && (
                                     <div className="flex gap-1.5">
-                                      <span className="font-bold text-slate-500">Keterangan:</span>
+                                      <span className="font-bold text-slate-500">{lang === 'en' ? 'Notes:' : 'Keterangan:'}</span>
                                       <span className="italic">{invoice.sender_note}</span>
                                     </div>
                                   )}
                                   {invoice.extra_charge_desc && (
                                     <div className="flex gap-1.5">
-                                      <span className="font-bold text-slate-500">Biaya Tambahan ({formatCurrency(invoice.extra_charge_amount)}):</span>
+                                      <span className="font-bold text-slate-500">
+                                        {lang === 'en' ? 'Extra Charges' : 'Biaya Tambahan'} ({formatCurrency(invoice.extra_charge_amount)}):
+                                      </span>
                                       <span className="italic">{formatExtraChargeDesc(invoice.extra_charge_desc)}</span>
                                     </div>
                                   )}

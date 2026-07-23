@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import {
   CreditCard,
@@ -34,6 +35,7 @@ interface AgingInvoice {
 
 export const LaporanPenagihan: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [invoices, setInvoices] = useState<AgingInvoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<AgingInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,32 +180,41 @@ export const LaporanPenagihan: React.FC = () => {
     if (invoices.length === 0) return;
     const excelRows = filteredInvoices.map((inv) => {
       const days = Number(inv.days_overdue);
-      let statusStr = 'Belum Jatuh Tempo';
-      if (days > 90) statusStr = '> 90 Hari Overdue';
-      else if (days > 60) statusStr = '61 - 90 Hari Overdue';
-      else if (days > 30) statusStr = '31 - 60 Hari Overdue';
-      else if (days > 0) statusStr = '1 - 30 Hari Overdue';
+      let statusStr = lang === 'en' ? 'Not Due Yet' : 'Belum Jatuh Tempo';
+      if (days > 90) statusStr = lang === 'en' ? '> 90 Days Overdue' : '> 90 Hari Overdue';
+      else if (days > 60) statusStr = lang === 'en' ? '61 - 90 Days Overdue' : '61 - 90 Hari Overdue';
+      else if (days > 30) statusStr = lang === 'en' ? '31 - 60 Days Overdue' : '31 - 60 Hari Overdue';
+      else if (days > 0) statusStr = lang === 'en' ? '1 - 30 Days Overdue' : '1 - 30 Hari Overdue';
 
       return {
-        'No. Faktur': inv.no_faktur || inv.no_order,
-        'Nama Pelanggan': inv.customer_nama,
-        'Tanggal Faktur': formatDate(inv.order_date),
-        'Jatuh Tempo': formatDate(inv.due_date),
-        'Terlambat (Hari)': days > 0 ? days : 0,
-        'Kategori Umur': statusStr,
-        'Total Belanja': Number(inv.subtotal),
-        'Terbayar': Number(inv.paid_amount),
-        'Sisa Piutang': Number(inv.remaining),
+        [lang === 'en' ? 'Invoice No.' : 'No. Faktur']: inv.no_faktur || inv.no_order,
+        [lang === 'en' ? 'Customer Name' : 'Nama Pelanggan']: inv.customer_nama,
+        [lang === 'en' ? 'Invoice Date' : 'Tanggal Faktur']: formatDate(inv.order_date),
+        [lang === 'en' ? 'Due Date' : 'Jatuh Tempo']: formatDate(inv.due_date),
+        [lang === 'en' ? 'Overdue (Days)' : 'Terlambat (Hari)']: days > 0 ? days : 0,
+        [lang === 'en' ? 'Age Category' : 'Kategori Umur']: statusStr,
+        [lang === 'en' ? 'Total Purchase' : 'Total Belanja']: Number(inv.subtotal),
+        [lang === 'en' ? 'Paid' : 'Terbayar']: Number(inv.paid_amount),
+        [lang === 'en' ? 'Remaining Receivable' : 'Sisa Piutang']: Number(inv.remaining),
       };
     });
 
     exportStyledExcel(
       excelRows,
       `Laporan_Aging_Piutang_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      'Laporan Struktur Umur Piutang (Aging)',
-      ['Terlambat (Hari)'],
-      ['No. Faktur', 'Tanggal Faktur', 'Jatuh Tempo', 'Kategori Umur'],
-      ['Total Belanja', 'Terbayar', 'Sisa Piutang']
+      lang === 'en' ? 'Accounts Receivable Aging Report' : 'Laporan Struktur Umur Piutang (Aging)',
+      [lang === 'en' ? 'Overdue (Days)' : 'Terlambat (Hari)'],
+      [
+        lang === 'en' ? 'Invoice No.' : 'No. Faktur',
+        lang === 'en' ? 'Invoice Date' : 'Tanggal Faktur',
+        lang === 'en' ? 'Due Date' : 'Jatuh Tempo',
+        lang === 'en' ? 'Age Category' : 'Kategori Umur'
+      ],
+      [
+        lang === 'en' ? 'Total Purchase' : 'Total Belanja',
+        lang === 'en' ? 'Paid' : 'Terbayar',
+        lang === 'en' ? 'Remaining Receivable' : 'Sisa Piutang'
+      ]
     );
   };
 
@@ -216,7 +227,7 @@ export const LaporanPenagihan: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -250,10 +261,16 @@ export const LaporanPenagihan: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Aging Piutang (AR)</h1>
-          <p className="text-slate-550 text-xs mt-1">Analisa struktur umur kredit piutang (Aging Report) dan jatuh tempo pembayaran pelanggan.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">
+            {lang === 'en' ? 'Accounts Receivable Aging Report (AR)' : 'Laporan Aging Piutang (AR)'}
+          </h1>
+          <p className="text-slate-555 text-xs mt-1">
+            {lang === 'en'
+              ? 'Analysis of accounts receivable aging structure (Aging Report) and customer payment due dates.'
+              : 'Analisa struktur umur kredit piutang (Aging Report) dan jatuh tempo pembayaran pelanggan.'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -263,7 +280,7 @@ export const LaporanPenagihan: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -279,9 +296,13 @@ export const LaporanPenagihan: React.FC = () => {
             }`}
         >
           <div>
-            <span className="text-[9px] font-bold text-slate-455 uppercase tracking-wider block">Belum J.Tempo</span>
+            <span className="text-[9px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Not Due Yet' : 'Belum J.Tempo'}
+            </span>
             <span className="text-sm font-extrabold text-slate-900 mt-1 block font-mono">{formatCurrency(bucketTotals.safe)}</span>
-            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">Porsi: {getBucketPercent(bucketTotals.safe)}</span>
+            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">
+              {lang === 'en' ? 'Portion:' : 'Porsi:'} {getBucketPercent(bucketTotals.safe)}
+            </span>
           </div>
           <div className="p-2.5 bg-primary-50 text-primary-600 border border-primary-100 rounded-xl">
             <Clock size={16} />
@@ -297,9 +318,13 @@ export const LaporanPenagihan: React.FC = () => {
             }`}
         >
           <div>
-            <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block">1 - 30 Hari</span>
+            <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block">
+              {lang === 'en' ? '1 - 30 Days' : '1 - 30 Hari'}
+            </span>
             <span className="text-sm font-extrabold text-emerald-700 mt-1 block font-mono">{formatCurrency(bucketTotals.days30)}</span>
-            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">Porsi: {getBucketPercent(bucketTotals.days30)}</span>
+            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">
+              {lang === 'en' ? 'Portion:' : 'Porsi:'} {getBucketPercent(bucketTotals.days30)}
+            </span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl">
             <TrendingUp size={16} />
@@ -315,9 +340,13 @@ export const LaporanPenagihan: React.FC = () => {
             }`}
         >
           <div>
-            <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider block">31 - 60 Hari</span>
+            <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider block">
+              {lang === 'en' ? '31 - 60 Days' : '31 - 60 Hari'}
+            </span>
             <span className="text-sm font-extrabold text-amber-700 mt-1 block font-mono">{formatCurrency(bucketTotals.days60)}</span>
-            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">Porsi: {getBucketPercent(bucketTotals.days60)}</span>
+            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">
+              {lang === 'en' ? 'Portion:' : 'Porsi:'} {getBucketPercent(bucketTotals.days60)}
+            </span>
           </div>
           <div className="p-2.5 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
             <Calendar size={16} />
@@ -333,9 +362,13 @@ export const LaporanPenagihan: React.FC = () => {
             }`}
         >
           <div>
-            <span className="text-[9px] font-bold text-orange-600 uppercase tracking-wider block">61 - 90 Hari</span>
+            <span className="text-[9px] font-bold text-orange-600 uppercase tracking-wider block">
+              {lang === 'en' ? '61 - 90 Days' : '61 - 90 Hari'}
+            </span>
             <span className="text-sm font-extrabold text-orange-700 mt-1 block font-mono">{formatCurrency(bucketTotals.days90)}</span>
-            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">Porsi: {getBucketPercent(bucketTotals.days90)}</span>
+            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">
+              {lang === 'en' ? 'Portion:' : 'Porsi:'} {getBucketPercent(bucketTotals.days90)}
+            </span>
           </div>
           <div className="p-2.5 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl">
             <AlertTriangle size={16} />
@@ -351,9 +384,13 @@ export const LaporanPenagihan: React.FC = () => {
             }`}
         >
           <div>
-            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider block">&gt; 90 Hari (Macet)</span>
+            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider block font-bold">
+              {lang === 'en' ? '> 90 Days (Bad Debt)' : '> 90 Hari (Macet)'}
+            </span>
             <span className="text-sm font-extrabold text-rose-700 mt-1 block font-mono">{formatCurrency(bucketTotals.over90)}</span>
-            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">Porsi: {getBucketPercent(bucketTotals.over90)}</span>
+            <span className="text-[9px] text-slate-500 block mt-1 font-semibold">
+              {lang === 'en' ? 'Portion:' : 'Porsi:'} {getBucketPercent(bucketTotals.over90)}
+            </span>
           </div>
           <div className="p-2.5 bg-rose-50 text-rose-650 border border-rose-100 rounded-xl">
             <AlertTriangle size={16} />
@@ -365,13 +402,15 @@ export const LaporanPenagihan: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Search */}
         <div className="md:col-span-2">
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Cari Pelanggan / Nota (F1)</label>
+          <label className="block text-[10px] text-slate-505 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Customer / Invoice (F1)' : 'Cari Pelanggan / Nota (F1)'}
+          </label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Nama customer atau nomor faktur..."
+              placeholder={lang === 'en' ? 'Customer name or invoice number...' : 'Nama customer atau nomor faktur...'}
               value={searchQuery}
               onKeyDown={handleFilterEnter}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -382,16 +421,31 @@ export const LaporanPenagihan: React.FC = () => {
 
         {/* Selected Bucket Info */}
         <div className="flex flex-col justify-center text-xs">
-          <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider">Metode Tampilan Filter</span>
-          <p className="text-slate-700 mt-1.5 font-medium">
-            Menampilkan: <strong className="text-primary-700 uppercase">{agingBucketFilter === 'all' ? 'Semua Faktur Piutang' : `Kategori ${agingBucketFilter}`}</strong>
+          <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Filter Display Mode' : 'Metode Tampilan Filter'}
+          </span>
+          <p className="text-slate-700 mt-1.5 font-semibold text-slate-500">
+            {lang === 'en' ? 'Showing:' : 'Menampilkan:'}{' '}
+            <strong className="text-primary-700 uppercase">
+              {agingBucketFilter === 'all'
+                ? (lang === 'en' ? 'All Receivable Invoices' : 'Semua Faktur Piutang')
+                : `${lang === 'en' ? 'Category' : 'Kategori'} ${agingBucketFilter}`}
+            </strong>
           </p>
         </div>
 
         {/* Hints */}
-        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed">
-          <p>kotak porsi umur piutang di atas untuk memfilter data secara cepat.</p>
-          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge text-[9px]">F1</kbd> cari, <kbd className="shortcut-badge text-[9px]">F10</kbd> ekspor Excel.</p>
+        <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed font-semibold">
+          <p>
+            {lang === 'en'
+              ? 'Click the aging cards above to filter data quickly.'
+              : 'Klik kotak porsi umur piutang di atas untuk memfilter data secara cepat.'}
+          </p>
+          <p className="mt-0.5 font-semibold text-slate-400">
+            {lang === 'en'
+              ? 'Shortcuts: F1 search, F10 export Excel.'
+              : 'Pintasan: F1 cari, F10 ekspor Excel.'}
+          </p>
         </div>
       </div>
 
@@ -405,26 +459,28 @@ export const LaporanPenagihan: React.FC = () => {
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
               <th className="p-3 w-12 text-center">No</th>
-              <th className="p-3">No. Faktur</th>
-              <th className="p-3">Nama Pelanggan</th>
-              <th className="p-3">Tgl Faktur</th>
-              <th className="p-3">Jatuh Tempo</th>
-              <th className="p-3 text-center">Hari Keterlambatan</th>
-              <th className="p-3 text-right">Nilai Faktur</th>
-              <th className="p-3 text-right">Sisa Piutang</th>
+              <th className="p-3">{lang === 'en' ? 'Invoice No.' : 'No. Faktur'}</th>
+              <th className="p-3">{lang === 'en' ? 'Customer Name' : 'Nama Pelanggan'}</th>
+              <th className="p-3">{lang === 'en' ? 'Inv. Date' : 'Tgl Faktur'}</th>
+              <th className="p-3">{lang === 'en' ? 'Due Date' : 'Jatuh Tempo'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Overdue Days' : 'Hari Keterlambatan'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Invoice Value' : 'Nilai Faktur'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Remaining Receivable' : 'Sisa Piutang'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-500 italic">
-                  Sedang menyusun struktur umur piutang...
+                  {lang === 'en' ? 'Compiling accounts receivable aging structure...' : 'Sedang menyusun struktur umur piutang...'}
                 </td>
               </tr>
             ) : filteredInvoices.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-400 italic">
-                  Tidak ada piutang aktif dalam kategori filter terpilih.
+                  {lang === 'en'
+                    ? 'No active receivables found in the selected filter category.'
+                    : 'Tidak ada piutang aktif dalam kategori filter terpilih.'}
                 </td>
               </tr>
             ) : (
@@ -474,10 +530,12 @@ export const LaporanPenagihan: React.FC = () => {
                     <td className={getTdClass('middle') + ` text-center ${agingClass}`}>
                       {days > 0 ? (
                         <span className="inline-flex items-center gap-1">
-                          <Clock size={12} /> {days} Hari
+                          <Clock size={12} /> {days} {lang === 'en' ? 'Days' : 'Hari'}
                         </span>
                       ) : (
-                        <span className="text-slate-400 font-normal">Belum J.Tempo</span>
+                        <span className="text-slate-400 font-normal">
+                          {lang === 'en' ? 'Not Due Yet' : 'Belum J.Tempo'}
+                        </span>
                       )}
                     </td>
                     <td className={getTdClass('middle') + " text-right font-mono"}>{formatCurrency(Number(inv.subtotal))}</td>
@@ -492,7 +550,11 @@ export const LaporanPenagihan: React.FC = () => {
         </table>
       </div>
       <div className="flex justify-end text-[10px] text-slate-400 mt-2">
-        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih.</span>
+        <span>
+          {lang === 'en'
+            ? 'Use cursor or click table to focus, ↑ ↓ keys to select.'
+            : 'Gunakan kursor atau klik tabel untuk fokus, tombol ↑ ↓ untuk memilih.'}
+        </span>
       </div>
     </div>
   );

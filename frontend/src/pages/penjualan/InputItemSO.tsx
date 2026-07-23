@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, formatRupiahInput, parseRupiahInput, parseAdjustments } from '@/lib/utils';
 import { Search, Save, Printer, Plus, Trash2, X, AlertCircle, ShoppingCart, Truck, User, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
@@ -40,6 +41,7 @@ interface SOItem {
 
 export const InputItemSO: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
 
   // SO metadata from step 1
   const [soMeta, setSoMeta] = useState<{ noOrder: string; orderDate: string; customer: Customer; diantar: boolean; limitBulan: number } | null>(null);
@@ -290,7 +292,11 @@ export const InputItemSO: React.FC = () => {
     // Check duplicate
     const isDuplicate = items.some(item => item.product_id === selectedProd.id);
     if (isDuplicate) {
-      setDuplicateMsg(`Barang "${selectedProd.nama}" sudah ada di daftar input SO!`);
+      setDuplicateMsg(
+        lang === 'en'
+          ? `Product "${selectedProd.nama}" is already in the SO list!`
+          : `Barang "${selectedProd.nama}" sudah ada di daftar input SO!`
+      );
       setShowDuplicateModal(true);
       return;
     }
@@ -300,7 +306,7 @@ export const InputItemSO: React.FC = () => {
       return;
     }
     if (!price || Number(price) <= 0) {
-      alert("Harga jual tidak boleh kosong atau 0!");
+      alert(lang === 'en' ? "Selling price cannot be empty or 0!" : "Harga jual tidak boleh kosong atau 0!");
       priceInputRef.current?.focus();
       return;
     }
@@ -308,7 +314,11 @@ export const InputItemSO: React.FC = () => {
     if (Number(qty) > Number(selectedProd.stok)) {
       const maxStok = Number(selectedProd.stok);
       setQty(maxStok);
-      setStockAlertMsg(`Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`);
+      setStockAlertMsg(
+        lang === 'en'
+          ? `Insufficient stock for ${selectedProd.nama}. Available: ${maxStok}. Quantity automatically adjusted to ${maxStok}.`
+          : `Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`
+      );
       setShowStockAlert(true);
       return;
     }
@@ -359,7 +369,11 @@ export const InputItemSO: React.FC = () => {
       if (selectedProd && Number(qty) > Number(selectedProd.stok)) {
         const maxStok = Number(selectedProd.stok);
         setQty(maxStok);
-        setStockAlertMsg(`Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`);
+        setStockAlertMsg(
+          lang === 'en'
+            ? `Insufficient stock for ${selectedProd.nama}. Available: ${maxStok}. Quantity automatically adjusted to ${maxStok}.`
+            : `Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`
+        );
         setShowStockAlert(true);
         return;
       }
@@ -394,18 +408,18 @@ export const InputItemSO: React.FC = () => {
       }
       return updated;
     });
-    showToast('Item berhasil dihapus dari daftar', 'success');
+    showToast(lang === 'en' ? 'Item successfully removed from list' : 'Item berhasil dihapus dari daftar', 'success');
   };
 
   const addAdjustmentToTable = () => {
     if (!tempAdjustmentDesc.trim()) {
-      showToast('Penjelasan penyesuaian tidak boleh kosong', 'error');
+      showToast(lang === 'en' ? 'Adjustment description cannot be empty' : 'Penjelasan penyesuaian tidak boleh kosong', 'error');
       return;
     }
     const val = tempAdjustmentAmountInput;
     const parsed = parseRupiahInput(val);
     if (parsed === 0) {
-      showToast('Nilai penyesuaian tidak boleh 0', 'error');
+      showToast(lang === 'en' ? 'Adjustment value cannot be 0' : 'Nilai penyesuaian tidak boleh 0', 'error');
       return;
     }
 
@@ -423,7 +437,7 @@ export const InputItemSO: React.FC = () => {
     setTempAdjustmentDesc('');
     setTempAdjustmentAmountInput('');
     adjustmentDescRef.current?.focus();
-    showToast('Penyesuaian berhasil dimasukkan', 'success');
+    showToast(lang === 'en' ? 'Adjustment successfully added' : 'Penyesuaian berhasil dimasukkan', 'success');
   };
 
   const handleSaveDraftAction = async (toDraftPage?: boolean) => {
@@ -447,7 +461,7 @@ export const InputItemSO: React.FC = () => {
 
       // Simpan draft di DB
       await api.post('/sales', payload);
-      showToast('Draft SO berhasil disimpan', 'success');
+      showToast(lang === 'en' ? 'Draft SO successfully saved' : 'Draft SO berhasil disimpan', 'success');
 
       sessionStorage.removeItem('so_step1');
       setShowConfirmPrintModal(false);
@@ -457,7 +471,7 @@ export const InputItemSO: React.FC = () => {
         navigate('/penjualan');
       }
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Gagal menyimpan draft order', 'error');
+      showToast(err.response?.data?.error || (lang === 'en' ? 'Failed to save draft order' : 'Gagal menyimpan draft order'), 'error');
     }
   };
 
@@ -495,7 +509,7 @@ export const InputItemSO: React.FC = () => {
 
       setCompletedSo(printRes.data);
       setCompletedSoId(soId);
-      showToast('Order SO berhasil disimpan', 'success');
+      showToast(lang === 'en' ? 'SO Order successfully saved' : 'Order SO berhasil disimpan', 'success');
 
       sessionStorage.removeItem('so_step1');
       setShowConfirmPrintModal(false);
@@ -506,7 +520,7 @@ export const InputItemSO: React.FC = () => {
         navigate('/penjualan');
       }, 250);
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Gagal menyimpan & mencetak penjualan', 'error');
+      showToast(err.response?.data?.error || (lang === 'en' ? 'Failed to save & print sales order' : 'Gagal menyimpan & mencetak penjualan'), 'error');
     }
   };
 
@@ -661,7 +675,7 @@ export const InputItemSO: React.FC = () => {
       }, 200);
     } catch (err) {
       console.error(err);
-      alert('Gagal menerbitkan nomor faktur');
+      alert(lang === 'en' ? 'Failed to issue invoice number' : 'Gagal menerbitkan nomor faktur');
     }
   };
 
@@ -761,8 +775,12 @@ export const InputItemSO: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Kasir Input SO (Step 2)</h1>
-            <p className="text-slate-400">Masukkan item belanjaan dan selesaikan transaksi kasir</p>
+            <h1 className="text-2xl font-extrabold text-white">
+              {lang === 'en' ? 'Cashier Input SO (Step 2)' : 'Kasir Input SO (Step 2)'}
+            </h1>
+            <p className="text-slate-400">
+              {lang === 'en' ? 'Enter shopping items and complete cashier transaction' : 'Masukkan item belanjaan dan selesaikan transaksi kasir'}
+            </p>
           </div>
         </div>
 
@@ -774,39 +792,55 @@ export const InputItemSO: React.FC = () => {
             {soMeta && showMetaInfo && (
               <div className="card card-hovered p-6 shadow-xl grid grid-cols-1 md:grid-cols-5 gap-4 text-xs">
                 <div>
-                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">Nomor SO</span>
+                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">
+                    {lang === 'en' ? 'SO Number' : 'Nomor SO'}
+                  </span>
                   <span className="font-mono font-bold text-white text-sm">{soMeta.noOrder}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">Pelanggan</span>
+                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">
+                    {lang === 'en' ? 'Customer' : 'Pelanggan'}
+                  </span>
                   <span className="font-bold text-slate-200 text-sm block truncate">{soMeta.customer.nama}</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Tlp: {soMeta.customer.no_telp || '-'}</span>
-                  <span className="text-[10px] text-slate-400 block truncate">Alamat: {soMeta.customer.alamat || '-'}</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                    {lang === 'en' ? 'Tel:' : 'Tlp:'} {soMeta.customer.no_telp || '-'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block truncate">
+                    {lang === 'en' ? 'Address:' : 'Alamat:'} {soMeta.customer.alamat || '-'}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">Sisa Limit Kredit</span>
+                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">
+                    {lang === 'en' ? 'Remaining Credit Limit' : 'Sisa Limit Kredit'}
+                  </span>
                   <span className={`font-bold text-sm block ${soMeta.customer.limit_kredit - soMeta.customer.saldo_piutang <= 0 ? 'text-danger-400' : 'text-emerald-400'}`}>
                     {formatCurrency(Math.max(0, soMeta.customer.limit_kredit - soMeta.customer.saldo_piutang))}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">Metode / J.Tempo</span>
+                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">
+                    {lang === 'en' ? 'Method / Terms' : 'Metode / J.Tempo'}
+                  </span>
                   <span className="font-bold text-slate-200 block mt-0.5">
-                    {soMeta.limitBulan > 0 ? `Kredit (${soMeta.limitBulan} Bulan)` : 'Tunai / Cash'}
+                    {soMeta.limitBulan > 0
+                      ? (lang === 'en' ? `Credit (${soMeta.limitBulan} Month(s))` : `Kredit (${soMeta.limitBulan} Bulan)`)
+                      : (lang === 'en' ? 'Cash' : 'Tunai / Cash')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">Status Kirim</span>
+                  <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px] font-bold">
+                    {lang === 'en' ? 'Delivery Status' : 'Status Kirim'}
+                  </span>
                   <span className="font-semibold text-slate-300 flex items-center gap-1.5 mt-0.5">
                     {soMeta.diantar ? (
                       <>
                         <Truck size={14} className="text-primary-400" />
-                        <span>Diantar Sopir</span>
+                        <span>{lang === 'en' ? 'Delivered by Driver' : 'Diantar Sopir'}</span>
                       </>
                     ) : (
                       <>
                         <User size={14} className="text-slate-400" />
-                        <span>Diambil Sendiri</span>
+                        <span>{lang === 'en' ? 'Self Pickup' : 'Diambil Sendiri'}</span>
                       </>
                     )}
                   </span>
@@ -819,11 +853,13 @@ export const InputItemSO: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Product Autocomplete */}
                 <div className="md:col-span-2 relative">
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Cari Produk (F1)</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    {lang === 'en' ? 'Search Product (F1)' : 'Cari Produk (F1)'}
+                  </label>
                   <input
                     ref={searchInputRef}
                     type="text"
-                    placeholder="Ketik kode atau nama produk..."
+                    placeholder={lang === 'en' ? 'Type code or product name...' : 'Ketik kode atau nama produk...'}
                     value={prodQuery}
                     onChange={(e) => {
                       setProdQuery(e.target.value);
@@ -838,12 +874,14 @@ export const InputItemSO: React.FC = () => {
 
                 {/* Qty */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Qty</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    {lang === 'en' ? 'Qty' : 'Qty'}
+                  </label>
                   <input
                     ref={qtyInputRef}
                     type="number"
                     min="1"
-                    placeholder="Kuantitas"
+                    placeholder={lang === 'en' ? 'Qty' : 'Kuantitas'}
                     value={qty}
                     onChange={(e) => setQty(e.target.value ? Number(e.target.value) : '')}
                     onFocus={() => {
@@ -853,7 +891,11 @@ export const InputItemSO: React.FC = () => {
                       if (selectedProd && qty && Number(qty) > Number(selectedProd.stok)) {
                         const maxStok = Number(selectedProd.stok);
                         setQty(maxStok);
-                        setStockAlertMsg(`Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`);
+                        setStockAlertMsg(
+                          lang === 'en'
+                            ? `Insufficient stock for ${selectedProd.nama}. Available: ${maxStok}. Quantity automatically adjusted to ${maxStok}.`
+                            : `Stok ${selectedProd.nama} tidak mencukupi. Tersedia: ${maxStok}. Kuantitas otomatis disesuaikan menjadi ${maxStok}.`
+                        );
                         setShowStockAlert(true);
                       }
                     }}
@@ -864,11 +906,13 @@ export const InputItemSO: React.FC = () => {
 
                 {/* Price */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Harga Jual</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    {lang === 'en' ? 'Selling Price' : 'Harga Jual'}
+                  </label>
                   <input
                     ref={priceInputRef}
                     type="text"
-                    placeholder="Harga Jual"
+                    placeholder={lang === 'en' ? 'Price' : 'Harga Jual'}
                     value={formatRupiahInput(price)}
                     onChange={(e) => setPrice(e.target.value ? parseRupiahInput(e.target.value) : '')}
                     onFocus={() => {
@@ -883,8 +927,12 @@ export const InputItemSO: React.FC = () => {
               {selectedProd && (
                 <div className="p-3 bg-surface-900 border border-surface-700/50 rounded-lg flex items-center justify-between text-xs animate-scale-in">
                   <div className="flex gap-4">
-                    <span className="text-slate-400">Barang Terpilih: <strong className="text-slate-200">{selectedProd.nama}</strong></span>
-                    <span className="text-slate-400">Ketersediaan Stok: <strong className="text-emerald-400">{selectedProd.stok} {selectedProd.satuan}</strong></span>
+                    <span className="text-slate-400">
+                      {lang === 'en' ? 'Selected Product:' : 'Barang Terpilih:'} <strong className="text-slate-200">{selectedProd.nama}</strong>
+                    </span>
+                    <span className="text-slate-400">
+                      {lang === 'en' ? 'Stock Availability:' : 'Ketersediaan Stok:'} <strong className="text-emerald-400">{selectedProd.stok} {selectedProd.satuan}</strong>
+                    </span>
                   </div>
                   <button onClick={() => { setSelectedProd(null); setProductHistoryData(null); }} className="text-slate-400 hover:text-white">
                     <X size={14} />
@@ -899,10 +947,10 @@ export const InputItemSO: React.FC = () => {
                 <thead>
                   <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
                     <th className="p-4 w-12 text-center">No</th>
-                    <th className="p-4">Kode SKU</th>
-                    <th className="p-4">Nama Barang</th>
+                    <th className="p-4">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+                    <th className="p-4">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                     <th className="p-4 text-right">Qty</th>
-                    <th className="p-4 text-right">Harga Satuan</th>
+                    <th className="p-4 text-right">{lang === 'en' ? 'Unit Price' : 'Harga Satuan'}</th>
                     <th className="p-4 text-right">Subtotal</th>
                   </tr>
                 </thead>
@@ -1001,7 +1049,9 @@ export const InputItemSO: React.FC = () => {
                   ) : (
                     <tr>
                       <td colSpan={6} className="p-8 text-center text-slate-500 text-xs italic">
-                        Belum ada item belanja ditambahkan. Cari barang di atas atau tekan F2.
+                        {lang === 'en'
+                          ? 'No items added yet. Search product above or press F2.'
+                          : 'Belum ada item belanja ditambahkan. Cari barang di atas atau tekan F2.'}
                       </td>
                     </tr>
                   )}
@@ -1013,11 +1063,13 @@ export const InputItemSO: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pr-4">
               {/* Bottom Left: Note / Keterangan */}
               <div className="flex flex-col space-y-1.5">
-                <label className="text-xs text-slate-400 font-semibold">Keterangan (F4)</label>
+                <label className="text-xs text-slate-400 font-semibold">
+                  {lang === 'en' ? 'Notes / Remarks (F4)' : 'Keterangan (F4)'}
+                </label>
                 <input
                   ref={noteInputRef}
                   type="text"
-                  placeholder="Input Keterangan..."
+                  placeholder={lang === 'en' ? 'Enter notes...' : 'Input Keterangan...'}
                   value={senderNote}
                   onChange={(e) => setSenderNote(e.target.value)}
                   onFocus={() => setActiveStep('adjust')}
@@ -1029,12 +1081,16 @@ export const InputItemSO: React.FC = () => {
               <div className="flex justify-end items-start">
                 <div className="flex flex-col text-right space-y-1.5 min-w-[280px]">
                   <div className="flex justify-between items-center text-xs gap-4">
-                    <span className="text-slate-400 font-medium">Subtotal Belanja:</span>
+                    <span className="text-slate-400 font-medium">
+                      {lang === 'en' ? 'Items Subtotal:' : 'Subtotal Belanja:'}
+                    </span>
                     <span className="font-semibold text-slate-200 currency">{formatCurrency(itemsSubtotal)}</span>
                   </div>
                   {adjustmentAmount !== 0 && (
                     <div className="flex justify-between items-center text-xs gap-4">
-                      <span className="text-slate-400 font-medium">Penyesuaian ({adjustmentDesc || 'F2'}):</span>
+                      <span className="text-slate-400 font-medium">
+                        {lang === 'en' ? 'Adjustment' : 'Penyesuaian'} ({adjustmentDesc || 'F2'}):
+                      </span>
                       <span className={`font-semibold currency ${adjustmentAmount < 0 ? 'text-danger-400' : 'text-emerald-400'}`}>
                         {adjustmentAmount < 0 ? '-' : '+'}{formatCurrency(Math.abs(adjustmentAmount))}
                       </span>
@@ -1057,27 +1113,29 @@ export const InputItemSO: React.FC = () => {
                 <div className="border-b border-surface-700 pb-3">
                   <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
                     <ShoppingCart size={16} className="text-primary-400" />
-                    <span>Analisis Riwayat Harga</span>
+                    <span>{lang === 'en' ? 'Price History Analysis' : 'Analisis Riwayat Harga'}</span>
                   </h4>
                   <p className="text-[10px] text-slate-400 mt-0.5">{selectedProd?.nama}</p>
                 </div>
 
                 {/* Last Unit Price Customer */}
                 <div className="space-y-1.5">
-                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Harga Terakhir Customer Ini</span>
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">
+                    {lang === 'en' ? 'Last Price of This Customer' : 'Harga Terakhir Customer Ini'}
+                  </span>
                   <div className="p-3 bg-surface-900 border border-blue-500/30 rounded-lg space-y-1">
                     {productHistoryData.last_sale ? (
                       <>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-400">Harga Terakhir:</span>
+                          <span className="text-slate-400">{lang === 'en' ? 'Last Price:' : 'Harga Terakhir:'}</span>
                           <span className="font-extrabold text-primary-400">
                             {formatCurrency(productHistoryData.last_sale.unit_price)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-400">Terakhir Order:</span>
+                          <span className="text-slate-400">{lang === 'en' ? 'Last Order:' : 'Terakhir Order:'}</span>
                           <span className="font-bold text-slate-200">
-                            {new Date(productHistoryData.last_sale.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {new Date(productHistoryData.last_sale.order_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-[9px] text-slate-500 font-mono pt-0.5 border-t border-surface-800">
@@ -1088,11 +1146,11 @@ export const InputItemSO: React.FC = () => {
                     ) : (
                       <>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-450">Harga Terakhir:</span>
+                          <span className="text-slate-450">{lang === 'en' ? 'Last Price:' : 'Harga Terakhir:'}</span>
                           <span className="font-semibold text-slate-550">-</span>
                         </div>
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-450">Terakhir Order:</span>
+                          <span className="text-slate-450">{lang === 'en' ? 'Last Order:' : 'Terakhir Order:'}</span>
                           <span className="font-bold text-slate-500">0</span>
                         </div>
                       </>
@@ -1102,7 +1160,9 @@ export const InputItemSO: React.FC = () => {
 
                 {/* Harga Beli Supplier History */}
                 <div className="space-y-1.5">
-                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">Harga Modal Supplier (Terkini & Sebelumnya)</span>
+                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block font-bold">
+                    {lang === 'en' ? 'Supplier Cost Price (Current & History)' : 'Harga Modal Supplier (Terkini & Sebelumnya)'}
+                  </span>
                   {productHistoryData.purchase_history && productHistoryData.purchase_history.length > 0 ? (
                     <div className="space-y-2">
                       {productHistoryData.purchase_history.map((item: any, idx: number) => (
@@ -1111,7 +1171,7 @@ export const InputItemSO: React.FC = () => {
                             <div>
                               <span className="font-bold text-slate-200 block text-xs truncate max-w-[140px]">{item.supplier_name}</span>
                               <span className="text-[9px] text-slate-500 block">
-                                Tanggal: {new Date(item.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {lang === 'en' ? 'Date:' : 'Tanggal:'} {new Date(item.order_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </span>
                             </div>
                             <div>
@@ -1127,7 +1187,7 @@ export const InputItemSO: React.FC = () => {
                           {/* Selisih Harga */}
                           {item.difference !== null && (
                             <div className="flex justify-between items-center text-[10px] pt-1 border-t border-surface-800">
-                              <span className="text-slate-500">Selisih:</span>
+                              <span className="text-slate-500">{lang === 'en' ? 'Diff:' : 'Selisih:'}</span>
                               <span className={`font-bold ${item.difference > 0 ? 'text-emerald-400' : item.difference < 0 ? 'text-danger-400' : 'text-slate-400'}`}>
                                 {item.difference > 0 ? '+' : ''}{formatCurrency(item.difference)}
                               </span>
@@ -1138,7 +1198,7 @@ export const InputItemSO: React.FC = () => {
                     </div>
                   ) : (
                     <div className="p-3 bg-surface-900 border border-surface-700/50 rounded-lg text-slate-500 text-xs">
-                      Belum ada riwayat pembelian modal dari supplier.
+                      {lang === 'en' ? 'No cost price purchase history from supplier.' : 'Belum ada riwayat pembelian modal dari supplier.'}
                     </div>
                   )}
                 </div>
@@ -1148,32 +1208,53 @@ export const InputItemSO: React.FC = () => {
             {/* Panduan Pintasan */}
             {!(activeStep === 'price' && productHistoryData) && (
               <div className="card card-hovered p-6 space-y-4 animate-scale-in">
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Panduan Pintasan</h4>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">
+                  {lang === 'en' ? 'Shortcuts Guide' : 'Panduan Pintasan'}
+                </h4>
                 <ul className="text-xs text-slate-450 space-y-2.5 list-disc list-inside">
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk mulai cari barang</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk menuju kolom Penyesuaian & Notes</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F3</kbd> untuk masuk/navigasi tabel belanjaan</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk menuju kolom Keterangan</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> pada kolom Qty / Harga untuk lanjut</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk simpan order</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
-                  <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal / keluar kasir</li>
+                  {lang === 'en' ? (
+                    <>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F1</kbd> to start searching product</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F2</kbd> to go to Adjustment & Notes</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F3</kbd> to enter/navigate shopping table</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F4</kbd> to go to Notes input</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">Enter</kbd> on Qty / Price column to proceed</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">F10</kbd> to save order</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">Delete</kbd> to delete highlighted row</li>
+                      <li>Press <kbd className="shortcut-badge text-[9px]">Esc</kbd> to cancel / exit cashier</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F1</kbd> untuk mulai cari barang</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F2</kbd> untuk menuju kolom Penyesuaian & Notes</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F3</kbd> untuk masuk/navigasi tabel belanjaan</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F4</kbd> untuk menuju kolom Keterangan</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> pada kolom Qty / Harga untuk lanjut</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">F10</kbd> untuk simpan order</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Delete</kbd> untuk menghapus baris terpilih</li>
+                      <li>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal / keluar kasir</li>
+                    </>
+                  )}
                 </ul>
               </div>
             )}
 
             {/* Adjustment Panel (Always Shown) */}
             <div className="card card-hovered p-6 space-y-6 border border-surface-700 animate-scale-in">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">Penyesuaian (Adjustment)</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-surface-700">
+                {lang === 'en' ? 'Adjustment' : 'Penyesuaian (Adjustment)'}
+              </h3>
 
               {/* Adjustments */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1.5 font-semibold">Penjelasan Penyesuaian (F2)</label>
+                  <label className="block text-xs text-slate-400 mb-1.5 font-semibold">
+                    {lang === 'en' ? 'Adjustment Explanation (F2)' : 'Penjelasan Penyesuaian (F2)'}
+                  </label>
                   <input
                     ref={adjustmentDescRef}
                     type="text"
-                    placeholder="Potongan / Pengiriman..."
+                    placeholder={lang === 'en' ? 'Discount / Shipping...' : 'Potongan / Pengiriman...'}
                     value={tempAdjustmentDesc}
                     onChange={(e) => setTempAdjustmentDesc(e.target.value)}
                     onFocus={() => setActiveStep('adjust')}
@@ -1182,7 +1263,9 @@ export const InputItemSO: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1.5 font-semibold">Jumlah Penyesuaian (Rp)</label>
+                  <label className="block text-xs text-slate-400 mb-1.5 font-semibold">
+                    {lang === 'en' ? 'Adjustment Amount (Rp)' : 'Jumlah Penyesuaian (Rp)'}
+                  </label>
                   <input
                     ref={adjustmentAmountRef}
                     type="text"
@@ -1221,7 +1304,7 @@ export const InputItemSO: React.FC = () => {
               <div className="flex justify-between items-center w-full border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Printer size={18} className="text-primary-600" />
-                  <span>Konfirmasi Cetak Nota</span>
+                  <span>{lang === 'en' ? 'Confirm Invoice Printing' : 'Konfirmasi Cetak Nota'}</span>
                 </h3>
                 <button
                   onClick={() => setShowConfirmPrintModal(false)}
@@ -1233,7 +1316,9 @@ export const InputItemSO: React.FC = () => {
 
               {/* Subtitle */}
               <p className="text-xs text-slate-500 mt-4 font-medium">
-                Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).
+                {lang === 'en'
+                  ? 'Select item sorting option, then choose action: Save as Draft (Enter) or Print (P).'
+                  : 'Pilih urutan item, lalu pilih aksi: Simpan sebagai Draft (Enter) atau Print (P).'}
               </p>
 
               {/* Sorting Pills */}
@@ -1247,7 +1332,7 @@ export const InputItemSO: React.FC = () => {
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                 >
-                  Urutan Asli
+                  {lang === 'en' ? 'Original Order' : 'Urutan Asli'}
                 </button>
                 <button
                   ref={btnAbjadRef}
@@ -1258,7 +1343,7 @@ export const InputItemSO: React.FC = () => {
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                 >
-                  Abjad (A-Z)
+                  {lang === 'en' ? 'Alphabetical (A-Z)' : 'Abjad (A-Z)'}
                 </button>
                 <button
                   ref={btnQtyRef}
@@ -1269,7 +1354,7 @@ export const InputItemSO: React.FC = () => {
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                 >
-                  Qty Terbanyak
+                  {lang === 'en' ? 'Highest Qty' : 'Qty Terbanyak'}
                 </button>
                 <button
                   ref={btnHargaRef}
@@ -1280,7 +1365,7 @@ export const InputItemSO: React.FC = () => {
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                 >
-                  Harga Tertinggi
+                  {lang === 'en' ? 'Highest Price' : 'Harga Tertinggi'}
                 </button>
               </div>
 
@@ -1289,10 +1374,10 @@ export const InputItemSO: React.FC = () => {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-250 text-slate-700 font-bold">
-                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="p-3 text-right w-20">Qty</th>
-                      <th className="p-3 text-right w-32">Harga</th>
-                      <th className="p-3 text-right w-32">Jumlah</th>
+                      <th className="p-3 text-right w-32">{lang === 'en' ? 'Price' : 'Harga'}</th>
+                      <th className="p-3 text-right w-32">{lang === 'en' ? 'Amount' : 'Jumlah'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-150">
@@ -1315,14 +1400,14 @@ export const InputItemSO: React.FC = () => {
                   onClick={() => setShowConfirmPrintModal(false)}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSaveDraftAction()}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
                 >
-                  Simpan Draft (Enter)
+                  {lang === 'en' ? 'Save Draft (Enter)' : 'Simpan Draft (Enter)'}
                 </button>
                 <button
                   type="button"
@@ -1349,10 +1434,14 @@ export const InputItemSO: React.FC = () => {
             >
               <div className="flex flex-col items-center justify-center gap-2 text-danger-600 border-b border-slate-100 pb-3 mb-4 text-center">
                 <AlertTriangle size={28} />
-                <h3 className="text-lg font-bold text-slate-900">Konfirmasi Batal Order</h3>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {lang === 'en' ? 'Confirm Cancel Order' : 'Konfirmasi Batal Order'}
+                </h3>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
-                Order belum di-input. Jika Anda membatalkan, seluruh data order penjualan ini akan terhapus sepenuhnya.
+                {lang === 'en'
+                  ? 'No items have been inputted yet. If you cancel, all sales order data will be permanently deleted.'
+                  : 'Order belum di-input. Jika Anda membatalkan, seluruh data order penjualan ini akan terhapus sepenuhnya.'}
               </p>
               <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
                 <button
@@ -1363,7 +1452,7 @@ export const InputItemSO: React.FC = () => {
                   }}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
                 >
-                  Kembali (Esc)
+                  {lang === 'en' ? 'Back (Esc)' : 'Kembali (Esc)'}
                 </button>
                 <button
                   type="button"
@@ -1374,7 +1463,7 @@ export const InputItemSO: React.FC = () => {
                   }}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-danger-600 hover:bg-danger-700 text-white transition-all shadow-md shadow-danger-500/10"
                 >
-                  Konfirmasi & Keluar (Enter)
+                  {lang === 'en' ? 'Confirm & Exit (Enter)' : 'Konfirmasi & Keluar (Enter)'}
                 </button>
               </div>
             </div>
@@ -1394,11 +1483,14 @@ export const InputItemSO: React.FC = () => {
             >
               <div className="flex flex-col items-center justify-center gap-2 text-amber-600 border-b border-slate-100 pb-3 mb-4 text-center">
                 <Save size={28} className="text-amber-600" />
-                <h3 className="text-lg font-bold text-slate-900">Simpan sebagai Draft</h3>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {lang === 'en' ? 'Save as Draft' : 'Simpan sebagai Draft'}
+                </h3>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold text-center">
-                Order penjualan ini akan disimpan sebagai <strong className="text-slate-900 font-bold">Draft</strong>.
-                Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.
+                {lang === 'en'
+                  ? 'This sales order will be saved as Draft. Inventory stock will still be reduced based on the inputted items.'
+                  : 'Order penjualan ini akan disimpan sebagai Draft. Stok di inventory akan tetap berkurang sesuai dengan barang yang telah di-input.'}
               </p>
               <div className="flex justify-center gap-3 border-t border-slate-100 pt-4">
                 <button
@@ -1409,7 +1501,7 @@ export const InputItemSO: React.FC = () => {
                   }}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
@@ -1419,7 +1511,7 @@ export const InputItemSO: React.FC = () => {
                   }}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-md shadow-amber-500/10"
                 >
-                  Simpan & Ke Draft (Enter)
+                  {lang === 'en' ? 'Save & Go to Draft (Enter)' : 'Simpan & Ke Draft (Enter)'}
                 </button>
               </div>
             </div>
@@ -1434,7 +1526,9 @@ export const InputItemSO: React.FC = () => {
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
               <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertCircle size={24} className="shrink-0 text-white" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Tidak Mencukupi</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Insufficient Stock' : 'Stok Tidak Mencukupi'}
+                </h3>
               </div>
               <div className="p-6 text-center">
                 <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
@@ -1452,7 +1546,7 @@ export const InputItemSO: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
                   >
-                    Tutup (Enter)
+                    {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1468,11 +1562,15 @@ export const InputItemSO: React.FC = () => {
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
               <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertTriangle size={24} className="shrink-0 text-white animate-bounce" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Kuantitas Kosong!</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Quantity Empty!' : 'Kuantitas Kosong!'}
+                </h3>
               </div>
               <div className="p-6 text-center">
                 <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                  Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.
+                  {lang === 'en'
+                    ? 'Quantity (Qty) cannot be empty or 0. Please enter the quantity first.'
+                    : 'Kuantitas (Qty) tidak boleh kosong atau 0. Silakan isi kuantitas terlebih dahulu.'}
                 </p>
                 <div className="flex justify-center pt-4 border-t border-slate-100">
                   <button
@@ -1486,7 +1584,7 @@ export const InputItemSO: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md"
                   >
-                    Tutup (Enter)
+                    {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1507,7 +1605,9 @@ export const InputItemSO: React.FC = () => {
             >
               <div className="bg-primary-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertTriangle size={24} className="shrink-0 text-white" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Barang Sudah Diinput</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Product Already Added' : 'Barang Sudah Diinput'}
+                </h3>
               </div>
               <div className="p-6 text-center">
                 <p className="text-xs text-slate-700 leading-relaxed mb-6 font-semibold">
@@ -1522,7 +1622,7 @@ export const InputItemSO: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-primary-600 !text-white text-xs font-bold hover:bg-primary-750 transition-all shadow-md"
                   >
-                    OK (Enter)
+                    {lang === 'en' ? 'OK (Enter)' : 'OK (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1551,11 +1651,21 @@ export const InputItemSO: React.FC = () => {
             <div className="bg-white rounded-xl max-w-sm w-full mx-auto shadow-2xl animate-scale-in text-slate-800 overflow-hidden">
               <div className="bg-danger-600 text-white px-6 py-4 flex flex-col items-center justify-center gap-2">
                 <AlertTriangle size={24} className="shrink-0 text-white" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-center">Stok Kosong!</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-center">
+                  {lang === 'en' ? 'Out of Stock!' : 'Stok Kosong!'}
+                </h3>
               </div>
               <div className="p-6 text-center">
-                <p className="text-xs text-slate-650 leading-relaxed mb-6 font-medium">
-                  Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
+                <p className="text-xs text-slate-655 leading-relaxed mb-6 font-medium">
+                  {lang === 'en' ? (
+                    <>
+                      Stock for product <strong>{zeroStockProduct.nama}</strong> in warehouse is empty (0). You cannot perform transactions for this product.
+                    </>
+                  ) : (
+                    <>
+                      Stok barang <strong>{zeroStockProduct.nama}</strong> di gudang kosong (0). Anda tidak dapat melakukan transaksi untuk barang ini.
+                    </>
+                  )}
                 </p>
                 <div className="flex justify-center pt-4 border-t border-slate-100">
                   <button
@@ -1570,7 +1680,7 @@ export const InputItemSO: React.FC = () => {
                     }}
                     className="px-6 py-2 rounded-lg bg-danger-600 !text-white text-xs font-bold hover:bg-danger-750 transition-all shadow-md animate-pulse"
                   >
-                    Tutup (Enter)
+                    {lang === 'en' ? 'Close (Enter)' : 'Tutup (Enter)'}
                   </button>
                 </div>
               </div>
@@ -1592,7 +1702,7 @@ export const InputItemSO: React.FC = () => {
               <div className="flex justify-between items-center w-full">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Search size={18} />
-                  <span>Pilih Produk</span>
+                  <span>{lang === 'en' ? 'Select Product' : 'Pilih Produk'}</span>
                 </h3>
                 <button onClick={() => setShowProductPopup(false)} className="text-slate-400 hover:text-white">
                   <X size={18} />
@@ -1623,13 +1733,18 @@ export const InputItemSO: React.FC = () => {
                   ))
                 ) : (
                   <div className="text-center py-8 text-slate-500 text-sm">
-                    Tidak ada produk yang cocok dengan "{prodQuery}".
+                    {lang === 'en'
+                      ? `No product matches "${prodQuery}".`
+                      : `Tidak ada produk yang cocok dengan "${prodQuery}".`}
                   </div>
                 )}
               </div>
               <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+                <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+                <span>
+                  <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
+                  <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+                </span>
               </div>
             </div>
           </div>
@@ -1650,9 +1765,12 @@ export const InputItemSO: React.FC = () => {
                 <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
                   <Printer size={24} />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Transaksi Berhasil Disimpan</h3>
-                  <p className="text-xs text-slate-400 mt-1">Pilih format cetak nota belanja (Gunakan Panah Kiri/Kanan):</p>
+                                 <h3 className="text-lg font-bold text-white">
+                    {lang === 'en' ? 'Transaction Saved Successfully' : 'Transaksi Berhasil Disimpan'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {lang === 'en' ? 'Select receipt print format (Use Left/Right Arrow):' : 'Pilih format cetak nota belanja (Gunakan Panah Kiri/Kanan):'}
+                  </p>
                 </div>
 
                 {/* Selector */}
@@ -1663,7 +1781,7 @@ export const InputItemSO: React.FC = () => {
                     className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${printFormat === 'thermal' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                       }`}
                   >
-                    Kasir Thermal (58mm)
+                    {lang === 'en' ? 'Thermal Cashier (58mm)' : 'Kasir Thermal (58mm)'}
                   </button>
                   <button
                     type="button"
@@ -1671,7 +1789,7 @@ export const InputItemSO: React.FC = () => {
                     className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${printFormat === 'a4' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                       }`}
                   >
-                    Nota A4 / Kertas
+                    {lang === 'en' ? 'A4 Receipt / Paper' : 'Nota A4 / Kertas'}
                   </button>
                 </div>
 
@@ -1683,7 +1801,7 @@ export const InputItemSO: React.FC = () => {
                     className="btn-primary w-full py-2 flex items-center justify-center gap-1.5 text-xs"
                   >
                     <Printer size={14} />
-                    <span>Cetak Nota Belanja (Enter)</span>
+                    <span>{lang === 'en' ? 'Print Receipt (Enter)' : 'Cetak Nota Belanja (Enter)'}</span>
                   </button>
                   <button
                     type="button"
@@ -1693,15 +1811,14 @@ export const InputItemSO: React.FC = () => {
                     }}
                     className="btn-secondary w-full py-2 text-xs"
                   >
-                    Selesai Tanpa Cetak (Esc)
+                    {lang === 'en' ? 'Finish Without Print (Esc)' : 'Selesai Tanpa Cetak (Esc)'}
                   </button>
                 </div>
 
                 <div className="pt-4 border-t border-surface-700 flex justify-between text-[10px] text-slate-500">
-                  <span>Tekan <kbd className="shortcut-badge text-[9px]">Enter</kbd> untuk Cetak</span>
-                  <span>Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk Selesai</span>
+                  <span>{lang === 'en' ? 'Press Enter to Print' : 'Tekan Enter untuk Cetak'}</span>
+                  <span>{lang === 'en' ? 'Press Esc to Finish' : 'Tekan Esc untuk Selesai'}</span>
                 </div>
-              </div>
             </div>
           </div>
         </ModalPortal>
@@ -1730,12 +1847,22 @@ export const InputItemSO: React.FC = () => {
                   <p className="border-t border-dashed border-black my-1.5"></p>
                 </div>
                 <div className="space-y-0.5">
-                  <p>No. Faktur: {completedSo.no_faktur || completedSo.no_order}</p>
-                  <p>Tanggal: {formatDate(completedSo.order_date)}</p>
-                  <p>Pelanggan: {completedSo.customer_nama}</p>
-                  <p>Termin: {completedSo.limit_bulan > 0 ? `Kredit (${completedSo.limit_bulan} Bulan)` : 'Tunai'}</p>
-                  <p>Status: {completedSo.limit_bulan > 0 ? 'BELUM LUNAS (KREDIT J.TEMPO)' : 'LUNAS'}</p>
-                  {completedSo.sender_note && <p>Keterangan: {completedSo.sender_note}</p>}
+                  <p>{lang === 'en' ? 'Invoice No.:' : 'No. Faktur:'} {completedSo.no_faktur || completedSo.no_order}</p>
+                  <p>{lang === 'en' ? 'Date:' : 'Tanggal:'} {formatDate(completedSo.order_date)}</p>
+                  <p>{lang === 'en' ? 'Customer:' : 'Pelanggan:'} {completedSo.customer_nama}</p>
+                  <p>
+                    {lang === 'en' ? 'Terms:' : 'Termin:'}{' '}
+                    {completedSo.limit_bulan > 0
+                      ? (lang === 'en' ? `Credit (${completedSo.limit_bulan} Month(s))` : `Kredit (${completedSo.limit_bulan} Bulan)`)
+                      : (lang === 'en' ? 'Cash' : 'Tunai')}
+                  </p>
+                  <p>
+                    Status:{' '}
+                    {completedSo.limit_bulan > 0
+                      ? (lang === 'en' ? 'UNPAID (CREDIT DUE)' : 'BELUM LUNAS (KREDIT J.TEMPO)')
+                      : (lang === 'en' ? 'PAID' : 'LUNAS')}
+                  </p>
+                  {completedSo.sender_note && <p>{lang === 'en' ? 'Remarks:' : 'Keterangan:'} {completedSo.sender_note}</p>}
                   <p className="border-t border-dashed border-black my-1.5"></p>
                 </div>
                 <div className="space-y-1">
@@ -1757,8 +1884,8 @@ export const InputItemSO: React.FC = () => {
                   <p className="font-bold text-xs">Total: {formatCurrency(Number(completedSo.subtotal))}</p>
                 </div>
                 <div className="text-center text-[9px] pt-3 space-y-0.5">
-                  <p>Terima Kasih Atas Kunjungan Anda</p>
-                  <p>Barang yang sudah dibeli tidak dapat ditukar</p>
+                  <p>{lang === 'en' ? 'Thank You for Your Visit' : 'Terima Kasih Atas Kunjungan Anda'}</p>
+                  <p>{lang === 'en' ? 'Purchased goods cannot be returned/exchanged' : 'Barang yang sudah dibeli tidak dapat ditukar'}</p>
                 </div>
               </div>
             ) : (
@@ -1767,30 +1894,40 @@ export const InputItemSO: React.FC = () => {
                 <div className="flex justify-between items-start border-b border-black pb-4">
                   <div>
                     <h1 className="text-lg font-bold uppercase tracking-wider">Maju Mulia Bersama</h1>
-                    <p className="text-xs text-slate-700">Distributor Bahan Bangunan & Logam</p>
+                    <p className="text-xs text-slate-700">
+                      {lang === 'en' ? 'Building Materials & Metal Distributor' : 'Distributor Bahan Bangunan & Logam'}
+                    </p>
                     <p className="text-xs text-slate-700">Jl. Raya Industri Utama No. 88, Cikarang, Bekasi</p>
                     <p className="text-xs text-slate-700">Telp: (021) 89876543 | Email: contact@mmb.com</p>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-base font-bold uppercase">Faktur Penjualan</h2>
+                    <h2 className="text-base font-bold uppercase">
+                      {lang === 'en' ? 'Sales Invoice' : 'Faktur Penjualan'}
+                    </h2>
                     <p className="text-xs font-semibold font-mono">{completedSo.no_faktur || completedSo.no_order}</p>
-                    <p className="text-[10px] mt-2">Tanggal: {formatDate(completedSo.order_date)}</p>
+                    <p className="text-[10px] mt-2">{lang === 'en' ? 'Date:' : 'Tanggal:'} {formatDate(completedSo.order_date)}</p>
                     {completedSo.due_date && (
-                      <p className="text-[10px] text-red-600 font-bold">Jatuh Tempo: {formatDate(completedSo.due_date)}</p>
+                      <p className="text-[10px] text-red-600 font-bold">
+                        {lang === 'en' ? 'Due Date:' : 'Jatuh Tempo:'} {formatDate(completedSo.due_date)}
+                      </p>
                     )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-[10px]">
                   <div>
-                    <p className="font-bold uppercase text-slate-500">Pelanggan:</p>
+                    <p className="font-bold uppercase text-slate-500">{lang === 'en' ? 'Customer:' : 'Pelanggan:'}</p>
                     <p className="font-bold text-xs">{completedSo.customer_nama}</p>
-                    <p>{completedSo.customer_alamat || 'Alamat tidak dicantumkan'}</p>
-                    <p>Telp: {completedSo.customer_telp || '-'}</p>
+                    <p>{completedSo.customer_alamat || (lang === 'en' ? 'Address not specified' : 'Alamat tidak dicantumkan')}</p>
+                    <p>{lang === 'en' ? 'Tel:' : 'Telp:'} {completedSo.customer_telp || '-'}</p>
                   </div>
                   <div>
-                    <p className="font-bold uppercase text-slate-500">Pengiriman & Catatan:</p>
-                    <p className="font-semibold">{completedSo.diantar ? '🚚 DIANTAR SOPIR' : '🚶 DIAMBIL SENDIRI'}</p>
+                    <p className="font-bold uppercase text-slate-500">{lang === 'en' ? 'Delivery & Notes:' : 'Pengiriman & Catatan:'}</p>
+                    <p className="font-semibold">
+                      {completedSo.diantar
+                        ? (lang === 'en' ? '🚚 DELIVERED BY DRIVER' : '🚚 DIANTAR SOPIR')
+                        : (lang === 'en' ? '🚶 SELF PICKUP' : '🚶 DIAMBIL SENDIRI')}
+                    </p>
                     {completedSo.sender_note && <p className="italic mt-1">"{completedSo.sender_note}"</p>}
                   </div>
                 </div>
@@ -1799,10 +1936,10 @@ export const InputItemSO: React.FC = () => {
                   <thead>
                     <tr className="bg-slate-100 border-b border-black font-bold uppercase text-[9px]">
                       <th className="p-1.5 border-r border-black w-8 text-center">No</th>
-                      <th className="p-1.5 border-r border-black">Kode Barang</th>
-                      <th className="p-1.5 border-r border-black">Nama Produk</th>
-                      <th className="p-1.5 border-r border-black text-right w-20">Kuantitas</th>
-                      <th className="p-1.5 border-r border-black text-right w-28">Harga</th>
+                      <th className="p-1.5 border-r border-black">{lang === 'en' ? 'Product Code' : 'Kode Barang'}</th>
+                      <th className="p-1.5 border-r border-black">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                      <th className="p-1.5 border-r border-black text-right w-20">{lang === 'en' ? 'Quantity' : 'Kuantitas'}</th>
+                      <th className="p-1.5 border-r border-black text-right w-28">{lang === 'en' ? 'Price' : 'Harga'}</th>
                       <th className="p-1.5 text-right w-28">Subtotal</th>
                     </tr>
                   </thead>
@@ -1833,7 +1970,7 @@ export const InputItemSO: React.FC = () => {
                     ))}
                     <tr className="bg-slate-50 border-t border-black">
                       <td colSpan={5} className="p-1.5 border-r border-black text-right font-bold uppercase">
-                        Grand Total Penjualan
+                        {lang === 'en' ? 'Grand Total Sales' : 'Grand Total Penjualan'}
                       </td>
                       <td className="p-1.5 text-right font-black">
                         {formatCurrency(Number(completedSo.subtotal))}
@@ -1844,15 +1981,15 @@ export const InputItemSO: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-4 text-center text-[9px] pt-8">
                   <div className="space-y-10">
-                    <p>Penerima / Customer</p>
+                    <p>{lang === 'en' ? 'Recipient / Customer' : 'Penerima / Customer'}</p>
                     <p className="underline font-bold">( ____________________ )</p>
                   </div>
                   <div className="space-y-10">
-                    <p>Sopir / Pengirim</p>
+                    <p>{lang === 'en' ? 'Driver / Shipper' : 'Sopir / Pengirim'}</p>
                     <p className="underline font-bold">( ____________________ )</p>
                   </div>
                   <div className="space-y-10">
-                    <p>Hormat Kami, Kasir</p>
+                    <p>{lang === 'en' ? 'Sincerely, Cashier' : 'Hormat Kami, Kasir'}</p>
                     <p className="underline font-bold">({completedSo.creator?.nama || '____________________'})</p>
                   </div>
                 </div>

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { Search, RotateCcw, ChevronLeft, ChevronRight, X, CheckCircle, XCircle, AlertCircle, Archive } from 'lucide-react';
 
 interface Product {
@@ -15,6 +16,7 @@ interface Product {
 
 export const ArsipProduk: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -99,11 +101,11 @@ export const ArsipProduk: React.FC = () => {
     setRestoreTarget(null);
     try {
       await api.patch(`/products/${id}/restore`);
-      addToast('success', `Produk "${nama}" berhasil dipulihkan.`);
+      addToast('success', lang === 'en' ? `Product "${nama}" successfully restored.` : `Produk "${nama}" berhasil dipulihkan.`);
       fetchArchivedProducts();
     } catch (err) {
       console.error(err);
-      addToast('error', `Gagal memulihkan produk "${nama}". Coba lagi.`);
+      addToast('error', lang === 'en' ? `Failed to restore product "${nama}". Try again.` : `Gagal memulihkan produk "${nama}". Coba lagi.`);
     }
   };
 
@@ -198,22 +200,27 @@ export const ArsipProduk: React.FC = () => {
             <div className="flex flex-col items-center text-center gap-2 bg-blue-50 border-b border-blue-100 px-5 py-4">
               <div className="p-2 bg-blue-100 rounded-full"><RotateCcw size={20} className="text-blue-600" /></div>
               <div>
-                <h2 className="font-bold text-slate-800 text-sm">Pulihkan Produk</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Produk akan aktif kembali dan dapat digunakan dalam transaksi</p>
+                <h2 className="font-bold text-slate-800 text-sm">{lang === 'en' ? 'Restore Product' : 'Pulihkan Produk'}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">{lang === 'en' ? 'Product will be active again and can be used in transactions' : 'Produk akan aktif kembali dan dapat digunakan dalam transaksi'}</p>
               </div>
             </div>
             <div className="px-5 py-5 text-center">
-              <p className="text-slate-700 text-sm leading-relaxed">Apakah Anda yakin ingin memulihkan produk <span className="font-bold text-slate-900">"{restoreTarget.nama}"</span>?</p>
-              <p className="text-xs text-slate-400 mt-2">Produk akan kembali muncul di daftar aktif dan bisa digunakan dalam transaksi pembelian maupun penjualan.</p>
+              <p className="text-slate-700 text-sm leading-relaxed">
+                {lang === 'en' ? 'Are you sure you want to restore product' : 'Apakah Anda yakin ingin memulihkan produk'}{' '}
+                <span className="font-bold text-slate-900">"{restoreTarget.nama}"</span>?
+              </p>
+              <p className="text-xs text-slate-400 mt-2">
+                {lang === 'en' ? 'The product will reappear in the active list and can be used in purchases or sales.' : 'Produk akan kembali muncul di daftar aktif dan bisa digunakan dalam transaksi pembelian maupun penjualan.'}
+              </p>
             </div>
             <div className="flex gap-2 px-5 pb-5 justify-center">
               <button onClick={() => setRestoreTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
                 <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
-                Batal
+                {lang === 'en' ? 'Cancel' : 'Batal'}
               </button>
               <button onClick={confirmRestore} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md shadow-blue-600/10">
                 <kbd className="text-[10px] bg-blue-500 border border-blue-400 rounded px-1 py-0.5 font-mono">Y</kbd>
-                Ya, Pulihkan
+                {lang === 'en' ? 'Yes, Restore' : 'Ya, Pulihkan'}
               </button>
             </div>
           </div>
@@ -223,11 +230,17 @@ export const ArsipProduk: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Arsip Produk</h1>
-          <p className="text-slate-400">Pulihkan barang yang telah diarsipkan untuk digunakan kembali dalam transaksi</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+            {lang === 'en' ? 'Archived Products' : 'Arsip Produk'}
+          </h1>
+          <p className="text-slate-400">
+            {lang === 'en'
+              ? 'Restore items that have been archived to be used again in transactions'
+              : 'Pulihkan barang yang telah diarsipkan untuk digunakan kembali dalam transaksi'}
+          </p>
         </div>
         <button onClick={() => navigate('/gudang')} className="btn-secondary text-xs">
-          Kembali ke Gudang
+          {lang === 'en' ? 'Back to Inventory' : 'Kembali ke Gudang'}
         </button>
       </div>
 
@@ -250,7 +263,7 @@ export const ArsipProduk: React.FC = () => {
                 setSelectedIdx(0);
               }
             }}
-            placeholder="Cari Produk Terarsip... (F1)"
+            placeholder={lang === 'en' ? 'Search Archived Products... (F1)' : 'Cari Produk Terarsip... (F1)'}
             className="input-field pl-9 w-full"
           />
           {search && (
@@ -266,17 +279,17 @@ export const ArsipProduk: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
-            <span>Cari</span>
+            <span>{lang === 'en' ? 'Search' : 'Cari'}</span>
           </span>
 
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F3 / Enter</kbd>
-            <span>Pulihkan</span>
+            <span>{lang === 'en' ? 'Restore' : 'Pulihkan'}</span>
           </span>
 
           <span className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
-            <span>Kembali</span>
+            <span>{lang === 'en' ? 'Back' : 'Kembali'}</span>
           </span>
         </div>
       </div>
@@ -294,10 +307,10 @@ export const ArsipProduk: React.FC = () => {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                  <th className="p-4">Kode</th>
-                  <th className="p-4">Nama Produk</th>
-                  <th className="p-4 text-right">Stok</th>
-                  <th className="p-4 text-center">Aksi</th>
+                  <th className="p-4">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                  <th className="p-4">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                  <th className="p-4 text-right">{lang === 'en' ? 'Stock' : 'Stok'}</th>
+                  <th className="p-4 text-center">{lang === 'en' ? 'Action' : 'Aksi'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-700/50">
@@ -318,7 +331,7 @@ export const ArsipProduk: React.FC = () => {
                         className="btn-secondary py-1 px-2.5 text-xs text-primary-400 hover:text-white"
                       >
                         <RotateCcw size={12} />
-                        <span>Pulihkan</span>
+                        <span>{lang === 'en' ? 'Restore' : 'Pulihkan'}</span>
                       </button>
                     </td>
                   </tr>
@@ -330,7 +343,9 @@ export const ArsipProduk: React.FC = () => {
           {/* Pagination Footer */}
           <div className="flex items-center justify-between p-4 bg-surface-800/50 border-t border-surface-700">
             <span className="text-xs text-slate-400">
-              Menampilkan {products.length} dari {totalProducts} barang terarsip
+              {lang === 'en'
+                ? `Showing ${products.length} of ${totalProducts} archived items`
+                : `Menampilkan ${products.length} dari ${totalProducts} barang terarsip`}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -340,7 +355,9 @@ export const ArsipProduk: React.FC = () => {
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-xs px-3 font-semibold">Halaman {page}</span>
+              <span className="text-xs px-3 font-semibold">
+                {lang === 'en' ? `Page ${page}` : `Halaman ${page}`}
+              </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={products.length < 10}
@@ -354,14 +371,24 @@ export const ArsipProduk: React.FC = () => {
       ) : search.trim() !== '' ? (
         <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10 min-h-[250px]">
           <AlertCircle className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-          <h3 className="text-lg font-bold text-slate-400">Produk Terarsip Tidak Ditemukan</h3>
-          <p className="text-sm mt-1 max-w-xs">Tidak ada produk terarsip yang cocok dengan pencarian "{search}".</p>
+          <h3 className="text-lg font-bold text-slate-400">
+            {lang === 'en' ? 'Archived Product Not Found' : 'Produk Terarsip Tidak Ditemukan'}
+          </h3>
+          <p className="text-sm mt-1 max-w-xs">
+            {lang === 'en'
+              ? `No archived products match the search "${search}".`
+              : `Tidak ada produk terarsip yang cocok dengan pencarian "${search}".`}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10 min-h-[250px]">
           <Archive className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-          <h3 className="text-lg font-bold text-slate-400">Arsip Kosong</h3>
-          <p className="text-sm mt-1 max-w-xs">Tidak ada produk terarsip saat ini.</p>
+          <h3 className="text-lg font-bold text-slate-400">
+            {lang === 'en' ? 'Archive is Empty' : 'Arsip Kosong'}
+          </h3>
+          <p className="text-sm mt-1 max-w-xs">
+            {lang === 'en' ? 'No archived products currently.' : 'Tidak ada produk terarsip saat ini.'}
+          </p>
         </div>
       )}
     </div>

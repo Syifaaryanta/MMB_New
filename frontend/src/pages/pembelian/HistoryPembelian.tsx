@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Search, Calendar, FileText, X, AlertTriangle, Info } from 'lucide-react';
 
@@ -23,6 +24,7 @@ interface Purchase {
 
 export const HistoryPembelian: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [searchParams] = useSearchParams();
   const fromHistory = searchParams.get('from') === 'history';
 
@@ -81,12 +83,12 @@ export const HistoryPembelian: React.FC = () => {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const format = now.toLocaleDateString('id-ID', {
+      const format = now.toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-      }) + ' - ' + now.toLocaleTimeString('id-ID', {
+      }) + ' - ' + now.toLocaleTimeString(lang === 'en' ? 'en-US' : 'id-ID', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
@@ -98,7 +100,7 @@ export const HistoryPembelian: React.FC = () => {
     updateTime();
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     if (showFilterPage) {
@@ -175,7 +177,12 @@ export const HistoryPembelian: React.FC = () => {
     try {
       setIsLoading(true);
       await api.delete(`/purchases/${target.id}`);
-      showToast('Transaksi PO berhasil dihapus dan stok dikembalikan', 'success');
+      showToast(
+        lang === 'en'
+          ? 'PO transaction successfully deleted and stock returned'
+          : 'Transaksi PO berhasil dihapus dan stok dikembalikan',
+        'success'
+      );
 
       // Refresh list
       let url = `/purchases?status=received&limit=1000`;
@@ -186,7 +193,11 @@ export const HistoryPembelian: React.FC = () => {
       setSelectedIdx(0);
     } catch (err: any) {
       console.error(err);
-      showToast(err.response?.data?.error || 'Gagal menghapus transaksi PO', 'error');
+      showToast(
+        err.response?.data?.error ||
+          (lang === 'en' ? 'Failed to delete PO transaction' : 'Gagal menghapus transaksi PO'),
+        'error'
+      );
     } finally {
       setIsLoading(false);
       setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null });
@@ -322,21 +333,31 @@ export const HistoryPembelian: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Histori Pembelian</h1>
-            <p className="text-slate-400">Arsip lengkap transaksi pemesanan barang yang sudah diterima</p>
+            <h1 className="text-2xl font-extrabold text-white">
+              {lang === 'en' ? 'Purchase History' : 'Histori Pembelian'}
+            </h1>
+            <p className="text-slate-400">
+              {lang === 'en'
+                ? 'Complete archive of received purchase orders'
+                : 'Arsip lengkap transaksi pemesanan barang yang sudah diterima'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-800 overflow-hidden">
-            <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700/80">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pencarian PO</h3>
-            </div>
+        <div className="bg-white border border-slate-200 rounded-xl max-w-md w-full shadow-2xl overflow-hidden p-6 animate-scale-in text-slate-800">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Calendar size={20} className="text-primary-600" />
+              <span>{lang === 'en' ? 'Filter Purchase History' : 'Filter Histori Pembelian'}</span>
+            </h2>
 
-            <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleFilterSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Start Date' : 'Tanggal Awal'}
+                  </label>
                   <input
                     ref={fromDateRef}
                     type="date"
@@ -347,7 +368,9 @@ export const HistoryPembelian: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+                  </label>
                   <input
                     ref={toDateRef}
                     type="date"
@@ -360,11 +383,13 @@ export const HistoryPembelian: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nomor PO</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                  {lang === 'en' ? 'PO Number' : 'Nomor PO'}
+                </label>
                 <input
                   ref={noOrderFilterRef}
                   type="text"
-                  placeholder="Semua / Ketik No PO"
+                  placeholder={lang === 'en' ? 'All / Type PO No.' : 'Semua / Ketik No PO'}
                   value={noOrderFilter}
                   onChange={(e) => setNoOrderFilter(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
@@ -378,17 +403,18 @@ export const HistoryPembelian: React.FC = () => {
                   onClick={() => navigate('/pembelian')}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs font-bold hover:bg-slate-50 transition-all"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
                 >
-                  Tampilkan (Enter)
+                  {lang === 'en' ? 'Show (Enter)' : 'Tampilkan (Enter)'}
                 </button>
               </div>
             </form>
           </div>
+        </div>
         </div>
       </div>
     );
@@ -399,8 +425,12 @@ export const HistoryPembelian: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Histori Pembelian</h1>
-          <p className="text-slate-400">Arsip lengkap transaksi pemesanan barang yang sudah diterima</p>
+          <h1 className="text-2xl font-extrabold text-white">
+            {lang === 'en' ? 'Purchase History' : 'Histori Pembelian'}
+          </h1>
+          <p className="text-slate-400">
+            {lang === 'en' ? 'Complete archive of ordered items transaction that have been received' : 'Arsip lengkap transaksi pemesanan barang yang sudah diterima'}
+          </p>
         </div>
       </div>
 
@@ -414,7 +444,7 @@ export const HistoryPembelian: React.FC = () => {
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Cari nama supplier (F1)..."
+                placeholder={lang === 'en' ? 'Search supplier name (F1)...' : 'Cari nama supplier (F1)...'}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -426,7 +456,7 @@ export const HistoryPembelian: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
-              <div className="bg-surface-800 border border-surface-700 px-4 py-2.5 rounded-lg text-slate-350 font-mono text-xs flex items-center justify-center shadow-sm min-w-[200px]">
+              <div className="bg-surface-800 border border-surface-700 px-4 py-2.5 rounded-lg text-slate-355 font-mono text-xs flex items-center justify-center shadow-sm min-w-[200px]">
                 {realtimeTime}
               </div>
 
@@ -440,7 +470,7 @@ export const HistoryPembelian: React.FC = () => {
                 onClick={() => setShowFilterPage(true)}
                 className="px-4 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm"
               >
-                Filter Tanggal & No PO (F2)
+                {lang === 'en' ? 'Filter Date & PO No. (F2)' : 'Filter Tanggal & No PO (F2)'}
               </button>
             </div>
           </div>
@@ -457,10 +487,10 @@ export const HistoryPembelian: React.FC = () => {
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                      <th className="p-4">Nomor PO</th>
+                      <th className="p-4">{lang === 'en' ? 'PO Number' : 'Nomor PO'}</th>
                       <th className="p-4">Supplier</th>
-                      <th className="p-4">Tanggal Order</th>
-                      <th className="p-4">Tanggal Terima</th>
+                      <th className="p-4">{lang === 'en' ? 'Order Date' : 'Tanggal Order'}</th>
+                      <th className="p-4">{lang === 'en' ? 'Received Date' : 'Tanggal Terima'}</th>
                       <th className="p-4 text-right">Subtotal</th>
                     </tr>
                   </thead>
@@ -520,8 +550,14 @@ export const HistoryPembelian: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20">
               <Calendar className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-              <h3 className="text-lg font-bold text-slate-400">Tidak ada data PO ditemukan</h3>
-              <p className="text-sm mt-1">Gunakan filter F2 untuk mencari berdasarkan tanggal dan supplier lain.</p>
+              <h3 className="text-lg font-bold text-slate-400">
+                {lang === 'en' ? 'No PO data found' : 'Tidak ada data PO ditemukan'}
+              </h3>
+              <p className="text-sm mt-1">
+                {lang === 'en'
+                  ? 'Use F2 filter to search by date and other suppliers.'
+                  : 'Gunakan filter F2 untuk mencari berdasarkan tanggal dan supplier lain.'}
+              </p>
             </div>
           )}
         </div>
@@ -532,7 +568,7 @@ export const HistoryPembelian: React.FC = () => {
           <div className="pb-1">
             <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <FileText size={18} className="text-blue-600" />
-              <span>Detail PO: {activePo.no_order}</span>
+              <span>{lang === 'en' ? `PO Details: ${activePo.no_order}` : `Detail PO: ${activePo.no_order}`}</span>
             </h1>
             <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-emerald-600 uppercase">{activePo.status}</span></p>
           </div>
@@ -543,23 +579,33 @@ export const HistoryPembelian: React.FC = () => {
               {/* Card 1: Informasi PO */}
               <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                 <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
-                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi PO</h3>
+                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                    {lang === 'en' ? 'PO Information' : 'Informasi PO'}
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-650">
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. PO</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'PO No.' : 'No. PO'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.no_order}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Order</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Order Date' : 'Tanggal Order'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activePo.order_date)}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Terima</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Received Date' : 'Tanggal Terima'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.received_at ? formatDate(activePo.received_at) : '-'}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Termin</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Terms' : 'Termin'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">{activePo.terms}</span>
                   </div>
                 </div>
@@ -568,21 +614,29 @@ export const HistoryPembelian: React.FC = () => {
               {/* Card 2: Pemasok (Supplier) */}
               <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                 <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
-                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Pemasok (Supplier)</h3>
+                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                    {lang === 'en' ? 'Supplier' : 'Pemasok (Supplier)'}
+                  </h3>
                 </div>
-                <div className="space-y-3.5 p-3.5 text-xs text-slate-650">
+                <div className="space-y-3.5 p-3.5 text-xs text-slate-655">
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Supplier</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Supplier Name' : 'Nama Supplier'}
+                    </span>
                     <span className="text-xs font-extrabold text-slate-855 mt-0.5 block">{activePo.supplier?.nama}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Alamat Pemasok</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Supplier Address' : 'Alamat Pemasok'}
+                    </span>
                     <span className="text-xs font-semibold text-slate-700 mt-0.5 block leading-normal">
-                      {activePo.supplier?.alamat || 'Alamat tidak dicantumkan'}
+                      {activePo.supplier?.alamat || (lang === 'en' ? 'Address not provided' : 'Alamat tidak dicantumkan')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Kode Supplier</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Supplier Code' : 'Kode Supplier'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.supplier?.kode || '-'}</span>
                   </div>
                 </div>
@@ -593,7 +647,9 @@ export const HistoryPembelian: React.FC = () => {
           {/* Card 3: Daftar Barang */}
           <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
             <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
-              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang</h3>
+              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                {lang === 'en' ? 'Item List' : 'Daftar Barang'}
+              </h3>
             </div>
             <div className="p-4">
               <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -601,10 +657,10 @@ export const HistoryPembelian: React.FC = () => {
                   <thead>
                     <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
                       <th className="p-3 w-12 text-center">#</th>
-                      <th className="p-3 w-32 text-center">Kode</th>
-                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3 w-32 text-center">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                      <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="p-3 text-center w-24">Qty</th>
-                      <th className="p-3 text-right w-36">Harga Beli</th>
+                      <th className="p-3 text-right w-36">{lang === 'en' ? 'Purchase Price' : 'Harga Beli'}</th>
                       <th className="p-3 text-right w-40">Subtotal</th>
                     </tr>
                   </thead>
@@ -629,7 +685,7 @@ export const HistoryPembelian: React.FC = () => {
                             {Number(item.qty)}
                             {isReturned && (
                               <span className="text-[10px] block text-red-500 font-bold mt-0.5">
-                                (Retur: {returnedQty})
+                                ({lang === 'en' ? 'Return' : 'Retur'}: {returnedQty})
                               </span>
                             )}
                           </td>
@@ -642,7 +698,9 @@ export const HistoryPembelian: React.FC = () => {
                 </table>
                 <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
                   <div className="flex gap-6 items-center">
-                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Grand Total PO</span>
+                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                      {lang === 'en' ? 'Grand Total PO' : 'Grand Total PO'}
+                    </span>
                     <span className="text-base font-extrabold text-emerald-600 font-mono">
                       {formatCurrency(Number(activePo.subtotal))}
                     </span>
@@ -659,7 +717,7 @@ export const HistoryPembelian: React.FC = () => {
               onClick={() => setIsInfoHidden((prev) => !prev)}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
-              <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+              <span>{isInfoHidden ? (lang === 'en' ? 'Show Info' : 'Tampilkan Info') : (lang === 'en' ? 'Hide Info' : 'Sembunyikan Info')}</span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
             </button>
             <button
@@ -670,7 +728,7 @@ export const HistoryPembelian: React.FC = () => {
               }}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
-              <span>Tutup</span>
+              <span>{lang === 'en' ? 'Close' : 'Tutup'}</span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
             </button>
           </div>
@@ -683,7 +741,9 @@ export const HistoryPembelian: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <div className="relative bg-white border border-slate-200 rounded-xl p-6 max-w-xs w-full shadow-2xl animate-scale-in text-center space-y-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
-              <p className="text-xs font-bold text-slate-700">Memeriksa status pembayaran PO...</p>
+              <p className="text-xs font-bold text-slate-700">
+                {lang === 'en' ? 'Checking PO payment status...' : 'Memeriksa status pembayaran PO...'}
+              </p>
             </div>
           </div>
         </ModalPortal>
@@ -700,18 +760,32 @@ export const HistoryPembelian: React.FC = () => {
                   <X size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Transaksi Tidak Dapat Dihapus</h2>
-                  <p className="text-xs text-red-100 mt-1 font-semibold">Sudah memiliki riwayat pembayaran atau retur</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">
+                    {lang === 'en' ? 'Transaction Cannot Be Deleted' : 'Transaksi Tidak Dapat Dihapus'}
+                  </h2>
+                  <p className="text-xs text-red-100 mt-1 font-semibold">
+                    {lang === 'en' ? 'Already has payment or return history' : 'Sudah memiliki riwayat pembayaran atau retur'}
+                  </p>
                 </div>
               </div>
 
               {/* Body */}
               <div className="px-5 py-5 bg-white text-xs">
                 <p className="text-slate-700 font-semibold leading-relaxed">
-                  Data transaksi pembelian <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> tidak dapat dihapus karena sudah memiliki pelunasan/pembayaran sebagian sebesar <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> atau sudah memiliki dokumen retur.
+                  {lang === 'en' ? (
+                    <>
+                      Purchase transaction data <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> cannot be deleted because it already has partial/full payment of <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> or already has return documents.
+                    </>
+                  ) : (
+                    <>
+                      Data transaksi pembelian <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span> tidak dapat dihapus karena sudah memiliki pelunasan/pembayaran sebagian sebesar <span className="text-red-650 font-extrabold">{formatCurrency(deleteCheckState.amountPaid)}</span> atau sudah memiliki dokumen retur.
+                    </>
+                  )}
                 </p>
                 <p className="text-slate-500 mt-2">
-                  Harap batalkan/hapus pembayaran terkait di menu penagihan/pelunasan terlebih dahulu sebelum menghapus transaksi ini.
+                  {lang === 'en'
+                    ? 'Please cancel/delete the associated payment in the billing/settlement menu first before deleting this transaction.'
+                    : 'Harap batalkan/hapus pembayaran terkait di menu penagihan/pelunasan terlebih dahulu sebelum menghapus transaksi ini.'}
                 </p>
               </div>
 
@@ -721,7 +795,7 @@ export const HistoryPembelian: React.FC = () => {
                   onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all bg-white"
                 >
-                  Tutup (Esc)
+                  {lang === 'en' ? 'Close (Esc)' : 'Tutup (Esc)'}
                 </button>
                 <button
                   onClick={() => {
@@ -731,7 +805,7 @@ export const HistoryPembelian: React.FC = () => {
                   }}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
-                  Lihat Pembayaran (Y)
+                  {lang === 'en' ? 'View Payment (Y)' : 'Lihat Pembayaran (Y)'}
                 </button>
               </div>
             </div>
@@ -750,20 +824,38 @@ export const HistoryPembelian: React.FC = () => {
                   <AlertTriangle size={20} className="text-white" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">Konfirmasi Hapus Transaksi PO</h2>
-                  <p className="text-xs text-amber-50 mt-1 font-semibold">Tindakan ini akan mengurangi stok barang di gudang</p>
+                  <h2 className="font-extrabold text-sm text-white uppercase tracking-wider">
+                    {lang === 'en' ? 'Confirm Delete PO Transaction' : 'Konfirmasi Hapus Transaksi PO'}
+                  </h2>
+                  <p className="text-xs text-amber-50 mt-1 font-semibold">
+                    {lang === 'en' ? 'This action will reduce stock in warehouse' : 'Tindakan ini akan mengurangi stok barang di gudang'}
+                  </p>
                 </div>
               </div>
 
               {/* Body */}
               <div className="px-5 py-5 bg-white text-xs">
                 <p className="text-slate-700 font-semibold leading-relaxed">
-                  Apakah Anda yakin ingin membatalkan dan menghapus transaksi Purchase Order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>? (Stok produk di gudang akan dikurangi)
+                  {lang === 'en' ? (
+                    <>
+                      Are you sure you want to cancel and delete Purchase Order transaction <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>? (Warehouse product stock will be reduced)
+                    </>
+                  ) : (
+                    <>
+                      Apakah Anda yakin ingin membatalkan dan menghapus transaksi Purchase Order <span className="font-extrabold text-slate-900">"{deleteCheckState.targetItem.no_order}"</span>? (Stok produk di gudang akan dikurangi)
+                    </>
+                  )}
                 </p>
                 <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-655">
-                  <div><span className="font-bold">Tanggal PO:</span> {formatDate(deleteCheckState.targetItem.order_date)}</div>
-                  <div><span className="font-bold">Supplier:</span> {deleteCheckState.targetItem.supplier?.nama}</div>
-                  <div><span className="font-bold">Total Nilai PO:</span> {formatCurrency(deleteCheckState.targetItem.subtotal)}</div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'PO Date:' : 'Tanggal PO:'}</span> {formatDate(deleteCheckState.targetItem.order_date)}
+                  </div>
+                  <div>
+                    <span className="font-bold">Supplier:</span> {deleteCheckState.targetItem.supplier?.nama}
+                  </div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'Total PO Value:' : 'Total Nilai PO:'}</span> {formatCurrency(deleteCheckState.targetItem.subtotal)}
+                  </div>
                 </div>
               </div>
 
@@ -773,13 +865,13 @@ export const HistoryPembelian: React.FC = () => {
                   onClick={() => setDeleteCheckState({ status: 'idle', amountPaid: 0, targetItem: null })}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-250 text-slate-600 hover:bg-slate-100 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   onClick={confirmDeletePurchase}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
-                  Ya, Hapus (Enter)
+                  {lang === 'en' ? 'Yes, Delete (Enter)' : 'Ya, Hapus (Enter)'}
                 </button>
               </div>
             </div>

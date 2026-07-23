@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { Search, ChevronRight, X, Calendar, User, CreditCard, AlertTriangle } from 'lucide-react';
 import { todayString, formatCurrency } from '@/lib/utils';
 
@@ -27,6 +28,7 @@ interface SupplierStats {
 
 export const BuatOrderPO: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
 
   const [poMetaSaved] = useState(() => {
     const saved = sessionStorage.getItem('po_step1');
@@ -231,7 +233,7 @@ export const BuatOrderPO: React.FC = () => {
 
   const handleSubmit = () => {
     if (!selectedSupplier || !supplierQuery.trim() || selectedSupplier.nama.toLowerCase() !== supplierQuery.trim().toLowerCase()) {
-      setFormError('Nama Pemasok (Supplier) tidak boleh kosong dan harus dipilih dari daftar autocomplete.');
+      setFormError(lang === 'en' ? 'Supplier Name cannot be empty and must be selected from the list.' : 'Nama Pemasok (Supplier) tidak boleh kosong dan harus dipilih dari daftar autocomplete.');
       return;
     }
     setFormError(null);
@@ -256,8 +258,12 @@ export const BuatOrderPO: React.FC = () => {
   return (
     <div className="w-full space-y-6" onKeyDown={handleGlobalKeyDown}>
       <div>
-        <h1 className="text-2xl font-extrabold text-white">Buat Purchase Order (Step 1)</h1>
-        <p className="text-slate-400">Pilih supplier, tanggal, dan jangka waktu pembayaran PO</p>
+        <h1 className="text-2xl font-extrabold text-white">
+          {lang === 'en' ? 'Create Purchase Order (Step 1)' : 'Buat Order PO (Step 1)'}
+        </h1>
+        <p className="text-slate-400">
+          {lang === 'en' ? 'Select supplier, date, and payment terms for PO' : 'Pilih supplier, tanggal, dan jangka waktu pembayaran PO'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
@@ -267,7 +273,7 @@ export const BuatOrderPO: React.FC = () => {
             <div className="p-4 rounded-lg bg-danger-600/15 border border-danger-500/30 text-danger-400 text-sm flex items-start gap-3 animate-fade-in">
               <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-danger-400" />
               <div className="flex-1">
-                <p className="font-bold">Kesalahan Validasi</p>
+                <p className="font-bold">{lang === 'en' ? 'Validation Error' : 'Kesalahan Validasi'}</p>
                 <p className="text-xs opacity-90 mt-0.5">{formError}</p>
               </div>
             </div>
@@ -279,7 +285,7 @@ export const BuatOrderPO: React.FC = () => {
               {/* PO Number */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Nomor PO (Otomatis)
+                  {lang === 'en' ? 'PO Number (Auto)' : 'Nomor PO (Otomatis)'}
                 </label>
                 <input
                   type="text"
@@ -292,7 +298,7 @@ export const BuatOrderPO: React.FC = () => {
               {/* Order Date */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Tanggal Order <span className="shortcut-badge text-[9px] ml-1">Enter</span>
+                  {lang === 'en' ? 'Order Date' : 'Tanggal Order'} <span className="shortcut-badge text-[9px] ml-1">Enter</span>
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
@@ -314,7 +320,7 @@ export const BuatOrderPO: React.FC = () => {
             {/* Supplier Selector */}
             <div className="relative">
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Pemasok (Supplier) <span className="shortcut-badge text-[9px] ml-1">Ketik & Pilih</span>
+                {lang === 'en' ? 'Supplier (Pemasok)' : 'Pemasok (Supplier)'} <span className="shortcut-badge text-[9px] ml-1">{lang === 'en' ? 'Type & Select' : 'Ketik & Pilih'}</span>
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
@@ -331,7 +337,7 @@ export const BuatOrderPO: React.FC = () => {
                     setActiveStep('supplier');
                   }}
                   onKeyDown={handleSupplierKeyDown}
-                  placeholder="Cari Supplier..."
+                  placeholder={lang === 'en' ? 'Search Supplier...' : 'Cari Supplier...'}
                   className={`input-field pl-9 ${activeStep === 'supplier' ? 'border-primary-500 ring-2 ring-primary-500/20' : ''}`}
                 />
               </div>
@@ -340,7 +346,7 @@ export const BuatOrderPO: React.FC = () => {
             {/* Payment Terms */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Termin Pembayaran <span className="shortcut-badge text-[9px] ml-1">Angka 1-4 / Panah</span>
+                {lang === 'en' ? 'Payment Terms' : 'Termin Pembayaran'} <span className="shortcut-badge text-[9px] ml-1">{lang === 'en' ? 'Numbers 1-4 / Arrow' : 'Angka 1-4 / Panah'}</span>
               </label>
               <div
                 ref={termsSelectRef}
@@ -352,10 +358,10 @@ export const BuatOrderPO: React.FC = () => {
                 }`}
               >
                 {[
-                  { val: 'tunai', num: '1', label: 'Tunai' },
-                  { val: '1', num: '2', label: '1 Bulan' },
-                  { val: '2', num: '3', label: '2 Bulan' },
-                  { val: '3', num: '4', label: '3 Bulan' },
+                  { val: 'tunai', num: '1', label: lang === 'en' ? 'Cash' : 'Tunai' },
+                  { val: '1', num: '2', label: lang === 'en' ? '1 Month' : '1 Bulan' },
+                  { val: '2', num: '3', label: lang === 'en' ? '2 Months' : '2 Bulan' },
+                  { val: '3', num: '4', label: lang === 'en' ? '3 Months' : '3 Bulan' },
                 ].map((opt) => (
                   <button
                     key={opt.val}
@@ -379,10 +385,10 @@ export const BuatOrderPO: React.FC = () => {
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => navigate('/pembelian')} className="btn-secondary">
-                Batal (Esc)
+                {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
               </button>
               <button onClick={handleSubmit} className="btn-primary">
-                <span>Lanjut Input Item</span>
+                <span>{lang === 'en' ? 'Continue to Item Input' : 'Lanjut Input Item'}</span>
                 <ChevronRight size={16} />
               </button>
             </div>
@@ -395,14 +401,18 @@ export const BuatOrderPO: React.FC = () => {
             <div>
               <div className="bg-blue-600 px-6 py-4 flex items-center gap-3 text-white border-b border-blue-700/80 rounded-t-xl">
                 <User className="text-white" size={18} />
-                <h3 className="text-base font-extrabold text-white">Informasi Pemasok</h3>
+                <h3 className="text-base font-extrabold text-white">
+                  {lang === 'en' ? 'Supplier Information' : 'Informasi Pemasok'}
+                </h3>
               </div>
 
               <div className="p-6">
                 {supplierStats ? (
                   <div className="space-y-4 animate-fade-in">
                     <div>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Nama Pemasok</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                        {lang === 'en' ? 'Supplier Name' : 'Nama Pemasok'}
+                      </p>
                       <h4 className="text-base font-extrabold text-white mt-0.5">{supplierStats.nama}</h4>
                       <span className="inline-block mt-1 text-[10px] bg-blue-500/10 text-blue-400 font-mono px-1.5 py-0.5 rounded border border-blue-500/20">
                         {supplierStats.kode}
@@ -411,29 +421,39 @@ export const BuatOrderPO: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4 border-t border-surface-700/40 pt-3">
                       <div>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">No. Telepon</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                          {lang === 'en' ? 'Phone Number' : 'No. Telepon'}
+                        </p>
                         <p className="text-xs text-slate-300 font-semibold mt-0.5">{supplierStats.no_telp || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Default Termin</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                          {lang === 'en' ? 'Default Terms' : 'Default Termin'}
+                        </p>
                         <p className="text-xs text-slate-300 font-semibold mt-0.5">
-                          {supplierStats.jatuh_tempo ? `${supplierStats.jatuh_tempo} Bulan` : 'Tunai'}
+                          {supplierStats.jatuh_tempo ? (lang === 'en' ? `${supplierStats.jatuh_tempo} Month(s)` : `${supplierStats.jatuh_tempo} Bulan`) : (lang === 'en' ? 'Cash' : 'Tunai')}
                         </p>
                       </div>
                     </div>
 
                     <div className="border-t border-surface-700/40 pt-3">
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Alamat</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                        {lang === 'en' ? 'Address' : 'Alamat'}
+                      </p>
                       <p className="text-xs text-slate-300 mt-0.5 line-clamp-2">{supplierStats.alamat || '-'}</p>
                     </div>
 
                     <div className="border-t border-surface-700/40 pt-3 space-y-2.5">
-                      <h5 className="text-xs font-bold text-slate-400">Ringkasan Aktivitas</h5>
+                      <h5 className="text-xs font-bold text-slate-400">
+                        {lang === 'en' ? 'Activity Summary' : 'Ringkasan Aktivitas'}
+                      </h5>
                       
                       {/* Transaksi Bulan Ini */}
                       <div className="p-3 bg-surface-900 border border-blue-500/40 rounded-xl flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] text-slate-500 uppercase font-semibold">Transaksi Bulan Ini</p>
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">
+                            {lang === 'en' ? 'Transactions This Month' : 'Transaksi Bulan Ini'}
+                          </p>
                           <p className="text-xs font-bold text-white mt-0.5">{supplierStats.total_transaksi_bulan_ini} Invoice</p>
                         </div>
                         <span className="text-xs font-bold text-primary-400">{formatCurrency(supplierStats.nominal_transaksi_bulan_ini)}</span>
@@ -442,8 +462,12 @@ export const BuatOrderPO: React.FC = () => {
                       {/* Piutang Dagang (Utang kita) */}
                       <div className="p-3 bg-surface-900 border border-blue-500/40 rounded-xl flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] text-slate-500 uppercase font-semibold">Total Utang Dagang</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Kumulatif transaksi aktif</p>
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">
+                            {lang === 'en' ? 'Total Accounts Payable' : 'Total Utang Dagang'}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {lang === 'en' ? 'Cumulative active transactions' : 'Kumulatif transaksi aktif'}
+                          </p>
                         </div>
                         <span className="text-xs font-bold text-danger-400">{formatCurrency(supplierStats.piutang)}</span>
                       </div>
@@ -451,11 +475,13 @@ export const BuatOrderPO: React.FC = () => {
                       {/* Terakhir Order */}
                       <div className="p-3 bg-surface-900 border border-blue-500/40 rounded-xl flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] text-slate-500 uppercase font-semibold">Terakhir Order</p>
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">
+                            {lang === 'en' ? 'Last Order' : 'Terakhir Order'}
+                          </p>
                         </div>
                         <span className="text-xs font-bold text-slate-300">
                           {supplierStats.terakhir_order
-                            ? new Date(supplierStats.terakhir_order).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                            ? new Date(supplierStats.terakhir_order).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
                             : '-'}
                         </span>
                       </div>
@@ -465,7 +491,7 @@ export const BuatOrderPO: React.FC = () => {
                   <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
                     <User size={32} className="text-slate-600 animate-pulse" />
                     <p className="text-xs text-slate-500 max-w-[200px]">
-                      Silakan cari dan pilih supplier untuk melihat detail data pemasok.
+                      {lang === 'en' ? 'Please search and select a supplier to view details.' : 'Silakan cari dan pilih supplier untuk melihat detail data pemasok.'}
                     </p>
                   </div>
                 )}
@@ -474,7 +500,7 @@ export const BuatOrderPO: React.FC = () => {
             
             <div className="p-6 pt-0">
               <div className="text-[9px] text-slate-500 border-t border-surface-700/40 pt-3">
-                * Data diambil real-time dari database supplier.
+                {lang === 'en' ? '* Data retrieved in real-time from supplier database.' : '* Data diambil real-time dari database supplier.'}
               </div>
             </div>
           </div>
@@ -494,7 +520,7 @@ export const BuatOrderPO: React.FC = () => {
             <div className="flex justify-between items-center w-full">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Search size={18} />
-                <span>Pilih Pemasok (Supplier)</span>
+                <span>{lang === 'en' ? 'Select Supplier' : 'Pilih Pemasok (Supplier)'}</span>
               </h3>
               <button onClick={() => setShowSupplierPopup(false)} className="text-slate-400 hover:text-white">
                 <X size={18} />
@@ -523,13 +549,16 @@ export const BuatOrderPO: React.FC = () => {
                 ))
               ) : (
                 <div className="text-center py-8 text-slate-500 text-sm">
-                  Tidak ada supplier yang cocok dengan "{supplierQuery}".
+                  {lang === 'en' ? `No supplier matches "${supplierQuery}".` : `Tidak ada supplier yang cocok dengan "${supplierQuery}".`}
                 </div>
               )}
             </div>
             <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+              <span>
+                <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
+                <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+              </span>
             </div>
           </div>
         </div>

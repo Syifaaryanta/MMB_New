@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Search, Calendar, FileText, X, History, ArrowDownCircle, ArrowUpCircle, Info } from 'lucide-react';
 
@@ -25,6 +26,7 @@ interface StockMovement {
 
 export const HistoryBarangInOut: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
 
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -161,7 +163,7 @@ export const HistoryBarangInOut: React.FC = () => {
       handleSearch(false);
     } catch (err) {
       console.error(err);
-      alert('Gagal menghapus penyesuaian stok.');
+      alert(lang === 'en' ? 'Failed to delete stock adjustment.' : 'Gagal menghapus penyesuaian stok.');
     }
   };
 
@@ -272,22 +274,32 @@ export const HistoryBarangInOut: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="mb-1">
-              <h1 className="text-2xl font-extrabold text-white">Histori Pergerakan Barang</h1>
+              <h1 className="text-2xl font-extrabold text-white">
+                {lang === 'en' ? 'Goods Movement History' : 'Histori Pergerakan Barang'}
+              </h1>
             </div>
-            <p className="text-slate-400">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
+            <p className="text-slate-400">
+              {lang === 'en'
+                ? 'Log of goods movement: incoming (PO), outgoing (SO), and stock adjustments by staff'
+                : 'Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full mx-4 animate-scale-in text-slate-800 overflow-hidden">
             <div className="bg-primary-600 text-white px-6 py-4 text-center border-b border-primary-700">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filter Pergerakan Barang</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                {lang === 'en' ? 'Filter Goods Movement' : 'Filter Pergerakan Barang'}
+              </h3>
             </div>
 
             <form onSubmit={handleFilterSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Awal</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'Start Date' : 'Tanggal Awal'}
+                  </label>
                   <input
                     ref={fromDateRef}
                     type="date"
@@ -298,7 +310,9 @@ export const HistoryBarangInOut: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Tanggal Akhir</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                    {lang === 'en' ? 'End Date' : 'Tanggal Akhir'}
+                  </label>
                   <input
                     ref={toDateRef}
                     type="date"
@@ -311,11 +325,13 @@ export const HistoryBarangInOut: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Nama / Kode Barang</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                  {lang === 'en' ? 'Product Name / SKU' : 'Nama / Kode Barang'}
+                </label>
                 <input
                   ref={popupBarangRef}
                   type="text"
-                  placeholder="Ketik Nama atau Kode Barang"
+                  placeholder={lang === 'en' ? 'Type Product Name or Code' : 'Ketik Nama atau Kode Barang'}
                   value={barangFilter}
                   onChange={(e) => setBarangFilter(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFilterSubmit(e))}
@@ -329,13 +345,13 @@ export const HistoryBarangInOut: React.FC = () => {
                   onClick={() => navigate('/history')}
                   className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-primary-600 text-white text-xs font-bold hover:bg-primary-550 transition-all shadow-md shadow-primary-500/10"
                 >
-                  Tampilkan (Enter)
+                  {lang === 'en' ? 'Show (Enter)' : 'Tampilkan (Enter)'}
                 </button>
               </div>
             </form>
@@ -351,9 +367,15 @@ export const HistoryBarangInOut: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="mb-1">
-            <h1 className="text-2xl font-extrabold text-white">Histori Pergerakan Barang</h1>
+            <h1 className="text-2xl font-extrabold text-white">
+              {lang === 'en' ? 'Goods Movement History' : 'Histori Pergerakan Barang'}
+            </h1>
           </div>
-          <p className="text-slate-400">Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff</p>
+          <p className="text-slate-400">
+            {lang === 'en'
+              ? 'Log of goods movement: incoming (PO), outgoing (SO), and stock adjustments by staff'
+              : 'Log pergerakan barang masuk (PO), keluar (SO), serta penyesuaian stok oleh staff'}
+          </p>
         </div>
       </div>
 
@@ -364,14 +386,14 @@ export const HistoryBarangInOut: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider flex items-center justify-between">
-                  <span>No. Order</span>
+                  <span>{lang === 'en' ? 'Order No.' : 'No. Order'}</span>
                   <span className="text-[10px] text-primary-400 font-bold font-mono">F1</span>
                 </label>
                 <div className="relative">
                   <input
                     ref={noOrderRef}
                     type="text"
-                    placeholder="PO, SO, atau Faktur"
+                    placeholder={lang === 'en' ? 'PO, SO, or Invoice' : 'PO, SO, atau Faktur'}
                     value={noOrderFilter}
                     onChange={(e) => setNoOrderFilter(e.target.value)}
                     onKeyDown={handleInputKeyDown}
@@ -387,7 +409,7 @@ export const HistoryBarangInOut: React.FC = () => {
                 <input
                   ref={namaRef}
                   type="text"
-                  placeholder="Ketik Nama"
+                  placeholder={lang === 'en' ? 'Type Name' : 'Ketik Nama'}
                   value={namaFilter}
                   onChange={(e) => setNamaFilter(e.target.value)}
                   onKeyDown={handleInputKeyDown}
@@ -396,13 +418,13 @@ export const HistoryBarangInOut: React.FC = () => {
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider flex items-center justify-between">
-                  <span>Nama / Kode Barang</span>
+                  <span>{lang === 'en' ? 'Product Name / SKU' : 'Nama / Kode Barang'}</span>
                   <span className="text-[10px] text-primary-400 font-bold font-mono">F3</span>
                 </label>
                 <input
                   ref={barangRef}
                   type="text"
-                  placeholder="Ketik Kode/Nama"
+                  placeholder={lang === 'en' ? 'Type Code/Name' : 'Ketik Kode/Nama'}
                   value={barangFilter}
                   onChange={(e) => setBarangFilter(e.target.value)}
                   onKeyDown={handleInputKeyDown}
@@ -413,12 +435,12 @@ export const HistoryBarangInOut: React.FC = () => {
 
             <div className="pt-2 border-t border-surface-700/60">
               <div className="text-[11px] text-slate-500 flex items-center gap-3">
-                <span>Pencarian Cepat:</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-350 text-[10px] font-mono mr-1">F1-F3</kbd> Fokus Input</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-350 text-[10px] font-mono mr-1">Enter</kbd> Cari & Fokus Tabel</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-350 text-[10px] font-mono mr-1">↑ ↓</kbd> Pilih Baris</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-350 text-[10px] font-mono mr-1">Enter</kbd> Detail</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-350 text-[10px] font-mono mr-1">Esc</kbd> Batal / Kembali</span>
+                <span>{lang === 'en' ? 'Quick Search:' : 'Pencarian Cepat:'}</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-355 text-[10px] font-mono mr-1">F1-F3</kbd> {lang === 'en' ? 'Focus Input' : 'Fokus Input'}</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-355 text-[10px] font-mono mr-1">Enter</kbd> {lang === 'en' ? 'Search & Focus Table' : 'Cari & Fokus Tabel'}</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-355 text-[10px] font-mono mr-1">↑ ↓</kbd> {lang === 'en' ? 'Select Row' : 'Pilih Baris'}</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-355 text-[10px] font-mono mr-1">Enter</kbd> {lang === 'en' ? 'Detail' : 'Detail'}</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-surface-700 border border-surface-600 text-slate-355 text-[10px] font-mono mr-1">Esc</kbd> {lang === 'en' ? 'Cancel / Back' : 'Batal / Kembali'}</span>
               </div>
             </div>
           </div>
@@ -437,15 +459,15 @@ export const HistoryBarangInOut: React.FC = () => {
                   <thead>
                     <tr className="bg-surface-800 text-slate-400 font-semibold text-xs uppercase tracking-wider border-b border-surface-700">
                       <th className="p-3.5 w-12 text-center">#</th>
-                      <th className="p-3.5">No. Order</th>
-                      <th className="p-3.5">Tanggal</th>
-                      <th className="p-3.5">No. Faktur</th>
+                      <th className="p-3.5">{lang === 'en' ? 'Order No.' : 'No. Order'}</th>
+                      <th className="p-3.5">{lang === 'en' ? 'Date' : 'Tanggal'}</th>
+                      <th className="p-3.5">{lang === 'en' ? 'Invoice No.' : 'No. Faktur'}</th>
                       <th className="p-3.5">Supplier</th>
                       <th className="p-3.5">Customer</th>
                       <th className="p-3.5">Staff</th>
-                      <th className="p-3.5">Nama Barang</th>
-                      <th className="p-3.5 text-center w-36">Stok Berkurang</th>
-                      <th className="p-3.5 text-center w-36">Stok Bertambah</th>
+                      <th className="p-3.5">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
+                      <th className="p-3.5 text-center w-36">{lang === 'en' ? 'Stock Out' : 'Stok Berkurang'}</th>
+                      <th className="p-3.5 text-center w-36">{lang === 'en' ? 'Stock In' : 'Stok Bertambah'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -583,8 +605,14 @@ export const HistoryBarangInOut: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-16 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10">
               <History className="w-12 h-12 mb-3 opacity-40 text-slate-400 animate-pulse" />
-              <h3 className="text-lg font-bold text-slate-400">Tidak ada data pergerakan barang ditemukan</h3>
-              <p className="text-sm mt-1">Ubah filter pencarian untuk melihat data pergerakan lainnya.</p>
+              <h3 className="text-lg font-bold text-slate-400">
+                {lang === 'en' ? 'No goods movement data found' : 'Tidak ada data pergerakan barang ditemukan'}
+              </h3>
+              <p className="text-sm mt-1">
+                {lang === 'en'
+                  ? 'Change search filter to view other movement data.'
+                  : 'Ubah filter pencarian untuk melihat data pergerakan lainnya.'}
+              </p>
             </div>
           )}
         </div>
@@ -595,9 +623,14 @@ export const HistoryBarangInOut: React.FC = () => {
           <div className="pb-1">
             <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <FileText size={18} className="text-blue-600" />
-              <span>Detail Penerimaan: {activePo.no_order}</span>
+              <span>{lang === 'en' ? 'Receiving Detail:' : 'Detail Penerimaan:'} {activePo.no_order}</span>
             </h1>
-            <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-emerald-600 uppercase">DITERIMA</span></p>
+            <p className="text-xs text-slate-500 font-mono mt-1">
+              Status:{' '}
+              <span className="font-bold text-emerald-600 uppercase">
+                {lang === 'en' ? 'RECEIVED' : 'DITERIMA'}
+              </span>
+            </p>
           </div>
 
           {/* 3 Separate Cards Layout */}
@@ -606,23 +639,33 @@ export const HistoryBarangInOut: React.FC = () => {
               {/* Card 1: Informasi Penerimaan */}
               <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                 <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
-                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Penerimaan</h3>
+                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                    {lang === 'en' ? 'Receiving Info' : 'Informasi Penerimaan'}
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-600">
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. PO</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'PO No.' : 'No. PO'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.no_order}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Order</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Order Date' : 'Tanggal Order'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{formatDate(activePo.order_date)}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Diterima</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Date Received' : 'Tanggal Diterima'}
+                    </span>
                     <span className="text-xs font-bold text-emerald-700 mt-0.5 block font-mono">{activePo.received_at ? formatDate(activePo.received_at) : '-'}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Termin</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Term' : 'Termin'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">{activePo.terms}</span>
                   </div>
                 </div>
@@ -631,21 +674,29 @@ export const HistoryBarangInOut: React.FC = () => {
               {/* Card 2: Pemasok (Supplier) */}
               <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                 <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
-                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Pemasok (Supplier)</h3>
+                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                    {lang === 'en' ? 'Supplier' : 'Pemasok (Supplier)'}
+                  </h3>
                 </div>
                 <div className="space-y-3.5 p-3.5 text-xs text-slate-600">
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Supplier</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Supplier Name' : 'Nama Supplier'}
+                    </span>
                     <span className="text-xs font-extrabold text-slate-850 mt-0.5 block">{activePo.supplier?.nama}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Alamat Pemasok</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Supplier Address' : 'Alamat Pemasok'}
+                    </span>
                     <span className="text-xs font-semibold text-slate-700 mt-0.5 block leading-normal">
-                      {activePo.supplier?.alamat || 'Alamat tidak dicantumkan'}
+                      {activePo.supplier?.alamat || (lang === 'en' ? 'Address not listed' : 'Alamat tidak dicantumkan')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Kode Supplier</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Supplier Code' : 'Kode Supplier'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.supplier?.kode || '-'}</span>
                   </div>
                 </div>
@@ -656,7 +707,9 @@ export const HistoryBarangInOut: React.FC = () => {
           {/* Card 3: Daftar Barang */}
           <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
             <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
-              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang yang Diterima</h3>
+              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                {lang === 'en' ? 'List of Received Items' : 'Daftar Barang yang Diterima'}
+              </h3>
             </div>
             <div className="p-4">
               <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -664,10 +717,10 @@ export const HistoryBarangInOut: React.FC = () => {
                   <thead>
                     <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
                       <th className="p-3 w-12 text-center">#</th>
-                      <th className="p-3 w-32 text-center">Kode</th>
-                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3 w-32 text-center">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                      <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="p-3 text-center w-24">Qty</th>
-                      <th className="p-3 text-right w-36">Harga Beli</th>
+                      <th className="p-3 text-right w-36">{lang === 'en' ? 'Purchase Price' : 'Harga Beli'}</th>
                       <th className="p-3 text-right w-40">Subtotal</th>
                     </tr>
                   </thead>
@@ -690,7 +743,9 @@ export const HistoryBarangInOut: React.FC = () => {
                 </table>
                 <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
                   <div className="flex gap-6 items-center">
-                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Total Pembelian PO</span>
+                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                      {lang === 'en' ? 'Total PO Purchase' : 'Total Pembelian PO'}
+                    </span>
                     <span className="text-base font-extrabold text-emerald-600 font-mono">
                       {formatCurrency(Number(activePo.subtotal))}
                     </span>
@@ -707,7 +762,11 @@ export const HistoryBarangInOut: React.FC = () => {
               onClick={() => setIsInfoHidden((prev) => !prev)}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
-              <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+              <span>
+                {isInfoHidden
+                  ? (lang === 'en' ? 'Show Info' : 'Tampilkan Info')
+                  : (lang === 'en' ? 'Hide Info' : 'Sembunyikan Info')}
+              </span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
             </button>
             <button
@@ -718,7 +777,7 @@ export const HistoryBarangInOut: React.FC = () => {
               }}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
-              <span>Tutup</span>
+              <span>{lang === 'en' ? 'Close' : 'Tutup'}</span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
             </button>
           </div>
@@ -730,9 +789,14 @@ export const HistoryBarangInOut: React.FC = () => {
           <div className="pb-1">
             <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <FileText size={18} className="text-blue-600" />
-              <span>Detail Pengiriman: {activeSo.no_faktur || activeSo.no_order}</span>
+              <span>{lang === 'en' ? 'Delivery Detail:' : 'Detail Pengiriman:'} {activeSo.no_faktur || activeSo.no_order}</span>
             </h1>
-            <p className="text-xs text-slate-500 font-mono mt-1">Status: <span className="font-bold text-blue-600 uppercase">{activeSo.status}</span></p>
+            <p className="text-xs text-slate-500 font-mono mt-1">
+              Status:{' '}
+              <span className="font-bold text-blue-600 uppercase">
+                {activeSo.status}
+              </span>
+            </p>
           </div>
 
           {/* 3 Separate Cards Layout */}
@@ -741,19 +805,27 @@ export const HistoryBarangInOut: React.FC = () => {
               {/* Card 1: Informasi Pengiriman */}
               <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                 <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
-                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Informasi Pengiriman</h3>
+                  <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                    {lang === 'en' ? 'Delivery Info' : 'Informasi Pengiriman'}
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3 p-3.5 text-xs text-slate-600">
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. SO</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'SO No.' : 'No. SO'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 block font-mono">{activeSo.no_order}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">No. Faktur</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Invoice No.' : 'No. Faktur'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 block font-mono">{activeSo.no_faktur || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal Order</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Order Date' : 'Tanggal Order'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 block font-mono">{formatDate(activeSo.order_date)}</span>
                   </div>
                   <div>
@@ -766,15 +838,21 @@ export const HistoryBarangInOut: React.FC = () => {
               {/* Card 2: Data Customer */}
               <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
                 <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
-                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Data Customer</h3>
+                  <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                    {lang === 'en' ? 'Customer Info' : 'Data Customer'}
+                  </h3>
                 </div>
                 <div className="space-y-3.5 p-3.5 text-xs text-slate-600">
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Customer</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Customer Name' : 'Nama Customer'}
+                    </span>
                     <span className="text-xs font-extrabold text-slate-855 mt-0.5 block">{activeSo.customer_nama || activeSo.customer?.nama || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Kode Customer</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'en' ? 'Customer Code' : 'Kode Customer'}
+                    </span>
                     <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activeSo.customer?.kode || '-'}</span>
                   </div>
                 </div>
@@ -785,7 +863,9 @@ export const HistoryBarangInOut: React.FC = () => {
           {/* Card 3: Daftar Barang */}
           <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-sm">
             <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5">
-              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Daftar Barang yang Dikirim</h3>
+              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                {lang === 'en' ? 'List of Shipped Items' : 'Daftar Barang yang Dikirim'}
+              </h3>
             </div>
             <div className="p-4">
               <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -793,10 +873,10 @@ export const HistoryBarangInOut: React.FC = () => {
                   <thead>
                     <tr className="bg-slate-50 text-slate-600 font-bold text-xs uppercase border-b border-slate-200">
                       <th className="p-3 w-12 text-center">#</th>
-                      <th className="p-3 w-32 text-center">Kode</th>
-                      <th className="p-3">Nama Barang</th>
+                      <th className="p-3 w-32 text-center">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                      <th className="p-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="p-3 text-center w-24">Qty</th>
-                      <th className="p-3 text-right w-36">Harga Jual</th>
+                      <th className="p-3 text-right w-36">{lang === 'en' ? 'Selling Price' : 'Harga Jual'}</th>
                       <th className="p-3 text-right w-40">Subtotal</th>
                     </tr>
                   </thead>
@@ -823,7 +903,7 @@ export const HistoryBarangInOut: React.FC = () => {
                             {Number(item.qty)}
                             {isReturned && (
                               <span className="text-[10px] block text-red-500 font-bold mt-0.5">
-                                (Retur: {returnedQty})
+                                ({lang === 'en' ? 'Return:' : 'Retur:'} {returnedQty})
                               </span>
                             )}
                           </td>
@@ -836,7 +916,9 @@ export const HistoryBarangInOut: React.FC = () => {
                 </table>
                 <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-col items-end gap-2 text-xs">
                   <div className="flex gap-6 items-center">
-                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Total Penjualan SO</span>
+                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                      {lang === 'en' ? 'Total SO Sales' : 'Total Penjualan SO'}
+                    </span>
                     <span className="text-base font-extrabold text-blue-600 font-mono">
                       {formatCurrency(Number(activeSo.subtotal))}
                     </span>
@@ -853,7 +935,11 @@ export const HistoryBarangInOut: React.FC = () => {
               onClick={() => setIsInfoHidden((prev) => !prev)}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
-              <span>{isInfoHidden ? 'Tampilkan Info' : 'Sembunyikan Info'}</span>
+              <span>
+                {isInfoHidden
+                  ? (lang === 'en' ? 'Show Info' : 'Tampilkan Info')
+                  : (lang === 'en' ? 'Hide Info' : 'Sembunyikan Info')}
+              </span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">F1</kbd>
             </button>
             <button
@@ -864,7 +950,7 @@ export const HistoryBarangInOut: React.FC = () => {
               }}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
-              <span>Tutup</span>
+              <span>{lang === 'en' ? 'Close' : 'Tutup'}</span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
             </button>
           </div>
@@ -876,7 +962,7 @@ export const HistoryBarangInOut: React.FC = () => {
           <div className="pb-1">
             <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
               <Info size={18} className="text-blue-600" />
-              <span>Detail Penyesuaian Stok (Manual)</span>
+              <span>{lang === 'en' ? 'Stock Adjustment Detail (Manual)' : 'Detail Penyesuaian Stok (Manual)'}</span>
             </h1>
             <p className="text-xs text-slate-500 font-mono mt-1">Ref ID: <span className="font-bold text-slate-800">{activeAdj.id}</span></p>
           </div>
@@ -885,27 +971,35 @@ export const HistoryBarangInOut: React.FC = () => {
             {/* Card 1: Detail Perubahan */}
             <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
               <div className="bg-blue-50 border-b border-blue-100 px-3.5 py-2">
-                <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Detail Perubahan</h3>
+                <h3 className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                  {lang === 'en' ? 'Adjustment Details' : 'Detail Perubahan'}
+                </h3>
               </div>
               <div className="space-y-3.5 p-3.5 text-xs text-slate-650">
                 <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tanggal</span>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    {lang === 'en' ? 'Date' : 'Tanggal'}
+                  </span>
                   <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activeAdj.tanggal)}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Oleh Staff</span>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    {lang === 'en' ? 'By Staff' : 'Oleh Staff'}
+                  </span>
                   <span className="text-xs font-bold text-slate-850 mt-0.5 block">{activeAdj.staff}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Stok Berubah</span>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    {lang === 'en' ? 'Stock Changed' : 'Stok Berubah'}
+                  </span>
                   <span className="text-xs font-bold block mt-1">
                     {activeAdj.stok_bertambah > 0 ? (
                       <span className="text-emerald-650 font-bold bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded text-[10px] inline-block">
-                        Bertambah +{activeAdj.stok_bertambah}
+                        {lang === 'en' ? 'Increased +' : 'Bertambah +'}{activeAdj.stok_bertambah}
                       </span>
                     ) : (
                       <span className="text-rose-650 font-bold bg-rose-50 border border-rose-100 px-2.5 py-0.5 rounded text-[10px] inline-block">
-                        Berkurang -{activeAdj.stok_berkurang}
+                        {lang === 'en' ? 'Decreased -' : 'Berkurang -'}{activeAdj.stok_berkurang}
                       </span>
                     )}
                   </span>
@@ -916,15 +1010,21 @@ export const HistoryBarangInOut: React.FC = () => {
             {/* Card 2: Detail Barang */}
             <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
               <div className="bg-amber-50 border-b border-amber-100 px-3.5 py-2">
-                <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Detail Barang</h3>
+                <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
+                  {lang === 'en' ? 'Product Detail' : 'Detail Barang'}
+                </h3>
               </div>
               <div className="space-y-3.5 p-3.5 text-xs text-slate-650">
                 <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Nama Barang</span>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    {lang === 'en' ? 'Product Name' : 'Nama Barang'}
+                  </span>
                   <span className="text-xs font-bold text-slate-850 mt-0.5 block">{activeAdj.product_nama}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Kode Barang</span>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    {lang === 'en' ? 'SKU' : 'Kode Barang'}
+                  </span>
                   <span className="text-xs font-mono font-bold text-slate-700 mt-0.5 block">{activeAdj.product_kode}</span>
                 </div>
               </div>
@@ -934,11 +1034,13 @@ export const HistoryBarangInOut: React.FC = () => {
           {/* Reason Card */}
           <div className="card p-0 overflow-hidden border border-slate-200 bg-white shadow-xs">
             <div className="bg-slate-50 border-b border-slate-200 px-3.5 py-2">
-              <h3 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Alasan Penyesuaian Stok</h3>
+              <h3 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                {lang === 'en' ? 'Stock Adjustment Reason' : 'Alasan Penyesuaian Stok'}
+              </h3>
             </div>
             <div className="p-3.5">
               <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                {activeAdj.alasan || 'Tidak ada keterangan alasan tambahan.'}
+                {activeAdj.alasan || (lang === 'en' ? 'No additional reason provided.' : 'Tidak ada keterangan alasan tambahan.')}
               </p>
             </div>
           </div>
@@ -952,7 +1054,7 @@ export const HistoryBarangInOut: React.FC = () => {
               }}
               className="px-5 py-2.5 rounded-lg border border-blue-600 bg-white hover:bg-blue-50 text-blue-600 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 focus:outline-none"
             >
-              <span>Tutup</span>
+              <span>{lang === 'en' ? 'Close' : 'Tutup'}</span>
               <kbd className="text-[10px] text-blue-500 font-bold font-mono uppercase bg-blue-50 border border-blue-200 px-1 py-0.5 rounded ml-1">Esc</kbd>
             </button>
           </div>
@@ -971,21 +1073,36 @@ export const HistoryBarangInOut: React.FC = () => {
                   <Info size={18} className="text-amber-400" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-bold text-sm text-white">Hapus Penyesuaian Stok</h2>
-                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">Tindakan ini akan mengembalikan stok barang di gudang</p>
+                  <h2 className="font-bold text-sm text-white">
+                    {lang === 'en' ? 'Delete Stock Adjustment' : 'Hapus Penyesuaian Stok'}
+                  </h2>
+                  <p className="text-xs text-amber-400 mt-0.5 font-semibold">
+                    {lang === 'en' ? 'This action will restore the warehouse stock level' : 'Tindakan ini akan mengembalikan stok barang di gudang'}
+                  </p>
                 </div>
               </div>
 
               {/* Body */}
               <div className="px-5 py-5 bg-white">
                 <p className="text-slate-700 text-xs font-semibold leading-relaxed">
-                  Apakah Anda yakin ingin menghapus data penyesuaian stok produk <span className="font-extrabold text-slate-900">"{deleteAdjTarget.product_nama}"</span>?
+                  {lang === 'en'
+                    ? `Are you sure you want to delete the stock adjustment for "${deleteAdjTarget.product_nama}"?`
+                    : `Apakah Anda yakin ingin menghapus data penyesuaian stok produk "${deleteAdjTarget.product_nama}"?`}
                 </p>
                 <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 text-xs text-slate-650">
-                  <div><span className="font-bold">Kode Barang:</span> <span className="font-mono">{deleteAdjTarget.product_kode}</span></div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'SKU Code:' : 'Kode Barang:'}</span>{' '}
+                    <span className="font-mono">{deleteAdjTarget.product_kode}</span>
+                  </div>
                   <div><span className="font-bold">Staff:</span> {deleteAdjTarget.staff}</div>
-                  <div><span className="font-bold">Perubahan Qty:</span> {deleteAdjTarget.stok_bertambah > 0 ? `+${deleteAdjTarget.stok_bertambah}` : `-${deleteAdjTarget.stok_berkurang}`}</div>
-                  <div><span className="font-bold">Alasan:</span> {deleteAdjTarget.alasan}</div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'Qty Delta:' : 'Perubahan Qty:'}</span>{' '}
+                    {deleteAdjTarget.stok_bertambah > 0 ? `+${deleteAdjTarget.stok_bertambah}` : `-${deleteAdjTarget.stok_berkurang}`}
+                  </div>
+                  <div>
+                    <span className="font-bold">{lang === 'en' ? 'Reason:' : 'Alasan:'}</span>{' '}
+                    {deleteAdjTarget.alasan}
+                  </div>
                 </div>
               </div>
 
@@ -995,13 +1112,13 @@ export const HistoryBarangInOut: React.FC = () => {
                   onClick={() => setDeleteAdjTarget(null)}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-250 text-slate-600 hover:bg-slate-100 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   onClick={handleConfirmDelete}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
-                  Ya, Hapus (Y)
+                  {lang === 'en' ? 'Yes, Delete (Y)' : 'Ya, Hapus (Y)'}
                 </button>
               </div>
             </div>
@@ -1021,18 +1138,26 @@ export const HistoryBarangInOut: React.FC = () => {
                   <X size={18} className="text-red-400" />
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <h2 className="font-bold text-sm text-black">Transaksi Tidak Dapat Dihapus</h2>
-                  <p className="text-xs text-red-400/80 mt-0.5 font-semibold">Gunakan menu pembelian/penjualan asal</p>
+                  <h2 className="font-bold text-sm text-white">
+                    {lang === 'en' ? 'Transaction Cannot Be Deleted' : 'Transaksi Tidak Dapat Dihapus'}
+                  </h2>
+                  <p className="text-xs text-red-400/80 mt-0.5 font-semibold">
+                    {lang === 'en' ? 'Use original purchase/sales page' : 'Gunakan menu pembelian/penjualan asal'}
+                  </p>
                 </div>
               </div>
 
               {/* Body */}
               <div className="px-5 py-5 bg-white">
                 <p className="text-slate-700 text-xs font-semibold leading-relaxed">
-                  Data transaksi barang masuk (PO) atau keluar (SO) tidak bisa dihapus langsung dari menu pergerakan barang ini.
+                  {lang === 'en'
+                    ? 'Purchase (PO) or sales (SO) transaction data cannot be deleted directly from this goods movement menu.'
+                    : 'Data transaksi barang masuk (PO) atau keluar (SO) tidak bisa dihapus langsung dari menu pergerakan barang ini.'}
                 </p>
-                <p className="text-xs text-slate-500 mt-2">
-                  Jika ingin menghapusnya, silakan buka menu <span className="font-bold text-slate-750">Histori Pembelian</span> (untuk PO) atau <span className="font-bold text-slate-750">Histori Penjualan</span> (untuk SO).
+                <p className="text-xs text-slate-555 mt-2">
+                  {lang === 'en'
+                    ? 'If you wish to delete it, please go to the Purchase History (for PO) or Sales History (for SO) menu.'
+                    : 'Jika ingin menghapusnya, silakan buka menu Histori Pembelian (untuk PO) atau Histori Penjualan (untuk SO).'}
                 </p>
               </div>
 
@@ -1042,7 +1167,7 @@ export const HistoryBarangInOut: React.FC = () => {
                   onClick={() => setShowBlockedDeleteModal(false)}
                   className="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-yellow-300 transition-all shadow-md shadow-red-500/20"
                 >
-                  Tutup (Enter / Esc)
+                  {lang === 'en' ? 'Close (Enter / Esc)' : 'Tutup (Enter / Esc)'}
                 </button>
               </div>
             </div>

@@ -225,9 +225,9 @@ export const Dashboard: React.FC = () => {
   }, { enableOnFormTags: false }, [isCalendarFocused, selectedDay, currentDate]);
 
   const getPeriodLabel = () => {
-    if (period === '30') return '30 Hari Terakhir';
-    if (period === '180') return '6 Bulan Terakhir';
-    return '1 Tahun Terakhir';
+    if (period === '30') return lang === 'en' ? 'Last 30 Days' : '30 Hari Terakhir';
+    if (period === '180') return lang === 'en' ? 'Last 6 Months' : '6 Bulan Terakhir';
+    return lang === 'en' ? 'Last 1 Year' : '1 Tahun Terakhir';
   };
 
   const formatWaktu = (waktu: string | null): string => {
@@ -246,7 +246,7 @@ export const Dashboard: React.FC = () => {
             {lang === 'en' ? 'Operational Dashboard' : 'Dashboard Operasional'}
           </h1>
           <p className="text-slate-400">
-            {lang === 'en' ? 'MMB performance summary for period' : 'Ringkasan kinerja MMB untuk periode'} {getPeriodLabel()}
+            {lang === 'en' ? 'MMB performance summary for period ' : 'Ringkasan kinerja MMB untuk periode '} {getPeriodLabel()}
           </p>
         </div>
 
@@ -378,7 +378,7 @@ export const Dashboard: React.FC = () => {
 
                 </div>
                 <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <Calendar size={12} /> Chart Data Real-time
+                  <Calendar size={12} /> {lang === 'en' ? 'Real-time Chart Data' : 'Chart Data Real-time'}
                 </span>
               </div>
               <div className="h-[300px] w-full">
@@ -396,21 +396,21 @@ export const Dashboard: React.FC = () => {
                         fontSize={11}
                         tickFormatter={(str) => {
                           try {
-                            return new Date(str).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                            return new Date(str).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' });
                           } catch { return str; }
                         }}
                       />
-                      <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => `Rp ${val / 1000000}Jt`} />
+                      <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => lang === 'en' ? `${val / 1000000}M Rp` : `Rp ${val / 1000000}Jt`} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#1e2535', borderColor: '#3d4f6b', borderRadius: '8px' }}
                         labelStyle={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}
                         itemStyle={{ color: '#fff', fontSize: '13px' }}
                         formatter={(value: any, name: any) => [formatCurrency(Number(value)), name]}
-                        labelFormatter={(label) => `Tanggal: ${new Date(label).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                        labelFormatter={(label) => `${lang === 'en' ? 'Date' : 'Tanggal'}: ${new Date(label).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`}
                       />
                       <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                      <Line type="monotone" dataKey="omzet" name="Nominal Penjualan (Rp)" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} />
-                      <Line type="monotone" dataKey="pembelian" name="Nominal Pembelian (Rp)" stroke="#eab308" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                      <Line type="monotone" dataKey="omzet" name={lang === 'en' ? 'Sales Revenue (Rp)' : 'Nominal Penjualan (Rp)'} stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                      <Line type="monotone" dataKey="pembelian" name={lang === 'en' ? 'Purchase Amount (Rp)' : 'Nominal Pembelian (Rp)'} stroke="#eab308" strokeWidth={2.5} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 )}
@@ -423,17 +423,17 @@ export const Dashboard: React.FC = () => {
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-1.5">
                     <ClipboardList size={16} className="text-blue-400" />
-                    Transaksi Hari Ini
+                    {lang === 'en' ? "Today's Transactions" : 'Transaksi Hari Ini'}
                     <span className="text-[10px] bg-blue-500/10 text-blue-400 font-mono px-1.5 py-0.5 rounded border border-blue-500/20">F4</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Total: <span className="font-bold text-blue-300">{kpi.today_transaksi} Transaksi</span>
+                    {lang === 'en' ? 'Total:' : 'Total:'} <span className="font-bold text-blue-300">{kpi.today_transaksi} {lang === 'en' ? 'Transactions' : 'Transaksi'}</span>
                   </p>
                 </div>
                 <button
                   onClick={() => navigate('/penjualan/list', { state: { skipFilter: true } })}
                   className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
-                  title="Lihat history penjualan"
+                  title={lang === 'en' ? 'View sales history' : 'Lihat history penjualan'}
                 >
                   <ArrowUpRight size={16} />
                 </button>
@@ -444,7 +444,9 @@ export const Dashboard: React.FC = () => {
                 {recentBarangKeluar.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center space-y-2">
                     <Package size={24} className="text-slate-600" />
-                    <p className="text-xs text-slate-500">Belum ada transaksi hari ini</p>
+                    <p className="text-xs text-slate-500">
+                      {lang === 'en' ? 'No transactions today yet' : 'Belum ada transaksi hari ini'}
+                    </p>
                   </div>
                 ) : (
                   recentBarangKeluar.slice(0, 5).map((item, idx) => (
@@ -481,7 +483,7 @@ export const Dashboard: React.FC = () => {
                 onClick={() => navigate('/penjualan/list', { state: { skipFilter: true } })}
                 className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-slate-400 hover:text-blue-400 border border-dashed border-surface-700 hover:border-blue-500/40 rounded-xl transition-all"
               >
-                Lihat Semua History Penjualan (F4)
+                {lang === 'en' ? 'View All Sales History (F4)' : 'Lihat Semua History Penjualan (F4)'}
                 <ArrowUpRight size={12} />
               </button>
             </div>
@@ -495,7 +497,7 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-bold text-white flex items-center gap-1.5">
                     <Calendar size={16} className="text-primary-400" />
-                    <span>Kalender Kepadatan</span>
+                    <span>{lang === 'en' ? 'Density Calendar' : 'Kalender Kepadatan'}</span>
                     <span className="text-[10px] bg-indigo-500/10 text-indigo-400 font-mono px-1.5 py-0.5 rounded border border-indigo-500/20">F6</span>
                   </h3>
                   <div className="flex gap-1 items-center">
@@ -503,7 +505,7 @@ export const Dashboard: React.FC = () => {
                       <ChevronLeft size={16} />
                     </button>
                     <span className="text-xs font-semibold text-white px-1 whitespace-nowrap">
-                      {currentDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                      {currentDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'long', year: 'numeric' })}
                     </span>
                     <button onClick={nextMonth} className="p-1 hover:bg-surface-750 text-slate-400 hover:text-white rounded transition-colors">
                       <ChevronRight size={16} />
@@ -513,7 +515,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Day Labels */}
                 <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-slate-500 border-b border-surface-700/40 pb-1.5">
-                  {['S', 'S', 'R', 'K', 'J', 'S', 'M'].map((dayLabel, idx) => (
+                  {(lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['S', 'S', 'R', 'K', 'J', 'S', 'M']).map((dayLabel, idx) => (
                     <span key={idx}>{dayLabel}</span>
                   ))}
                 </div>
@@ -580,15 +582,15 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center gap-4 text-[10px] text-slate-500 pt-2 border-t border-surface-700/40">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500/40 inline-block" />
-                    Tinggi
+                    {lang === 'en' ? 'High' : 'Tinggi'}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/20 border border-amber-500/40 inline-block" />
-                    Sedang
+                    {lang === 'en' ? 'Medium' : 'Sedang'}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm bg-rose-500/10 border border-rose-500/20 inline-block" />
-                    Rendah
+                    {lang === 'en' ? 'Low' : 'Rendah'}
                   </span>
                 </div>
               </div>
@@ -599,7 +601,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-surface-700/40">
                 <h3 className="text-base font-bold text-white flex items-center gap-1.5">
                   <TrendingUp size={16} className="text-primary-400" />
-                  <span>Detail Transaksi Harian</span>
+                  <span>{lang === 'en' ? 'Daily Transaction Details' : 'Detail Transaksi Harian'}</span>
                   <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-mono px-1.5 py-0.5 rounded border border-emerald-500/20">Enter</span>
                 </h3>
               </div>
@@ -614,22 +616,27 @@ export const Dashboard: React.FC = () => {
                   const isHigh = dayData.omzet >= TARGET_HARIAN;
                   const isMedium = dayData.omzet >= 15_000_000;
 
-                  const targetStatus = isHigh ? 'Tinggi' : isMedium ? 'Sedang' : 'Rendah';
+                  const targetStatus = isHigh
+                    ? (lang === 'en' ? 'High' : 'Tinggi')
+                    : isMedium
+                      ? (lang === 'en' ? 'Medium' : 'Sedang')
+                      : (lang === 'en' ? 'Low' : 'Rendah');
                   const statusColor = isHigh ? 'text-emerald-400' : isMedium ? 'text-amber-400' : 'text-rose-400';
                   const badgeBg = isHigh ? 'bg-emerald-500/10 border-emerald-500/30' : isMedium ? 'bg-amber-500/10 border-amber-500/30' : 'bg-rose-500/10 border-rose-500/20';
 
                   const progressPct = Math.min((dayData.omzet / TARGET_HARIAN) * 100, 100);
                   const aov = dayData.penjualan > 0 ? Math.round(dayData.omzet / dayData.penjualan) : 0;
-                  const ratio = dayData.omzet > 0 ? Math.round((dayData.pembelian / dayData.omzet) * 100) : 0;
 
                   return (
                     <div className="space-y-4">
                       {/* Tanggal & Status */}
                       <div className="flex justify-between items-center pb-2 border-b border-surface-700/40">
                         <div>
-                          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Tanggal Terpilih</p>
+                          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                            {lang === 'en' ? 'Selected Date' : 'Tanggal Terpilih'}
+                          </p>
                           <h4 className="text-sm font-bold text-white mt-0.5">
-                            {new Date(year, month, selectedDay).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {new Date(year, month, selectedDay).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </h4>
                         </div>
                         <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${statusColor} ${badgeBg}`}>
@@ -640,7 +647,7 @@ export const Dashboard: React.FC = () => {
                       {/* Progress Bar target harian */}
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs text-slate-400">
-                          <span>Target Harian</span>
+                          <span>{lang === 'en' ? 'Daily Target' : 'Target Harian'}</span>
                           <span className={`font-bold ${statusColor}`}>{progressPct.toFixed(1)}%</span>
                         </div>
                         <div className="w-full h-2.5 bg-surface-800 rounded-full overflow-hidden border border-surface-700/50">
@@ -657,7 +664,9 @@ export const Dashboard: React.FC = () => {
                         <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <TrendingUp size={14} className="text-emerald-400" />
-                            <span className="text-[11px] text-slate-300">Omzet Penjualan</span>
+                            <span className="text-[11px] text-slate-300">
+                              {lang === 'en' ? 'Sales Revenue' : 'Omzet Penjualan'}
+                            </span>
                           </div>
                           <span className="text-xs font-bold text-white">{formatCurrency(dayData.omzet)}</span>
                         </div>
@@ -666,7 +675,9 @@ export const Dashboard: React.FC = () => {
                         <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <ShoppingCart size={14} className="text-amber-400" />
-                            <span className="text-[11px] text-slate-300">Pembelian PO</span>
+                            <span className="text-[11px] text-slate-300">
+                              {lang === 'en' ? 'Purchase PO' : 'Pembelian PO'}
+                            </span>
                           </div>
                           <div className="text-right">
                             <div className="text-xs font-bold text-white">{formatCurrency(dayData.pembelian)}</div>
@@ -677,7 +688,9 @@ export const Dashboard: React.FC = () => {
                         <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Package size={14} className="text-blue-400" />
-                            <span className="text-[11px] text-slate-300">Jumlah Transaksi</span>
+                            <span className="text-[11px] text-slate-300">
+                              {lang === 'en' ? 'Total Transactions' : 'Jumlah Transaksi'}
+                            </span>
                           </div>
                           <span className="text-xs font-bold text-white">{dayData.penjualan} </span>
                         </div>
@@ -686,7 +699,9 @@ export const Dashboard: React.FC = () => {
                         <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <DollarSign size={14} className="text-purple-400" />
-                            <span className="text-[11px] text-slate-300">AOV (Rata-rata Order)</span>
+                            <span className="text-[11px] text-slate-300">
+                              {lang === 'en' ? 'AOV (Average Order Value)' : 'AOV (Rata-rata Order)'}
+                            </span>
                           </div>
                           <span className="text-xs font-bold text-white">{formatCurrency(aov)}</span>
                         </div>
@@ -700,8 +715,14 @@ export const Dashboard: React.FC = () => {
                     <Calendar size={24} />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-white">Rincian Transaksi Harian</p>
-                    <p className="text-[10px] text-slate-500 mt-1 max-w-[200px] mx-auto">Klik salah satu tanggal pada kalender kepadatan di sebelah kiri untuk melihat statistik rinciannya.</p>
+                    <p className="text-xs font-semibold text-white">
+                      {lang === 'en' ? 'Daily Transaction Details' : 'Rincian Transaksi Harian'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1 max-w-[200px] mx-auto">
+                      {lang === 'en'
+                        ? 'Click one of the dates on the density calendar on the left to view detailed statistics.'
+                        : 'Klik salah satu tanggal pada kalender kepadatan di sebelah kiri untuk melihat statistik rinciannya.'}
+                    </p>
                   </div>
                 </div>
               )}
@@ -710,7 +731,7 @@ export const Dashboard: React.FC = () => {
         </>
       ) : (
         <div className="p-8 text-center text-slate-400 border border-dashed border-surface-700 rounded-xl">
-          Gagal mengambil ringkasan KPI dashboard
+          {lang === 'en' ? 'Failed to fetch dashboard KPI summary' : 'Gagal mengambil ringkasan KPI dashboard'}
         </div>
       )}
     </div>

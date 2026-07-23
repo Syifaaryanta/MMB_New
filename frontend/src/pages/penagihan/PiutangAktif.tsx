@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatRupiahInput, parseRupiahInput, parseAdjustments, formatExtraChargeDesc } from '@/lib/utils';
 import {
   Search,
@@ -65,6 +66,7 @@ const getStoredState = <T,>(key: string, defaultValue: T): T => {
 
 export const PiutangAktif: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [data, setData] = useState<CustomerGroup[]>([]);
   const [filteredData, setFilteredData] = useState<CustomerGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -482,7 +484,7 @@ export const PiutangAktif: React.FC = () => {
       setDetailInvoice(res.data);
     } catch (err) {
       console.error(err);
-      showToast('Gagal mengambil detail invoice', 'error');
+      showToast(lang === 'en' ? 'Failed to fetch invoice details' : 'Gagal mengambil detail invoice', 'error');
       setShowDetailModal(false);
     } finally {
       setIsLoadingDetail(false);
@@ -518,7 +520,7 @@ export const PiutangAktif: React.FC = () => {
       fetchData(); // reload values
     } catch (err) {
       console.error(err);
-      showToast('Gagal mengupdate ongkir', 'error');
+      showToast(lang === 'en' ? 'Failed to update shipping cost' : 'Gagal mengupdate ongkir', 'error');
     }
   };
 
@@ -537,12 +539,12 @@ export const PiutangAktif: React.FC = () => {
 
     if (paymentMode === 'fifo') {
       if (!paymentAmount || Number(paymentAmount) <= 0) {
-        showToast('Silakan masukkan nominal setoran yang valid.', 'error');
+        showToast(lang === 'en' ? 'Please enter a valid deposit amount.' : 'Silakan masukkan nominal setoran yang valid.', 'error');
         return;
       }
       const limit = customerGroup.total_piutang || 0;
       if (Number(paymentAmount) > Number(limit)) {
-        showToast('Nominal setoran melebihi total piutang aktif!', 'error');
+        showToast(lang === 'en' ? 'Deposit amount exceeds active total receivables!' : 'Nominal setoran melebihi total piutang aktif!', 'error');
         return;
       }
       payload.total_amount = Number(paymentAmount);
@@ -552,7 +554,7 @@ export const PiutangAktif: React.FC = () => {
         .map(([sale_id, amount]) => ({ sale_id, amount }));
 
       if (activeAllocations.length === 0) {
-        showToast('Silakan isi nominal pembayaran minimal untuk satu nota.', 'error');
+        showToast(lang === 'en' ? 'Please fill in the payment amount for at least one invoice.' : 'Silakan isi nominal pembayaran minimal untuk satu nota.', 'error');
         return;
       }
       payload.allocations = activeAllocations;
@@ -570,10 +572,10 @@ export const PiutangAktif: React.FC = () => {
         setReceiptSession(sessionDetail.data);
         setShowReceiptModal(true);
       } else {
-        showToast('Setoran berhasil disimpan.', 'success');
+        showToast(lang === 'en' ? 'Deposit successfully saved.' : 'Setoran berhasil disimpan.', 'success');
       }
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Gagal menyimpan setoran penagihan', 'error');
+      showToast(err.response?.data?.error || (lang === 'en' ? 'Failed to save billing deposit' : 'Gagal menyimpan setoran penagihan'), 'error');
     }
   };
 
@@ -596,7 +598,7 @@ export const PiutangAktif: React.FC = () => {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -635,48 +637,48 @@ export const PiutangAktif: React.FC = () => {
         <div className="bg-blue-600 -mx-6 -mt-6 p-4 px-6 flex justify-between items-center text-white rounded-t-2xl shrink-0">
           <h3 className="text-base font-extrabold text-white flex items-center gap-2">
             <FileText size={18} />
-            <span>Rincian Nota Penjualan</span>
+            <span>{lang === 'en' ? 'Sales Invoice Details' : 'Rincian Nota Penjualan'}</span>
           </h3>
           <button
             onClick={() => setShowDetailModal(false)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-500 rounded-lg shadow-sm cursor-pointer transition-all duration-200"
           >
-            ← Kembali (Esc)
+            {lang === 'en' ? '← Back (Esc)' : '← Kembali (Esc)'}
           </button>
         </div>
 
         <div className="space-y-4 overflow-y-auto max-h-[82vh] pr-1">
           {isLoadingDetail ? (
-            <div className="py-24 text-center text-blue-500 font-bold animate-pulse text-sm">Memuat rincian nota...</div>
+            <div className="py-24 text-center text-blue-500 font-bold animate-pulse text-sm">{lang === 'en' ? 'Loading invoice details...' : 'Memuat rincian nota...'}</div>
           ) : detailInvoice ? (
             <>
               {/* Ultra-Compact Metadata Row */}
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm text-xs shrink-0">
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">No Faktur</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">{lang === 'en' ? 'Invoice No' : 'No Faktur'}</span>
                   <strong className="text-slate-900 font-mono text-[11px]">{detailInvoice.no_faktur || detailInvoice.no_order}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Tanggal Order</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">{lang === 'en' ? 'Order Date' : 'Tanggal Order'}</span>
                   <strong className="text-slate-800 text-[11px]">{formatDate(detailInvoice.order_date)}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Termin</span>
-                  <strong className="text-slate-800 text-[11px]">{detailInvoice.limit_bulan > 0 ? `Kredit (${detailInvoice.limit_bulan} Bln)` : 'Tunai'}</strong>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">{lang === 'en' ? 'Terms' : 'Termin'}</span>
+                  <strong className="text-slate-800 text-[11px]">{detailInvoice.limit_bulan > 0 ? (lang === 'en' ? `Credit (${detailInvoice.limit_bulan} Mo)` : `Kredit (${detailInvoice.limit_bulan} Bln)`) : (lang === 'en' ? 'Cash' : 'Tunai')}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Pengiriman</span>
-                  <strong className="text-blue-700 text-[11px]">{detailInvoice.diantar ? ' Diantar' : ' Diambil'}</strong>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">{lang === 'en' ? 'Delivery' : 'Pengiriman'}</span>
+                  <strong className="text-blue-700 text-[11px]">{detailInvoice.diantar ? (lang === 'en' ? ' Delivered' : ' Diantar') : (lang === 'en' ? ' Picked Up' : ' Diambil')}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Pelanggan</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">{lang === 'en' ? 'Customer' : 'Pelanggan'}</span>
                   <strong className="text-slate-900 text-[11px] block truncate" title={`${detailInvoice.customer_nama} (${detailInvoice.customer_telp || '-'})`}>
                     {detailInvoice.customer_nama}
                   </strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Catatan</span>
-                  <span className="text-slate-600 text-[11px] block truncate" title={detailInvoice.sender_note || 'Tidak ada catatan'}>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">{lang === 'en' ? 'Notes' : 'Catatan'}</span>
+                  <span className="text-slate-600 text-[11px] block truncate" title={detailInvoice.sender_note || (lang === 'en' ? 'No notes' : 'Tidak ada catatan')}>
                     {detailInvoice.sender_note || '-'}
                   </span>
                 </div>
@@ -688,10 +690,10 @@ export const PiutangAktif: React.FC = () => {
                   <thead>
                     <tr className="bg-blue-50 text-blue-900 font-bold uppercase text-[9px] border-b border-blue-100">
                       <th className="py-2 px-3 w-10 text-center">No</th>
-                      <th className="py-2 px-3">Kode SKU</th>
-                      <th className="py-2 px-3">Nama Barang</th>
+                      <th className="py-2 px-3">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+                      <th className="py-2 px-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="py-2 px-3 text-right w-20">Qty</th>
-                      <th className="py-2 px-3 text-right w-28">Harga</th>
+                      <th className="py-2 px-3 text-right w-28">{lang === 'en' ? 'Price' : 'Harga'}</th>
                       <th className="py-2 px-3 text-right w-28">Total</th>
                     </tr>
                   </thead>
@@ -708,7 +710,7 @@ export const PiutangAktif: React.FC = () => {
                     ))}
                     {parseAdjustments(detailInvoice.extra_charge_desc, detailInvoice.extra_charge_amount).map((adj, index) => (
                       <tr key={`adj-${index}`} className="text-slate-655 font-semibold bg-slate-50/50">
-                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Biaya Tambahan ({adj.product_nama})</td>
+                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">{lang === 'en' ? 'Extra Charge' : 'Biaya Tambahan'} ({adj.product_nama})</td>
                         <td className={`py-1.5 px-3 text-right font-mono font-bold ${adj.total < 0 ? 'text-danger-600' : 'text-emerald-700'}`}>
                           {adj.total < 0 ? '-' : '+'}{formatCurrency(Math.abs(adj.total))}
                         </td>
@@ -716,13 +718,13 @@ export const PiutangAktif: React.FC = () => {
                     ))}
                     {Number(detailInvoice.biaya_pengiriman) !== 0 && (
                       <tr className="text-slate-600 font-semibold bg-slate-50/50">
-                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Pengiriman</td>
+                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">{lang === 'en' ? 'Delivery' : 'Pengiriman'}</td>
                         <td className="py-1.5 px-3 text-right font-mono text-slate-800 font-bold">{formatCurrency(Number(detailInvoice.biaya_pengiriman))}</td>
                       </tr>
                     )}
                     <tr className="bg-blue-50/40 font-black border-t border-blue-100">
                       <td colSpan={5} className="py-2 px-3 text-right uppercase text-[10px] text-blue-900">Grand Total</td>
-                      <td className="py-2 px-3 text-right font-mono text-blue-950 font-black text-xs">{formatCurrency(Number(detailInvoice.subtotal) + Number(detailInvoice.biaya_pengiriman))}</td>
+                      <td className="py-2 px-3 text-right font-mono text-blue-955 font-black text-xs">{formatCurrency(Number(detailInvoice.subtotal) + Number(detailInvoice.biaya_pengiriman))}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -730,14 +732,14 @@ export const PiutangAktif: React.FC = () => {
 
               {/* Payment Logs - Compact */}
               <div className="p-3 bg-white border border-blue-100 rounded-xl shadow-sm space-y-2 shrink-0">
-                <h4 className="text-[10px] uppercase font-black text-slate-500 border-b border-slate-100 pb-1 mb-1">Riwayat Angsuran Setoran</h4>
+                <h4 className="text-[10px] uppercase font-black text-slate-500 border-b border-slate-100 pb-1 mb-1">{lang === 'en' ? 'Deposit Installment History' : 'Riwayat Angsuran Setoran'}</h4>
                 {detailInvoice.sales_payments && detailInvoice.sales_payments.length > 0 ? (
                   <div className="space-y-1.5">
                     {detailInvoice.sales_payments.map((pay: any) => (
                       <div key={pay.id} className="py-1.5 px-3 bg-blue-50/20 hover:bg-blue-50/40 border border-blue-100/30 rounded-lg flex justify-between items-center transition-all text-[11px]">
                         <div>
-                          <p className="font-extrabold text-blue-950">Setoran: {formatCurrency(Number(pay.amount))}</p>
-                          <p className="text-[10px] text-slate-500">Catatan: {cleanPaymentNote(pay.note)}</p>
+                          <p className="font-extrabold text-blue-955">{lang === 'en' ? 'Deposit' : 'Setoran'}: {formatCurrency(Number(pay.amount))}</p>
+                          <p className="text-[10px] text-slate-500">{lang === 'en' ? 'Notes' : 'Catatan'}: {cleanPaymentNote(pay.note)}</p>
                         </div>
                         <div className="text-right text-[10px] text-slate-400 font-semibold flex items-center gap-2">
                           <span>{formatDate(pay.payment_date)}</span>
@@ -747,12 +749,12 @@ export const PiutangAktif: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-slate-400 italic">Belum ada angsuran tercatat untuk nota ini.</p>
+                  <p className="text-[11px] text-slate-400 italic">{lang === 'en' ? 'No installments recorded for this invoice yet.' : 'Belum ada angsuran tercatat untuk nota ini.'}</p>
                 )}
               </div>
             </>
           ) : (
-            <div className="py-24 text-center text-rose-500 font-bold">Gagal mengambil rincian detail.</div>
+            <div className="py-24 text-center text-rose-500 font-bold">{lang === 'en' ? 'Failed to fetch invoice details.' : 'Gagal mengambil rincian detail.'}</div>
           )}
         </div>
       </div>
@@ -764,8 +766,8 @@ export const PiutangAktif: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Penagihan Piutang Customer (AR)</h1>
-          <p className="text-slate-400 text-sm">Monitoring daftar invoice kredit aktif, input biaya travel/bus, dan catat angsuran piutang global.</p>
+          <h1 className="text-2xl font-extrabold text-white">{lang === 'en' ? 'Customer Receivables Billing (AR)' : 'Penagihan Piutang Customer (AR)'}</h1>
+          <p className="text-slate-400 text-sm">{lang === 'en' ? 'Monitor active credit invoices, input travel/bus delivery costs, and record global receivables installment.' : 'Monitoring daftar invoice kredit aktif, input biaya travel/bus, dan catat angsuran piutang global.'}</p>
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
@@ -775,7 +777,7 @@ export const PiutangAktif: React.FC = () => {
             className="btn-primary flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
             <DollarSign size={14} />
-            <span>Bayar Tagihan Multi-Nota (F10)</span>
+            <span>{lang === 'en' ? 'Pay Multi-Invoice Billing (F10)' : 'Bayar Tagihan Multi-Nota (F10)'}</span>
           </button>
         </div>
       </div>
@@ -784,13 +786,13 @@ export const PiutangAktif: React.FC = () => {
       <div className="card p-4 flex flex-col md:flex-row md:items-end gap-4">
         {/* Search */}
         <div className="relative flex-grow">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Pelanggan (F1)</label>
+          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">{lang === 'en' ? 'Search Customer (F1)' : 'Cari Pelanggan (F1)'}</label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Nama pelanggan..."
+              placeholder={lang === 'en' ? 'Customer name...' : 'Nama pelanggan...'}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -812,7 +814,7 @@ export const PiutangAktif: React.FC = () => {
 
         {/* Status Filter Trigger */}
         <div className="w-full md:w-64">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Filter Status Piutang (F3)</label>
+          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">{lang === 'en' ? 'Filter Receivable Status (F3)' : 'Filter Status Piutang (F3)'}</label>
           <button
             type="button"
             onClick={() => {
@@ -822,9 +824,9 @@ export const PiutangAktif: React.FC = () => {
             className="input-field w-full py-2 px-3 text-xs flex justify-between items-center text-slate-350 bg-surface-900 border border-surface-750 hover:bg-surface-750 hover:text-white transition-all text-left font-bold cursor-pointer"
           >
             <span>
-              {statusFilter === 'all' && 'Semua'}
+              {statusFilter === 'all' && (lang === 'en' ? 'All' : 'Semua')}
               {statusFilter === 'overdue' && 'Overdue'}
-              {statusFilter === 'lancar' && 'Hampir'}
+              {statusFilter === 'lancar' && (lang === 'en' ? 'Current' : 'Hampir')}
             </span>
             <ChevronDown size={14} className="text-slate-500" />
           </button>
@@ -838,7 +840,7 @@ export const PiutangAktif: React.FC = () => {
             <Search size={28} className="text-primary-500/80 animate-pulse" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
-            Silakan ketik nama customer pada kolom pencarian untuk menampilkan data piutang.
+            {lang === 'en' ? 'Please type customer name in the search field to display receivables data.' : 'Silakan ketik nama customer pada kolom pencarian untuk menampilkan data piutang.'}
           </p>
         </div>
       ) : !isConfirmed ? (
@@ -847,7 +849,7 @@ export const PiutangAktif: React.FC = () => {
             <Search size={28} className="text-amber-500/80 animate-bounce" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
-            Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih customer dan menampilkan data piutang.
+            {lang === 'en' ? <>Press <span className="font-extrabold text-blue-600 font-mono">Enter</span> to select customer and display receivables data.</> : <>Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih customer dan menampilkan data piutang.</>}
           </p>
         </div>
       ) : isLoading ? (
@@ -858,7 +860,7 @@ export const PiutangAktif: React.FC = () => {
         </div>
       ) : filteredData.length === 0 ? (
         <div className="card p-12 text-center text-slate-500 italic text-xs border border-surface-700">
-          Tidak ada piutang aktif yang ditemukan berdasarkan filter pencarian.
+          {lang === 'en' ? 'No active receivables found based on search filter.' : 'Tidak ada piutang aktif yang ditemukan berdasarkan filter pencarian.'}
         </div>
       ) : (
         <div className="space-y-4">
@@ -908,15 +910,19 @@ export const PiutangAktif: React.FC = () => {
                       className="btn-primary py-1.5 px-3 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg flex items-center gap-1.5 cursor-pointer"
                     >
                       <Printer size={12} />
-                      <span>Cetak Penagihan</span>
+                      <span>{lang === 'en' ? 'Print Billing' : 'Cetak Penagihan'}</span>
                     </button>
 
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Limit Kredit</span>
+                      <span className="text-[10px] text-slate-400 block uppercase tracking-wider">
+                        {lang === 'en' ? 'Credit Limit' : 'Limit Kredit'}
+                      </span>
                       <span className="text-xs text-slate-300 font-semibold">{formatCurrency(Number(cust.limit_kredit))}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Total Piutang</span>
+                      <span className="text-[10px] text-slate-400 block uppercase tracking-wider">
+                        {lang === 'en' ? 'Total Receivable' : 'Total Piutang'}
+                      </span>
                       <span className="text-sm font-black text-rose-400 currency">{formatCurrency(group.total_piutang)}</span>
                     </div>
                   </div>
@@ -928,15 +934,15 @@ export const PiutangAktif: React.FC = () => {
                       <thead>
                         <tr className="bg-surface-800/30 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-surface-750">
                           <th className="p-3 w-10 text-center">No</th>
-                          <th className="p-3 w-32">No. Faktur</th>
-                          <th className="p-3 w-28">Tgl Order</th>
-                          <th className="p-3 w-28">Jatuh Tempo</th>
-                          <th className="p-3 text-right w-32">Subtotal Barang</th>
-                          <th className="p-3 text-right w-36">Biaya Tambahan (SO)</th>
-                          <th className="p-3 text-center w-36">Pengiriman</th>
-                          <th className="p-3 text-right w-32">Total Nota</th>
-                          <th className="p-3 text-right w-32">Terbayar</th>
-                          <th className="p-3 text-right w-32">Sisa Tagihan</th>
+                          <th className="p-3 w-32">{lang === 'en' ? 'Invoice No.' : 'No. Faktur'}</th>
+                          <th className="p-3 w-28">{lang === 'en' ? 'Order Date' : 'Tgl Order'}</th>
+                          <th className="p-3 w-28">{lang === 'en' ? 'Due Date' : 'Jatuh Tempo'}</th>
+                          <th className="p-3 text-right w-32">{lang === 'en' ? 'Items Subtotal' : 'Subtotal Barang'}</th>
+                          <th className="p-3 text-right w-36">{lang === 'en' ? 'Extra Charge (SO)' : 'Biaya Tambahan (SO)'}</th>
+                          <th className="p-3 text-center w-36">{lang === 'en' ? 'Delivery' : 'Pengiriman'}</th>
+                          <th className="p-3 text-right w-32">{lang === 'en' ? 'Invoice Total' : 'Total Nota'}</th>
+                          <th className="p-3 text-right w-32">{lang === 'en' ? 'Paid' : 'Terbayar'}</th>
+                          <th className="p-3 text-right w-32">{lang === 'en' ? 'Remaining' : 'Sisa Tagihan'}</th>
                           <th className="p-3 text-center w-28">Status</th>
                         </tr>
                       </thead>
@@ -1067,7 +1073,7 @@ export const PiutangAktif: React.FC = () => {
                                   </span>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-yellow-955 text-yellow-400 border border-yellow-700/30 inline-flex items-center gap-1">
-                                    <CheckCircle size={10} /> Hampir
+                                    <CheckCircle size={10} /> {lang === 'en' ? 'Current' : 'Hampir'}
                                   </span>
                                 )}
                               </td>
@@ -1077,8 +1083,16 @@ export const PiutangAktif: React.FC = () => {
                       </tbody>
                     </table>
                     <div className="pt-2 p-3 text-[10px] text-slate-400 flex justify-between bg-surface-900/50">
-                      <span>Tekan <kbd className="shortcut-badge">F4</kbd> lihat rincian nota | <kbd className="shortcut-badge">F10</kbd> catat setoran</span>
-                      <span>Gunakan panah <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk navigasi</span>
+                      <span>
+                        {lang === 'en'
+                          ? 'Press F4 to view invoice details | F10 to record deposit'
+                          : 'Tekan F4 lihat rincian nota | F10 catat setoran'}
+                      </span>
+                      <span>
+                        {lang === 'en'
+                          ? 'Use arrow ↑ ↓ keys to navigate'
+                          : 'Gunakan panah ↑ ↓ untuk navigasi'}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1101,7 +1115,7 @@ export const PiutangAktif: React.FC = () => {
               <div className="flex justify-between items-center w-full border-b border-surface-700 pb-3 shrink-0">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Search size={18} />
-                  <span>Pilih Pelanggan (Customer)</span>
+                  <span>{lang === 'en' ? 'Select Customer' : 'Pilih Pelanggan (Customer)'}</span>
                 </h3>
                 <button
                   onClick={() => {
@@ -1117,11 +1131,13 @@ export const PiutangAktif: React.FC = () => {
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
                 {isLoading ? (
                   <div className="py-8 text-center text-slate-500 italic text-xs">
-                    Memuat data pelanggan...
+                    {lang === 'en' ? 'Loading customer data...' : 'Memuat data pelanggan...'}
                   </div>
                 ) : filteredData.length === 0 ? (
                   <div className="py-8 text-center text-slate-500 italic text-xs">
-                    Tidak ada pelanggan yang cocok dengan pencarian "{searchQuery}".
+                    {lang === 'en'
+                      ? `No customer matches found for "${searchQuery}".`
+                      : `Tidak ada pelanggan yang cocok dengan pencarian "${searchQuery}".`}
                   </div>
                 ) : (
                   filteredData.map((group, idx) => (
@@ -1148,12 +1164,18 @@ export const PiutangAktif: React.FC = () => {
                         }`}
                     >
                       <div>
-                        <p className="font-semibold text-slate-850">{group.customer.nama}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Alamat: {group.customer.alamat || '-'}</p>
+                        <p className="font-semibold text-slate-855">{group.customer.nama}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {lang === 'en' ? 'Address:' : 'Alamat:'} {group.customer.alamat || '-'}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block uppercase font-mono">Kode: {group.customer.kode}</span>
-                        <span className="text-[11px] font-bold text-rose-400 block mt-0.5">Piutang: {formatCurrency(group.total_piutang)}</span>
+                        <span className="text-[10px] text-slate-400 block font-mono">
+                          {lang === 'en' ? 'Code:' : 'Kode:'} {group.customer.kode}
+                        </span>
+                        <span className="text-[11px] font-bold text-rose-400 block mt-0.5">
+                          {lang === 'en' ? 'Receivable:' : 'Piutang:'} {formatCurrency(group.total_piutang)}
+                        </span>
                       </div>
                     </button>
                   ))
@@ -1161,8 +1183,8 @@ export const PiutangAktif: React.FC = () => {
               </div>
 
               <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[10px] text-slate-500 shrink-0">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</span>
+                <span>{lang === 'en' ? 'Use ↑ ↓ to choose' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+                <span>{lang === 'en' ? 'Enter select | Esc close' : 'Enter pilih | Esc tutup'}</span>
               </div>
             </div>
           </div>
@@ -1197,7 +1219,7 @@ export const PiutangAktif: React.FC = () => {
             >
               <div className="flex justify-between items-center border-b border-surface-700 pb-3">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>Filter Status Piutang (F3)</span>
+                  <span>{lang === 'en' ? 'Filter Receivable Status (F3)' : 'Filter Status Piutang (F3)'}</span>
                 </h3>
                 <button
                   type="button"
@@ -1210,9 +1232,9 @@ export const PiutangAktif: React.FC = () => {
 
               <div className="space-y-2">
                 {[
-                  { key: 'all', label: 'Semua Status', color: 'bg-primary-600' },
-                  { key: 'overdue', label: 'Overdue (Jatuh Tempo)', color: 'bg-danger-600' },
-                  { key: 'lancar', label: 'Hampir', color: 'bg-yellow-500' },
+                  { key: 'all', label: lang === 'en' ? 'All Status' : 'Semua Status', color: 'bg-primary-600' },
+                  { key: 'overdue', label: lang === 'en' ? 'Overdue (Past Due)' : 'Overdue (Jatuh Tempo)', color: 'bg-danger-600' },
+                  { key: 'lancar', label: lang === 'en' ? 'Current' : 'Hampir', color: 'bg-yellow-500' },
                 ].map((opt, idx) => {
                   const isSelected = selectedFilterOptionIdx === idx;
                   const isCurrent = statusFilter === opt.key;
@@ -1235,7 +1257,9 @@ export const PiutangAktif: React.FC = () => {
                         <span>{opt.label}</span>
                       </div>
                       {isCurrent && (
-                        <span className="text-[10px] text-primary-500 font-normal italic">Aktif</span>
+                        <span className="text-[10px] text-primary-500 font-normal italic">
+                          {lang === 'en' ? 'Active' : 'Aktif'}
+                        </span>
                       )}
                     </button>
                   );
@@ -1243,8 +1267,8 @@ export const PiutangAktif: React.FC = () => {
               </div>
 
               <div className="pt-2 text-[10px] text-slate-500 flex justify-between">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</span>
+                <span>{lang === 'en' ? 'Use ↑ ↓ to choose' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+                <span>{lang === 'en' ? 'Enter select | Esc close' : 'Enter pilih | Esc tutup'}</span>
               </div>
             </div>
           </div>
@@ -1263,7 +1287,9 @@ export const PiutangAktif: React.FC = () => {
               <div className="bg-blue-600 px-6 py-4 flex justify-between items-center text-white shrink-0">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <DollarSign size={18} />
-                  <span>Pencatatan Setoran Pembayaran Multi-Nota</span>
+                  <span>
+                    {lang === 'en' ? 'Multi-Invoice Deposit Recording' : 'Pencatatan Setoran Pembayaran Multi-Nota'}
+                  </span>
                 </h3>
                 <button
                   type="button"
@@ -1278,12 +1304,17 @@ export const PiutangAktif: React.FC = () => {
                 {/* Customer Info Card in Light Theme */}
                 <div className="p-3 bg-blue-50/50 border border-blue-100/60 rounded-lg text-xs space-y-1 shrink-0">
                   <p className="text-slate-655">Customer: <strong className="text-slate-900">{filteredData[selectedCustIdx].customer.nama} ({filteredData[selectedCustIdx].customer.kode})</strong></p>
-                  <p className="text-slate-655">Total Piutang Aktif: <strong className="text-rose-600 font-bold">{formatCurrency(filteredData[selectedCustIdx].total_piutang)}</strong></p>
+                  <p className="text-slate-655">
+                    {lang === 'en' ? 'Total Active Receivable:' : 'Total Piutang Aktif:'}{' '}
+                    <strong className="text-rose-600 font-bold">{formatCurrency(filteredData[selectedCustIdx].total_piutang)}</strong>
+                  </p>
                 </div>
 
                 {/* Payment Mode Selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-655 mb-1">Mode Pembayaran</label>
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">
+                    {lang === 'en' ? 'Payment Mode' : 'Mode Pembayaran'}
+                  </label>
                   <div className="flex gap-2">
                     <button
                       ref={paymentModeFifoRef}
@@ -1301,10 +1332,10 @@ export const PiutangAktif: React.FC = () => {
                       }}
                       className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMode === 'fifo'
                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                        : 'bg-slate-55 border-slate-250 text-slate-500 hover:bg-slate-100'
                         }`}
                     >
-                      FIFO Otomatis (Nota Terlama)
+                      {lang === 'en' ? 'Automatic FIFO (Oldest Invoice)' : 'FIFO Otomatis (Nota Terlama)'}
                     </button>
                     <button
                       ref={paymentModeManualRef}
@@ -1322,16 +1353,18 @@ export const PiutangAktif: React.FC = () => {
                       }}
                       className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMode === 'manual'
                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
+                        : 'bg-slate-55 border-slate-250 text-slate-500 hover:bg-slate-100'
                         }`}
                     >
-                      Pilihan Manual Per Nota
+                      {lang === 'en' ? 'Manual Allocation Per Invoice' : 'Pilihan Manual Per Nota'}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-655 mb-1">Tanggal Setoran</label>
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">
+                    {lang === 'en' ? 'Deposit Date' : 'Tanggal Setoran'}
+                  </label>
                   <input
                     ref={paymentDateRef}
                     type="date"
@@ -1363,7 +1396,9 @@ export const PiutangAktif: React.FC = () => {
                 {/* FIFO Mode Amount Input */}
                 {paymentMode === 'fifo' && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-655 mb-1">Nominal Setoran (Rp)</label>
+                    <label className="block text-xs font-semibold text-slate-655 mb-1">
+                      {lang === 'en' ? 'Deposit Amount (Rp)' : 'Nominal Setoran (Rp)'}
+                    </label>
                     <input
                       ref={paymentAmountRef}
                       type="text"
@@ -1374,21 +1409,23 @@ export const PiutangAktif: React.FC = () => {
                           e.preventDefault();
                           const limit = filteredData[selectedCustIdx]?.total_piutang || 0;
                           if (Number(paymentAmount) > Number(limit)) {
-                            showToast('Nominal setoran melebihi total piutang aktif!', 'error');
+                            showToast(lang === 'en' ? 'Deposit amount exceeds active total receivables!' : 'Nominal setoran melebihi total piutang aktif!', 'error');
                             return;
                           }
                           paymentMethodCashRef.current?.focus();
                         }
                       }}
                       required
-                      placeholder="Masukkan nominal setoran..."
+                      placeholder={lang === 'en' ? 'Enter deposit amount...' : 'Masukkan nominal setoran...'}
                       className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-655 mb-1">Metode Setoran</label>
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">
+                    {lang === 'en' ? 'Deposit Method' : 'Metode Setoran'}
+                  </label>
                   <div className="flex gap-2">
                     <button
                       ref={paymentMethodCashRef}
@@ -1409,7 +1446,7 @@ export const PiutangAktif: React.FC = () => {
                         : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
                         }`}
                     >
-                      Tunai / Cash
+                      {lang === 'en' ? 'Cash' : 'Tunai / Cash'}
                     </button>
                     <button
                       ref={paymentMethodTransferRef}
@@ -1430,7 +1467,7 @@ export const PiutangAktif: React.FC = () => {
                         : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
                         }`}
                     >
-                      Transfer Bank
+                      {lang === 'en' ? 'Bank Transfer' : 'Transfer Bank'}
                     </button>
                   </div>
                 </div>
@@ -1438,7 +1475,7 @@ export const PiutangAktif: React.FC = () => {
                 {/* Automatic Nota Synchronization Button Toggle */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-655 mb-1">
-                    Otomatisasi Manajemen Nota (Merah/Putih)
+                    {lang === 'en' ? 'Automatic Invoice Management (Red/White)' : 'Otomatisasi Manajemen Nota (Merah/Putih)'}
                   </label>
                   <div className="flex gap-2">
                     <button
@@ -1460,7 +1497,7 @@ export const PiutangAktif: React.FC = () => {
                         : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
                         }`}
                     >
-                      Ya
+                      {lang === 'en' ? 'Yes' : 'Ya'}
                     </button>
                     <button
                       ref={syncNotaTidakRef}
@@ -1481,17 +1518,20 @@ export const PiutangAktif: React.FC = () => {
                         : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'
                         }`}
                     >
-                      Tidak
+                      {lang === 'en' ? 'No' : 'Tidak'}
                     </button>
                   </div>
-                  <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Jika aktif: Nota Merah akan diceklis & Putih di-unceklis jika lunas.
-                    Jika belum lunas, Nota Putih akan diceklis & Merah di-unceklis.
+                  <p className="text-[10px] text-slate-550 leading-relaxed">
+                    {lang === 'en'
+                      ? 'If active: Red Invoice will be checked & White unchecked if paid. If unpaid, White Invoice will be checked & Red unchecked.'
+                      : 'Jika aktif: Nota Merah akan diceklis & Putih di-unceklis jika lunas. Jika belum lunas, Nota Putih akan diceklis & Merah di-unceklis.'}
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-655 mb-1">Catatan Setoran</label>
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">
+                    {lang === 'en' ? 'Deposit Notes' : 'Catatan Setoran'}
+                  </label>
                   <textarea
                     ref={paymentNoteRef}
                     value={paymentNote}
@@ -1503,7 +1543,11 @@ export const PiutangAktif: React.FC = () => {
                       }
                     }}
                     rows={2}
-                    placeholder="Keterangan transfer bank, no giro, dll... (Opsional)"
+                    placeholder={
+                      lang === 'en'
+                        ? 'Bank transfer description, giro number, etc... (Optional)'
+                        : 'Keterangan transfer bank, no giro, dll... (Opsional)'
+                    }
                     className="input-field w-full py-1.5 text-xs resize-none bg-slate-50 border border-slate-250 text-slate-800 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                   />
                 </div>
@@ -1516,20 +1560,20 @@ export const PiutangAktif: React.FC = () => {
                     onClick={() => setShowPaymentModal(false)}
                     className="btn-secondary py-1.5 px-3 text-xs font-bold rounded-lg cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-800 whitespace-nowrap"
                   >
-                    Batal (Esc)
+                    {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                   </button>
                   <button
                     type="button"
                     onClick={() => savePayment(false)}
                     className="btn-secondary py-1.5 px-3 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-850 cursor-pointer whitespace-nowrap"
                   >
-                    Simpan
+                    {lang === 'en' ? 'Save' : 'Simpan'}
                   </button>
                   <button
                     type="submit"
                     className="btn-primary py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
                   >
-                    Cetak
+                    {lang === 'en' ? 'Print' : 'Cetak'}
                   </button>
                 </div>
               </div>
@@ -1540,26 +1584,32 @@ export const PiutangAktif: React.FC = () => {
               <div className="bg-white border border-slate-200 rounded-xl w-full md:w-80 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
                 <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
                   <FileText size={18} />
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">Preview Distribusi (FIFO)</h4>
+                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                    {lang === 'en' ? 'Distribution Preview (FIFO)' : 'Preview Distribusi (FIFO)'}
+                  </h4>
                 </div>
-                <div className="p-4 overflow-y-auto space-y-2 text-xs flex-1 bg-slate-50/30">
+                <div className="p-4 overflow-y-auto space-y-2 text-xs flex-1 bg-slate-55/35 animate-fade-in">
                   <div className="space-y-2 text-[11px]">
                     {fifoAllocations.map((alloc) => (
                       <div key={alloc.id} className="flex flex-col p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
                         <div className="flex justify-between font-mono font-bold text-slate-800">
                           <span>{alloc.no_faktur || alloc.no_order}</span>
                           {alloc.remainingAfter === 0 ? (
-                            <span className="text-emerald-600 font-bold flex items-center gap-0.5">Lunas ✓</span>
+                            <span className="text-emerald-600 font-bold flex items-center gap-0.5">
+                              {lang === 'en' ? 'Settled ✓' : 'Lunas ✓'}
+                            </span>
                           ) : (
-                            <span className="text-amber-600 font-semibold flex items-center gap-0.5">Sebagian</span>
+                            <span className="text-amber-600 font-semibold flex items-center gap-0.5">
+                              {lang === 'en' ? 'Partial' : 'Sebagian'}
+                            </span>
                           )}
                         </div>
                         <div className="flex justify-between text-slate-500">
-                          <span>Tagihan Awal:</span>
+                          <span>{lang === 'en' ? 'Initial Billing:' : 'Tagihan Awal:'}</span>
                           <span>{formatCurrency(alloc.remaining)}</span>
                         </div>
                         <div className="flex justify-between border-t border-dashed border-slate-200 pt-1 font-semibold text-emerald-600">
-                          <span>Bayar:</span>
+                          <span>{lang === 'en' ? 'Pay:' : 'Bayar:'}</span>
                           <span>{formatCurrency(alloc.allocated)}</span>
                         </div>
                       </div>
@@ -1574,16 +1624,18 @@ export const PiutangAktif: React.FC = () => {
               <div className="bg-white border border-slate-200 rounded-xl w-full md:w-96 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
                 <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
                   <FileText size={18} />
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">Input Setoran Per Nota</h4>
+                  <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                    {lang === 'en' ? 'Input Deposit Per Invoice' : 'Input Setoran Per Nota'}
+                  </h4>
                 </div>
-                <div className="p-4 overflow-y-auto space-y-3 flex-1 bg-slate-50/30">
+                <div className="p-4 overflow-y-auto space-y-3 flex-1 bg-slate-55/35 animate-fade-in">
                   <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto bg-white shadow-sm">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
-                        <tr className="text-slate-500 text-[10px] font-bold uppercase">
-                          <th className="p-2">No. Faktur</th>
-                          <th className="p-2 text-right">Sisa Tagihan</th>
-                          <th className="p-2 text-center w-36">Nominal Bayar</th>
+                        <tr className="text-slate-505 text-[10px] font-bold uppercase">
+                          <th className="p-2">{lang === 'en' ? 'Invoice No.' : 'No. Faktur'}</th>
+                          <th className="p-2 text-right">{lang === 'en' ? 'Remaining' : 'Sisa Tagihan'}</th>
+                          <th className="p-2 text-center w-36">{lang === 'en' ? 'Payment Amount' : 'Nominal Bayar'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1644,7 +1696,9 @@ export const PiutangAktif: React.FC = () => {
                     </table>
                   </div>
                   <div className="flex justify-between items-center text-xs p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm">
-                    <span className="text-slate-500 uppercase font-bold text-[10px]">Total Setoran Manual</span>
+                    <span className="text-slate-500 uppercase font-bold text-[10px]">
+                      {lang === 'en' ? 'Total Manual Deposit' : 'Total Setoran Manual'}
+                    </span>
                     <strong className="text-emerald-600 text-sm font-black">{formatCurrency(manualTotal)}</strong>
                   </div>
                 </div>
@@ -1664,7 +1718,9 @@ export const PiutangAktif: React.FC = () => {
               <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0 print:hidden">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Printer size={20} className="text-primary-400" />
-                  <span>Bukti Setoran Pembayaran Piutang</span>
+                  <span>
+                    {lang === 'en' ? 'Receivable Payment Deposit Receipt' : 'Bukti Setoran Pembayaran Piutang'}
+                  </span>
                 </h3>
                 <button
                   onClick={() => setShowReceiptModal(false)}
@@ -1678,20 +1734,22 @@ export const PiutangAktif: React.FC = () => {
               <div className="flex-1 overflow-y-auto py-6 space-y-6 text-xs bg-white text-slate-900 p-8 rounded-lg mt-4 font-mono shadow-inner print:mt-0 print:p-0" id="print-receipt-area">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-extrabold tracking-wider uppercase text-slate-950">CV MAJU MULIA BERSAMA</h2>
-                  <p className="text-xs text-slate-600">Suku Cadang & Sparepart AC Mobil Terlengkap</p>
+                  <p className="text-xs text-slate-600">
+                    {lang === 'en' ? 'Complete Automotive AC Parts & Spareparts' : 'Suku Cadang & Sparepart AC Mobil Terlengkap'}
+                  </p>
                   <p className="text-[10px] text-slate-500 border-b border-slate-300 pb-2">Jl. Raya Timur Kudus, Indonesia | Telp: 0291-555-1234</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1">
                     <p><strong>Customer:</strong> {receiptSession.allocations[0]?.sale?.customer?.nama || receiptSession.target_nama}</p>
-                    <p><strong>Alamat:</strong> {receiptSession.allocations[0]?.sale?.customer?.alamat || '-'}</p>
-                    <p><strong>Telp:</strong> {receiptSession.allocations[0]?.sale?.customer?.no_telp || '-'}</p>
+                    <p><strong>{lang === 'en' ? 'Address:' : 'Alamat:'}</strong> {receiptSession.allocations[0]?.sale?.customer?.alamat || '-'}</p>
+                    <p><strong>{lang === 'en' ? 'Phone:' : 'Telp:'}</strong> {receiptSession.allocations[0]?.sale?.customer?.no_telp || '-'}</p>
                   </div>
                   <div className="space-y-1 text-right">
-                    <p><strong>Tanggal Setoran:</strong> {formatDate(receiptSession.session_date)}</p>
-                    <p><strong>Metode Pembayaran:</strong> <span className="uppercase">{receiptSession.payment_method}</span></p>
-                    <p><strong>Kasir/Admin:</strong> {receiptSession.creator?.nama || '-'}</p>
+                    <p><strong>{lang === 'en' ? 'Deposit Date:' : 'Tanggal Setoran:'}</strong> {formatDate(receiptSession.session_date)}</p>
+                    <p><strong>{lang === 'en' ? 'Payment Method:' : 'Metode Pembayaran:'}</strong> <span className="uppercase">{receiptSession.payment_method}</span></p>
+                    <p><strong>{lang === 'en' ? 'Cashier/Admin:' : 'Kasir/Admin:'}</strong> {receiptSession.creator?.nama || '-'}</p>
                   </div>
                 </div>
 
@@ -1700,11 +1758,11 @@ export const PiutangAktif: React.FC = () => {
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-600 font-bold">
                         <th className="py-2 w-8 text-center">No</th>
-                        <th className="py-2">No. Nota</th>
-                        <th className="py-2">Tgl Order</th>
-                        <th className="py-2 text-right">Total Nota</th>
-                        <th className="py-2 text-right">Bayar Hari Ini</th>
-                        <th className="py-2 text-right">Sisa Tagihan</th>
+                        <th className="py-2">{lang === 'en' ? 'Invoice No.' : 'No. Nota'}</th>
+                        <th className="py-2">{lang === 'en' ? 'Order Date' : 'Tgl Order'}</th>
+                        <th className="py-2 text-right">{lang === 'en' ? 'Invoice Total' : 'Total Nota'}</th>
+                        <th className="py-2 text-right">{lang === 'en' ? 'Paid Today' : 'Bayar Hari Ini'}</th>
+                        <th className="py-2 text-right">{lang === 'en' ? 'Remaining' : 'Sisa Tagihan'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1727,11 +1785,11 @@ export const PiutangAktif: React.FC = () => {
 
                 <div className="flex flex-col items-end space-y-1.5">
                   <div className="flex justify-between w-64 text-xs">
-                    <span className="text-slate-600">Total Setoran:</span>
+                    <span className="text-slate-600">{lang === 'en' ? 'Total Deposit:' : 'Total Setoran:'}</span>
                     <strong className="text-emerald-700 font-black">{formatCurrency(Number(receiptSession.total_amount))}</strong>
                   </div>
                   <div className="flex justify-between w-64 text-[10px] text-slate-500 border-t border-slate-200 pt-1.5">
-                    <span>Catatan:</span>
+                    <span>{lang === 'en' ? 'Notes:' : 'Catatan:'}</span>
                     <span className="italic">{receiptSession.catatan || '-'}</span>
                   </div>
                 </div>
@@ -1739,12 +1797,12 @@ export const PiutangAktif: React.FC = () => {
                 {/* Signature Blocks */}
                 <div className="grid grid-cols-2 gap-8 pt-8 text-center text-xs">
                   <div>
-                    <p className="text-slate-500">Penerima (Admin)</p>
+                    <p className="text-slate-500">{lang === 'en' ? 'Recipient (Admin)' : 'Penerima (Admin)'}</p>
                     <div className="h-16"></div>
                     <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">({receiptSession.creator?.nama || 'Budi Santoso'})</p>
                   </div>
                   <div>
-                    <p className="text-slate-500">Penyetor (Customer)</p>
+                    <p className="text-slate-500">{lang === 'en' ? 'Depositor (Customer)' : 'Penyetor (Customer)'}</p>
                     <div className="h-16"></div>
                     <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">({receiptSession.allocations[0]?.sale?.customer?.nama || 'Bengkel'})</p>
                   </div>
@@ -1756,14 +1814,14 @@ export const PiutangAktif: React.FC = () => {
                   onClick={() => setShowReceiptModal(false)}
                   className="btn-secondary text-xs px-4"
                 >
-                  Tutup (Esc)
+                  {lang === 'en' ? 'Close (Esc)' : 'Tutup (Esc)'}
                 </button>
                 <button
                   onClick={printReceipt}
                   className="btn-primary flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 px-5 font-bold"
                 >
                   <Printer size={14} />
-                  <span>Cetak Struk (Print)</span>
+                  <span>{lang === 'en' ? 'Print Receipt' : 'Cetak Struk (Print)'}</span>
                 </button>
               </div>
             </div>
@@ -1779,7 +1837,9 @@ export const PiutangAktif: React.FC = () => {
               <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0 print:hidden">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Printer size={20} className="text-primary-400" />
-                  <span>Cetak Lembar Penagihan Piutang</span>
+                  <span>
+                    {lang === 'en' ? 'Print Receivable Billing Sheet' : 'Cetak Lembar Penagihan Piutang'}
+                  </span>
                 </h3>
                 <button
                   onClick={() => setShowBillingPrintModal(false)}
@@ -1793,24 +1853,28 @@ export const PiutangAktif: React.FC = () => {
               <div className="flex-1 overflow-y-auto py-6 space-y-6 text-xs bg-white text-slate-900 p-8 rounded-lg mt-4 font-mono shadow-inner print:mt-0 print:p-0" id="print-billing-area">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-extrabold tracking-wider uppercase text-slate-950">CV MAJU MULIA BERSAMA</h2>
-                  <p className="text-xs text-slate-600">Suku Cadang & Sparepart AC Mobil Terlengkap</p>
+                  <p className="text-xs text-slate-600">
+                    {lang === 'en' ? 'Complete Automotive AC Parts & Spareparts' : 'Suku Cadang & Sparepart AC Mobil Terlengkap'}
+                  </p>
                   <p className="text-[10px] text-slate-500 border-b border-slate-300 pb-2">Jl. Raya Timur Kudus, Indonesia | Telp: 0291-555-1234</p>
                 </div>
 
                 <div className="text-center">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 underline">LEMBAR PENAGIHAN PIUTANG CUSTOMER</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 underline">
+                    {lang === 'en' ? 'CUSTOMER RECEIVABLE BILLING SHEET' : 'LEMBAR PENAGIHAN PIUTANG CUSTOMER'}
+                  </h3>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-xs text-slate-800">
                   <div className="space-y-1">
                     <p><strong>Customer:</strong> {printBillingGroup.customer.nama}</p>
-                    <p><strong>Kode Cust:</strong> {printBillingGroup.customer.kode}</p>
-                    <p><strong>Alamat:</strong> {printBillingGroup.customer.alamat || '-'}</p>
-                    <p><strong>No Telp:</strong> {printBillingGroup.customer.no_telp || '-'}</p>
+                    <p><strong>{lang === 'en' ? 'Cust Code:' : 'Kode Cust:'}</strong> {printBillingGroup.customer.kode}</p>
+                    <p><strong>{lang === 'en' ? 'Address:' : 'Alamat:'}</strong> {printBillingGroup.customer.alamat || '-'}</p>
+                    <p><strong>{lang === 'en' ? 'Phone No:' : 'No Telp:'}</strong> {printBillingGroup.customer.no_telp || '-'}</p>
                   </div>
                   <div className="space-y-1 text-right">
-                    <p><strong>Tanggal Tagihan:</strong> {formatDate(new Date().toISOString())}</p>
-                    <p><strong>Limit Kredit:</strong> {formatCurrency(Number(printBillingGroup.customer.limit_kredit))}</p>
+                    <p><strong>{lang === 'en' ? 'Billing Date:' : 'Tanggal Tagihan:'}</strong> {formatDate(new Date().toISOString())}</p>
+                    <p><strong>{lang === 'en' ? 'Credit Limit:' : 'Limit Kredit:'}</strong> {formatCurrency(Number(printBillingGroup.customer.limit_kredit))}</p>
                   </div>
                 </div>
 
@@ -1819,12 +1883,12 @@ export const PiutangAktif: React.FC = () => {
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-600 font-bold">
                         <th className="py-2 w-8 text-center">No</th>
-                        <th className="py-2">No. Faktur</th>
-                        <th className="py-2">Tgl Order</th>
-                        <th className="py-2">Jatuh Tempo</th>
-                        <th className="py-2 text-right">Total Nota</th>
-                        <th className="py-2 text-right">Terbayar</th>
-                        <th className="py-2 text-right">Sisa Tagihan</th>
+                        <th className="py-2">{lang === 'en' ? 'Invoice No.' : 'No. Faktur'}</th>
+                        <th className="py-2">{lang === 'en' ? 'Order Date' : 'Tgl Order'}</th>
+                        <th className="py-2">{lang === 'en' ? 'Due Date' : 'Jatuh Tempo'}</th>
+                        <th className="py-2 text-right">{lang === 'en' ? 'Invoice Total' : 'Total Nota'}</th>
+                        <th className="py-2 text-right">{lang === 'en' ? 'Paid' : 'Terbayar'}</th>
+                        <th className="py-2 text-right">{lang === 'en' ? 'Remaining' : 'Sisa Tagihan'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-800">
@@ -1848,7 +1912,7 @@ export const PiutangAktif: React.FC = () => {
 
                 <div className="flex flex-col items-end space-y-1.5 text-slate-800">
                   <div className="flex justify-between w-64 text-xs font-bold border-b border-slate-300 pb-1">
-                    <span>TOTAL PIUTANG:</span>
+                    <span>{lang === 'en' ? 'TOTAL RECEIVABLE:' : 'TOTAL PIUTANG:'}</span>
                     <span className="text-rose-600 font-black">{formatCurrency(printBillingGroup.total_piutang)}</span>
                   </div>
                 </div>
@@ -1856,12 +1920,12 @@ export const PiutangAktif: React.FC = () => {
                 {/* Signature Blocks */}
                 <div className="grid grid-cols-2 gap-8 pt-12 text-center text-xs text-slate-700">
                   <div>
-                    <p>Mengetahui (Kolektor/Admin)</p>
+                    <p>{lang === 'en' ? 'Acknowledged by (Collector/Admin)' : 'Mengetahui (Kolektor/Admin)'}</p>
                     <div className="h-16"></div>
                     <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">( ______________________ )</p>
                   </div>
                   <div>
-                    <p>Penerima (Customer)</p>
+                    <p>{lang === 'en' ? 'Recipient (Customer)' : 'Penerima (Customer)'}</p>
                     <div className="h-16"></div>
                     <p className="font-bold border-t border-slate-300 pt-1 inline-block px-4">( {printBillingGroup.customer.nama} )</p>
                   </div>
@@ -1873,14 +1937,14 @@ export const PiutangAktif: React.FC = () => {
                   onClick={() => setShowBillingPrintModal(false)}
                   className="btn-secondary text-xs px-4 bg-surface-700 hover:bg-surface-650 text-white rounded-lg cursor-pointer"
                 >
-                  Tutup (Esc)
+                  {lang === 'en' ? 'Close (Esc)' : 'Tutup (Esc)'}
                 </button>
                 <button
                   onClick={() => window.print()}
                   className="btn-primary flex items-center gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 px-5 font-bold rounded-lg cursor-pointer"
                 >
                   <Printer size={14} />
-                  <span>Cetak Lembar Penagihan</span>
+                  <span>{lang === 'en' ? 'Print Billing Sheet' : 'Cetak Lembar Penagihan'}</span>
                 </button>
               </div>
             </div>

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, todayString } from '@/lib/utils';
 import {
   Search,
@@ -76,6 +77,7 @@ interface CompletedReturnSlip {
 
 export const ReturPembelian: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
 
   // Basic Form States
   const [returMetaSaved] = useState(() => {
@@ -434,7 +436,12 @@ export const ReturPembelian: React.FC = () => {
       rp => rp.id === historyPopupProduct.id && rp.history.some(h => h.purchase_id === selectedItem.purchase_id)
     );
     if (exists) {
-      showToast('Transaksi barang ini sudah ditambahkan ke daftar retur.', 'error');
+      showToast(
+        lang === 'en'
+          ? 'This item transaction has already been added to the return list.'
+          : 'Transaksi barang ini sudah ditambahkan ke daftar retur.',
+        'error'
+      );
       closeHistoryPopup();
       return;
     }
@@ -465,7 +472,10 @@ export const ReturPembelian: React.FC = () => {
     setShowHistoryPopup(false);
     setHistoryPopupProduct(null);
     setHistoryPopupList([]);
-    showToast('Transaksi berhasil ditambahkan ke daftar retur.', 'success');
+    showToast(
+      lang === 'en' ? 'Transaction successfully added to return list.' : 'Transaksi berhasil ditambahkan ke daftar retur.',
+      'success'
+    );
 
     setTimeout(() => {
       productSearchRef.current?.focus();
@@ -537,8 +547,15 @@ export const ReturPembelian: React.FC = () => {
       }));
 
       if (historyList.length === 0) {
-        setFormError(`Supplier "${selectedSupplier.nama}" belum pernah menyuplai "${p.nama}" di sistem.`);
-        showToast('Supplier belum pernah menyuplai barang ini.', 'error');
+        setFormError(
+          lang === 'en'
+            ? `Supplier "${selectedSupplier.nama}" has never supplied "${p.nama}" in the system.`
+            : `Supplier "${selectedSupplier.nama}" belum pernah menyuplai "${p.nama}" di sistem.`
+        );
+        showToast(
+          lang === 'en' ? 'Supplier has never supplied this item.' : 'Supplier belum pernah menyuplai barang ini.',
+          'error'
+        );
       } else {
         setFormError(null);
         setHistoryPopupProduct(p);
@@ -551,7 +568,10 @@ export const ReturPembelian: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
-      showToast('Gagal memuat riwayat pembelian dari supplier.', 'error');
+      showToast(
+        lang === 'en' ? 'Failed to load purchase history from supplier.' : 'Gagal memuat riwayat pembelian dari supplier.',
+        'error'
+      );
     }
 
     setProductQuery('');
@@ -645,7 +665,10 @@ export const ReturPembelian: React.FC = () => {
       const card = flatHistoryCards[idx];
       if (card) {
         removeProduct(card.productId);
-        showToast('Produk berhasil dihapus dari daftar retur.', 'success');
+        showToast(
+          lang === 'en' ? 'Product successfully deleted from return list.' : 'Produk berhasil dihapus dari daftar retur.',
+          'success'
+        );
         setActiveStep('product');
         setTimeout(() => {
           productSearchRef.current?.focus();
@@ -670,7 +693,10 @@ export const ReturPembelian: React.FC = () => {
           }
         }, 50);
       } else {
-        showToast('Masukkan Qty Diretur terlebih dahulu.', 'error');
+        showToast(
+          lang === 'en' ? 'Please enter returned quantity first.' : 'Masukkan Qty Diretur terlebih dahulu.',
+          'error'
+        );
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -784,12 +810,16 @@ export const ReturPembelian: React.FC = () => {
   const handlePrintTrigger = () => {
     setFormError(null);
     if (!selectedSupplier) {
-      setFormError('Pilih supplier terlebih dahulu.');
+      setFormError(lang === 'en' ? 'Please select a supplier first.' : 'Pilih supplier terlebih dahulu.');
       return;
     }
     const totalItems = calculateTotalItems();
     if (totalItems <= 0) {
-      setFormError('Masukkan jumlah retur minimal 1 barang di card riwayat pembelian.');
+      setFormError(
+        lang === 'en'
+          ? 'Please enter returned quantity for at least 1 item in the purchase history cards.'
+          : 'Masukkan jumlah retur minimal 1 barang di card riwayat pembelian.'
+      );
       return;
     }
     setShowConfirmPrintModal(true);
@@ -889,7 +919,10 @@ export const ReturPembelian: React.FC = () => {
       }
 
       setCompletedReturns(createdSlips);
-      showToast('Retur pembelian berhasil disimpan!', 'success');
+      showToast(
+        lang === 'en' ? 'Purchase return successfully saved!' : 'Retur pembelian berhasil disimpan!',
+        'success'
+      );
       setShowConfirmPrintModal(false);
 
       setTimeout(() => {
@@ -899,7 +932,11 @@ export const ReturPembelian: React.FC = () => {
 
     } catch (err: any) {
       console.error(err);
-      showToast(err.response?.data?.error || 'Gagal menyimpan retur pembelian.', 'error');
+      showToast(
+        err.response?.data?.error ||
+          (lang === 'en' ? 'Failed to save purchase return.' : 'Gagal menyimpan retur pembelian.'),
+        'error'
+      );
       setShowConfirmPrintModal(false);
     }
   };
@@ -975,7 +1012,7 @@ export const ReturPembelian: React.FC = () => {
               <input
                 ref={supplierSearchRef}
                 type="text"
-                placeholder="Ketik nama supplier..."
+                placeholder={lang === 'en' ? 'Type supplier name...' : 'Ketik nama supplier...'}
                 value={supplierQuery}
                 onFocus={() => setActiveStep('supplier')}
                 onChange={(e) => setSupplierQuery(e.target.value)}
@@ -1182,7 +1219,7 @@ export const ReturPembelian: React.FC = () => {
                               <input
                                 ref={el => { catatanInputRefs.current[cardKey] = el; }}
                                 type="text"
-                                placeholder="Alasan retur (opsional)..."
+                                placeholder={lang === 'en' ? 'Return reason (optional)...' : 'Alasan retur (opsional)...'}
                                 value={h.catatan || ''}
                                 onFocus={() => {
                                   setActiveStep('catatan');
@@ -1361,7 +1398,7 @@ export const ReturPembelian: React.FC = () => {
               <div className="flex justify-between items-center w-full pb-3 border-b border-slate-100">
                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                   <Search size={18} className="text-blue-500" />
-                  <span>Pilih Transaksi - {historyPopupProduct.nama}</span>
+                  <span>{lang === 'en' ? `Select Transaction - ${historyPopupProduct.nama}` : `Pilih Transaksi - ${historyPopupProduct.nama}`}</span>
                 </h3>
                 <button onClick={closeHistoryPopup} className="text-slate-400 hover:text-slate-655">
                   <X size={18} />
@@ -1372,10 +1409,10 @@ export const ReturPembelian: React.FC = () => {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-100 text-slate-650 font-bold border-b border-slate-200">
-                        <th className="p-3">No Order</th>
-                        <th className="p-3">Tanggal</th>
-                        <th className="p-3 text-right">Harga Beli</th>
-                        <th className="p-3 text-right">Qty Tersedia</th>
+                        <th className="p-3">{lang === 'en' ? 'Order No' : 'No Order'}</th>
+                        <th className="p-3">{lang === 'en' ? 'Date' : 'Tanggal'}</th>
+                        <th className="p-3 text-right">{lang === 'en' ? 'Purchase Price' : 'Harga Beli'}</th>
+                        <th className="p-3 text-right">{lang === 'en' ? 'Available Qty' : 'Qty Tersedia'}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1404,8 +1441,12 @@ export const ReturPembelian: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+                <span>
+                  {lang === 'en' ? <>Use <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> to select</> : <>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</>}
+                </span>
+                <span>
+                  {lang === 'en' ? <><kbd className="shortcut-badge">Enter</kbd> to confirm, <kbd className="shortcut-badge">Esc</kbd> to cancel</> : <><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</>}
+                </span>
               </div>
             </div>
           </div>
@@ -1422,22 +1463,32 @@ export const ReturPembelian: React.FC = () => {
               {/* Colored Header */}
               <div className="bg-blue-600 text-white px-5 py-4 flex items-center gap-2">
                 <Printer size={18} />
-                <h3 className="font-bold text-xs uppercase tracking-wider">Konfirmasi Simpan & Cetak</h3>
+                <h3 className="font-bold text-xs uppercase tracking-wider">
+                  {lang === 'en' ? 'Confirm Save & Print' : 'Konfirmasi Simpan & Cetak'}
+                </h3>
               </div>
 
               {/* Body */}
               <div className="p-5 space-y-4">
                 <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-                  Apakah Anda yakin ingin memproses retur pembelian ini? Dokumen retur akan disimpan dan nota transaksi akan langsung dicetak.
+                  {lang === 'en'
+                    ? 'Are you sure you want to process this purchase return? The return document will be saved and the transaction receipt will be printed immediately.'
+                    : 'Apakah Anda yakin ingin memproses retur pembelian ini? Dokumen retur akan disimpan dan nota transaksi akan langsung dicetak.'}
                 </p>
 
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Barang</span>
-                    <p className="font-bold text-slate-800 mt-1">{calculateTotalItems()} item</p>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {lang === 'en' ? 'Total Items' : 'Total Barang'}
+                    </span>
+                    <p className="font-bold text-slate-800 mt-1">
+                      {calculateTotalItems()} {lang === 'en' ? 'item(s)' : 'item'}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Nilai Retur</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {lang === 'en' ? 'Total Return Value' : 'Total Nilai Retur'}
+                    </span>
                     <p className="font-bold text-blue-600 mt-1">{formatCurrency(calculateTotalRefund())}</p>
                   </div>
                 </div>
@@ -1450,14 +1501,14 @@ export const ReturPembelian: React.FC = () => {
                   onClick={() => setShowConfirmPrintModal(false)}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-650 hover:bg-slate-100 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmSaveAndPrint}
                   className="px-4.5 py-2 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-500/10 flex items-center gap-1"
                 >
-                  Cetak Nota (P)
+                  {lang === 'en' ? 'Print Nota (P)' : 'Cetak Nota (P)'}
                 </button>
               </div>
 
@@ -1475,26 +1526,38 @@ export const ReturPembelian: React.FC = () => {
               <div className="flex justify-between items-start border-b border-blue-600 pb-4">
                 <div>
                   <h1 className="text-base font-bold uppercase tracking-wider text-blue-650">Maju Mulia Bersama</h1>
-                  <p className="text-[10px] text-slate-700">Distributor Bahan Bangunan & Logam</p>
+                  <p className="text-[10px] text-slate-700">
+                    {lang === 'en' ? 'Building Materials & Metal Distributor' : 'Distributor Bahan Bangunan & Logam'}
+                  </p>
                   <p className="text-[10px] text-slate-700">Jl. Raya Industri Utama No. 88, Cikarang, Bekasi</p>
                   <p className="text-[10px] text-slate-700">Telp: (021) 89876543</p>
                 </div>
                 <div className="text-right">
-                  <h2 className="text-sm font-bold uppercase text-blue-650">Nota Retur Pembelian</h2>
+                  <h2 className="text-sm font-bold uppercase text-blue-650">
+                    {lang === 'en' ? 'Purchase Return Receipt' : 'Nota Retur Pembelian'}
+                  </h2>
                   <p className="text-[10px] font-semibold font-mono text-blue-600">{slip.no_retur}</p>
-                  <p className="text-[9px] mt-1 text-slate-650">Tanggal Retur: {formatDate(slip.retur_date)}</p>
+                  <p className="text-[9px] mt-1 text-slate-655 font-semibold">
+                    {lang === 'en' ? 'Return Date:' : 'Tanggal Retur:'} {formatDate(slip.retur_date)}
+                  </p>
                 </div>
               </div>
 
               {/* Metadata */}
               <div className="grid grid-cols-2 gap-4 text-[9px]">
                 <div>
-                  <p className="font-bold text-blue-500 uppercase">Supplier / Pemasok:</p>
+                  <p className="font-bold text-blue-500 uppercase">
+                    {lang === 'en' ? 'Supplier:' : 'Supplier / Pemasok:'}
+                  </p>
                   <p className="font-bold text-[10px] text-slate-800">{slip.supplier_nama}</p>
                 </div>
                 <div>
-                  <p className="font-bold text-blue-500 uppercase">Keterangan:</p>
-                  <p className="italic text-slate-700">"{slip.catatan || 'Tidak ada catatan'}"</p>
+                  <p className="font-bold text-blue-500 uppercase">
+                    {lang === 'en' ? 'Remarks:' : 'Keterangan:'}
+                  </p>
+                  <p className="italic text-slate-700">
+                    "{slip.catatan || (lang === 'en' ? 'No remarks' : 'Tidak ada catatan')}"
+                  </p>
                 </div>
               </div>
 
@@ -1503,11 +1566,11 @@ export const ReturPembelian: React.FC = () => {
                 <thead>
                   <tr className="bg-blue-50/40 border-b border-blue-600 font-bold uppercase text-[8px] text-blue-900">
                     <th className="p-1 border-r border-blue-600 w-6 text-center">No</th>
-                    <th className="p-1 border-r border-blue-600">Kode Barang</th>
-                    <th className="p-1 border-r border-blue-600">Nama Produk</th>
-                    <th className="p-1 border-r border-blue-600 text-center w-16">Kuantitas</th>
-                    <th className="p-1 border-r border-blue-600 text-center w-16">Kondisi</th>
-                    <th className="p-1 border-r border-blue-600 text-right w-24">Harga Beli</th>
+                    <th className="p-1 border-r border-blue-600">{lang === 'en' ? 'Item Code' : 'Kode Barang'}</th>
+                    <th className="p-1 border-r border-blue-600">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                    <th className="p-1 border-r border-blue-600 text-center w-16">{lang === 'en' ? 'Quantity' : 'Kuantitas'}</th>
+                    <th className="p-1 border-r border-blue-600 text-center w-16">{lang === 'en' ? 'Condition' : 'Kondisi'}</th>
+                    <th className="p-1 border-r border-blue-600 text-right w-24">{lang === 'en' ? 'Purchase Price' : 'Harga Beli'}</th>
                     <th className="p-1 text-right w-24">Subtotal</th>
                   </tr>
                 </thead>
@@ -1518,14 +1581,18 @@ export const ReturPembelian: React.FC = () => {
                       <td className="p-1 border-r border-blue-600 font-mono text-slate-700">{item.product_kode}</td>
                       <td className="p-1 border-r border-blue-600 font-bold text-slate-800">{item.product_nama}</td>
                       <td className="p-1 border-r border-blue-600 text-center">{item.qty} {item.satuan}</td>
-                      <td className="p-1 border-r border-blue-600 text-center uppercase font-bold text-slate-700">{item.kondisi}</td>
+                      <td className="p-1 border-r border-blue-600 text-center uppercase font-bold text-slate-700">
+                        {lang === 'en'
+                          ? (item.kondisi === 'bagus' ? 'GOOD' : 'DAMAGED')
+                          : (item.kondisi === 'bagus' ? 'BAGUS' : 'RUSAK')}
+                      </td>
                       <td className="p-1 border-r border-blue-600 text-right">{formatCurrency(item.unit_price)}</td>
                       <td className="p-1 text-right text-slate-800">{formatCurrency(item.total)}</td>
                     </tr>
                   ))}
                   <tr className="bg-blue-50/20 border-t border-blue-600">
                     <td colSpan={6} className="p-1 border-r border-blue-600 text-right font-bold uppercase text-blue-900">
-                      Total Nilai Retur
+                      {lang === 'en' ? 'Total Return Value' : 'Total Nilai Retur'}
                     </td>
                     <td className="p-1 text-right font-black text-blue-800">
                       {formatCurrency(slip.total)}
@@ -1537,11 +1604,11 @@ export const ReturPembelian: React.FC = () => {
               {/* Signatures */}
               <div className="grid grid-cols-2 gap-4 text-center text-[9px] pt-8 text-slate-800">
                 <div className="space-y-12">
-                  <p>Supplier / Pemasok</p>
+                  <p>{lang === 'en' ? 'Supplier' : 'Supplier / Pemasok'}</p>
                   <p className="underline font-bold text-slate-900">( ____________________ )</p>
                 </div>
                 <div className="space-y-12">
-                  <p>Hormat Kami, Kasir</p>
+                  <p>{lang === 'en' ? 'Sincerely, Cashier' : 'Hormat Kami, Kasir'}</p>
                   <p className="underline font-bold text-slate-900">( Maju Mulia Bersama )</p>
                 </div>
               </div>

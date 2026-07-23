@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatRupiahInput, parseRupiahInput } from '@/lib/utils';
 import {
   Users,
@@ -46,6 +47,7 @@ interface MasterDataProps {
 
 export const MasterData: React.FC<MasterDataProps> = ({ type }) => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [activeTab, setActiveTab] = useState<'customer' | 'supplier'>(type || 'customer');
 
   useEffect(() => {
@@ -648,7 +650,7 @@ export const MasterData: React.FC<MasterDataProps> = ({ type }) => {
                       formNamaRef.current?.select();
                     }
                   }}
-                  placeholder="Kode (misal: CUST-09 atau SUPP-11)"
+                  placeholder={lang === 'en' ? 'Code (e.g., CUST-09 or SUPP-11)' : 'Kode (misal: CUST-09 atau SUPP-11)'}
                   className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
               </div>
@@ -672,7 +674,7 @@ export const MasterData: React.FC<MasterDataProps> = ({ type }) => {
                       formKodeRef.current?.select();
                     }
                   }}
-                  placeholder="Nama lengkap..."
+                  placeholder={lang === 'en' ? 'Full name...' : 'Nama lengkap...'}
                   className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
               </div>
@@ -694,7 +696,7 @@ export const MasterData: React.FC<MasterDataProps> = ({ type }) => {
                       formNamaRef.current?.select();
                     }
                   }}
-                  placeholder="No. Telp..."
+                  placeholder={lang === 'en' ? 'Phone number...' : 'No. Telp...'}
                   className="input-field w-full py-2.5 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white"
                 />
               </div>
@@ -719,7 +721,7 @@ export const MasterData: React.FC<MasterDataProps> = ({ type }) => {
                     }
                   }}
                   rows={2}
-                  placeholder="Alamat lengkap..."
+                  placeholder={lang === 'en' ? 'Full address...' : 'Alamat lengkap...'}
                   className="input-field w-full py-2 px-3 border border-slate-350 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white resize-none"
                 />
               </div>

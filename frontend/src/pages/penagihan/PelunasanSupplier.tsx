@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatRupiahInput, parseRupiahInput } from '@/lib/utils';
 import {
   Search,
@@ -66,6 +67,7 @@ const getStoredState = <T,>(key: string, defaultValue: T): T => {
 
 export const PelunasanSupplier: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [data, setData] = useState<SupplierGroup[]>([]);
   const [filteredData, setFilteredData] = useState<SupplierGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -492,7 +494,7 @@ export const PelunasanSupplier: React.FC = () => {
       setDetailPurchase(res.data);
     } catch (err) {
       console.error(err);
-      showToast('Gagal mengambil detail PO', 'error');
+      showToast(lang === 'en' ? 'Failed to fetch PO details' : 'Gagal mengambil detail PO', 'error');
       setShowDetailModal(false);
     } finally {
       setIsLoadingDetail(false);
@@ -527,7 +529,7 @@ export const PelunasanSupplier: React.FC = () => {
       fetchData(); // reload values
     } catch (err) {
       console.error(err);
-      showToast('Gagal mengupdate biaya pengiriman', 'error');
+      showToast(lang === 'en' ? 'Failed to update delivery cost' : 'Gagal mengupdate biaya pengiriman', 'error');
     }
   };
 
@@ -545,12 +547,12 @@ export const PelunasanSupplier: React.FC = () => {
 
     if (paymentMode === 'fifo') {
       if (!paymentAmount || Number(paymentAmount) <= 0) {
-        showToast('Silakan masukkan nominal pelunasan yang valid.', 'error');
+        showToast(lang === 'en' ? 'Please enter a valid settlement amount.' : 'Silakan masukkan nominal pelunasan yang valid.', 'error');
         return;
       }
       const limit = supplierGroup.total_hutang || 0;
       if (Number(paymentAmount) > Number(limit)) {
-        showToast('Nominal pelunasan melebihi total hutang aktif!', 'error');
+        showToast(lang === 'en' ? 'Settlement amount exceeds total active debt!' : 'Nominal pelunasan melebihi total hutang aktif!', 'error');
         return;
       }
       payload.total_amount = Number(paymentAmount);
@@ -560,7 +562,7 @@ export const PelunasanSupplier: React.FC = () => {
         .map(([purchase_id, amount]) => ({ purchase_id, amount }));
 
       if (activeAllocations.length === 0) {
-        showToast('Silakan isi nominal pembayaran minimal untuk satu PO.', 'error');
+        showToast(lang === 'en' ? 'Please enter a payment amount for at least one PO.' : 'Silakan isi nominal pembayaran minimal untuk satu PO.', 'error');
         return;
       }
       payload.allocations = activeAllocations;
@@ -571,9 +573,9 @@ export const PelunasanSupplier: React.FC = () => {
       await api.post('/payments/supplier/session', payload);
       setShowPaymentModal(false);
       fetchData(); // reload list
-      showToast('Pelunasan berhasil disimpan.', 'success');
+      showToast(lang === 'en' ? 'Settlement successfully saved.' : 'Pelunasan berhasil disimpan.', 'success');
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Gagal menyimpan pelunasan hutang', 'error');
+      showToast(err.response?.data?.error || (lang === 'en' ? 'Failed to save debt settlement' : 'Gagal menyimpan pelunasan hutang'), 'error');
     }
   };
 
@@ -614,44 +616,58 @@ export const PelunasanSupplier: React.FC = () => {
         remainingAfter: sisa - allocated,
       };
     });
-  };
+  };  const fifoAllocations = getFifoAllocations();
+  const manualTotal = Object.values(manualAmounts).reduce((sum, v) => sum + v, 0);
 
-  const fifoAllocations = getFifoAllocations();
-  const manualTotal = Object.values(manualAmounts).reduce((sum, v) => sum + v, 0); if (showDetailModal && detailPurchaseId) {
+  if (showDetailModal && detailPurchaseId) {
     return (
       <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 text-slate-800 p-6 rounded-2xl border border-blue-100 shadow-xl space-y-4 animate-scale-in">
         {/* Header Board */}
         <div className="bg-blue-600 -mx-6 -mt-6 p-4 px-6 flex justify-between items-center text-white rounded-t-2xl shrink-0">
           <h3 className="text-base font-extrabold text-white flex items-center gap-2">
             <FileText size={18} />
-            <span>Rincian Purchase Order (PO)</span>
+            <span>
+              {lang === 'en' ? 'Purchase Order (PO) Details' : 'Rincian Purchase Order (PO)'}
+            </span>
           </h3>
           <button
             onClick={() => setShowDetailModal(false)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-500 rounded-lg shadow-sm cursor-pointer transition-all duration-200"
           >
-            ← Kembali (Esc)
+            {lang === 'en' ? '← Back (Esc)' : '← Kembali (Esc)'}
           </button>
         </div>
 
         <div className="space-y-4 overflow-y-auto max-h-[82vh] pr-1">
           {isLoadingDetail ? (
-            <div className="py-24 text-center text-blue-500 font-bold animate-pulse text-sm">Memuat rincian PO...</div>
+            <div className="py-24 text-center text-blue-500 font-bold animate-pulse text-sm">
+              {lang === 'en' ? 'Loading PO details...' : 'Memuat rincian PO...'}
+            </div>
           ) : detailPurchase ? (
             <>
               {/* Ultra-Compact Metadata Row */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm text-xs shrink-0">
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">No. PO</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">
+                    {lang === 'en' ? 'PO No.' : 'No. PO'}
+                  </span>
                   <strong className="text-slate-900 font-mono text-[11px]">{detailPurchase.no_order}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Tanggal PO</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">
+                    {lang === 'en' ? 'PO Date' : 'Tanggal PO'}
+                  </span>
                   <strong className="text-slate-800 text-[11px]">{formatDate(detailPurchase.order_date)}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Termin</span>
-                  <strong className="text-slate-800 text-[11px] uppercase">{detailPurchase.terms === 'tunai' ? 'Tunai' : `Kredit (${detailPurchase.terms} Bln)`}</strong>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">
+                    {lang === 'en' ? 'Terms' : 'Termin'}
+                  </span>
+                  <strong className="text-slate-800 text-[11px] uppercase">
+                    {detailPurchase.terms === 'tunai'
+                      ? (lang === 'en' ? 'Cash' : 'Tunai')
+                      : (lang === 'en' ? `Credit (${detailPurchase.terms} Mos)` : `Kredit (${detailPurchase.terms} Bln)`)}
+                  </strong>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Supplier</span>
@@ -660,7 +676,9 @@ export const PelunasanSupplier: React.FC = () => {
                   </strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Pembuat</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">
+                    {lang === 'en' ? 'Created By' : 'Pembuat'}
+                  </span>
                   <span className="text-slate-600 text-[11px] block truncate" title={detailPurchase.creator?.nama || 'Administrator'}>
                     {detailPurchase.creator?.nama || 'Administrator'}
                   </span>
@@ -673,10 +691,10 @@ export const PelunasanSupplier: React.FC = () => {
                   <thead>
                     <tr className="bg-blue-50 text-blue-900 font-bold uppercase text-[9px] border-b border-blue-100">
                       <th className="py-2 px-3 w-10 text-center">No</th>
-                      <th className="py-2 px-3">Kode SKU</th>
-                      <th className="py-2 px-3">Nama Barang</th>
+                      <th className="py-2 px-3">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+                      <th className="py-2 px-3">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="py-2 px-3 text-right w-20">Qty</th>
-                      <th className="py-2 px-3 text-right w-28">Harga Beli</th>
+                      <th className="py-2 px-3 text-right w-28">{lang === 'en' ? 'Purchase Price' : 'Harga Beli'}</th>
                       <th className="py-2 px-3 text-right w-28">Total</th>
                     </tr>
                   </thead>
@@ -693,13 +711,15 @@ export const PelunasanSupplier: React.FC = () => {
                     ))}
                     {Number(detailPurchase.biaya_pengiriman) !== 0 && (
                       <tr className="text-slate-600 font-semibold bg-slate-50/50">
-                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">Pengiriman</td>
+                        <td colSpan={5} className="py-1.5 px-3 text-right uppercase text-[10px]">
+                          {lang === 'en' ? 'Shipping' : 'Pengiriman'}
+                        </td>
                         <td className="py-1.5 px-3 text-right font-mono text-slate-800 font-bold">{formatCurrency(Number(detailPurchase.biaya_pengiriman))}</td>
                       </tr>
                     )}
                     <tr className="bg-blue-50/40 font-black border-t border-blue-100">
                       <td colSpan={5} className="py-2 px-3 text-right uppercase text-[10px] text-blue-900">Grand Total</td>
-                      <td className="py-2 px-3 text-right font-mono text-blue-950 font-black text-xs">{formatCurrency(Number(detailPurchase.subtotal) + Number(detailPurchase.biaya_pengiriman))}</td>
+                      <td className="py-2 px-3 text-right font-mono text-blue-955 font-black text-xs">{formatCurrency(Number(detailPurchase.subtotal) + Number(detailPurchase.biaya_pengiriman))}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -707,14 +727,20 @@ export const PelunasanSupplier: React.FC = () => {
 
               {/* Payment Logs - Compact */}
               <div className="p-3 bg-white border border-blue-100 rounded-xl shadow-sm space-y-2 shrink-0">
-                <h4 className="text-[10px] uppercase font-black text-slate-500 border-b border-slate-100 pb-1 mb-1">Riwayat Pembayaran PO</h4>
+                <h4 className="text-[10px] uppercase font-black text-slate-500 border-b border-slate-100 pb-1 mb-1">
+                  {lang === 'en' ? 'PO Payment History' : 'Riwayat Pembayaran PO'}
+                </h4>
                 {detailPurchase.supplier_payments && detailPurchase.supplier_payments.length > 0 ? (
                   <div className="space-y-1.5">
                     {detailPurchase.supplier_payments.map((pay: any) => (
                       <div key={pay.id} className="py-1.5 px-3 bg-blue-50/20 hover:bg-blue-50/40 border border-blue-100/30 rounded-lg flex justify-between items-center transition-all text-[11px]">
                         <div>
-                          <p className="font-extrabold text-blue-950">Bayar: {formatCurrency(Number(pay.amount))}</p>
-                          <p className="text-[10px] text-slate-500">Catatan: {cleanPaymentNote(pay.note)}</p>
+                          <p className="font-extrabold text-blue-955">
+                            {lang === 'en' ? 'Pay:' : 'Bayar:'} {formatCurrency(Number(pay.amount))}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {lang === 'en' ? 'Note:' : 'Catatan:'} {cleanPaymentNote(pay.note)}
+                          </p>
                         </div>
                         <div className="text-right text-[10px] text-slate-400 font-semibold flex items-center gap-2">
                           <span>{formatDate(pay.payment_date)}</span>
@@ -724,25 +750,34 @@ export const PelunasanSupplier: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-slate-400 italic">Belum ada riwayat pembayaran untuk PO ini.</p>
+                  <p className="text-[11px] text-slate-400 italic">
+                    {lang === 'en' ? 'No payment history yet for this PO.' : 'Belum ada riwayat pembayaran untuk PO ini.'}
+                  </p>
                 )}
               </div>
             </>
           ) : (
-            <div className="py-24 text-center text-rose-500 font-bold">Gagal memuat detail data.</div>
+            <div className="py-24 text-center text-rose-500 font-bold">
+              {lang === 'en' ? 'Failed to load details.' : 'Gagal memuat detail data.'}
+            </div>
           )}
         </div>
       </div>
     );
   }
-
-  return (
+   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Pelunasan Hutang Supplier (AP)</h1>
-          <p className="text-slate-400 text-sm">Monitoring daftar PO kredit aktif, input biaya pengiriman, dan catat angsuran hutang global.</p>
+          <h1 className="text-2xl font-extrabold text-white">
+            {lang === 'en' ? 'Supplier Debt Settlement (AP)' : 'Pelunasan Hutang Supplier (AP)'}
+          </h1>
+          <p className="text-slate-400 text-sm">
+            {lang === 'en'
+              ? 'Monitor active credit POs, enter shipping fees, and record global supplier debt payments.'
+              : 'Monitoring daftar PO kredit aktif, input biaya pengiriman, dan catat angsuran hutang global.'}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
@@ -752,7 +787,7 @@ export const PelunasanSupplier: React.FC = () => {
             className="btn-primary flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
             <DollarSign size={14} />
-            <span>Bayar Hutang Multi-PO (F10)</span>
+            <span>{lang === 'en' ? 'Pay Multi-PO Debt (F10)' : 'Bayar Hutang Multi-PO (F10)'}</span>
           </button>
         </div>
       </div>
@@ -761,13 +796,15 @@ export const PelunasanSupplier: React.FC = () => {
       <div className="card p-4 flex flex-col md:flex-row md:items-end gap-4">
         {/* Search */}
         <div className="relative flex-grow">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Cari Pemasok (F1)</label>
+          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Supplier (F1)' : 'Cari Pemasok (F1)'}
+          </label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Nama pemasok..."
+              placeholder={lang === 'en' ? 'Supplier name...' : 'Nama pemasok...'}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -789,7 +826,9 @@ export const PelunasanSupplier: React.FC = () => {
 
         {/* Status Filter Trigger */}
         <div className="w-full md:w-64">
-          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">Filter Status (F3)</label>
+          <label className="block text-[11px] text-slate-400 mb-1 font-semibold uppercase tracking-wider">
+            {lang === 'en' ? 'Filter Status (F3)' : 'Filter Status (F3)'}
+          </label>
           <button
             onClick={() => {
               setSelectedFilterOptionIdx(['all', 'overdue', 'lancar'].indexOf(statusFilter));
@@ -798,9 +837,9 @@ export const PelunasanSupplier: React.FC = () => {
             className="input-field w-full py-2 px-3 text-xs flex items-center justify-between bg-surface-900 border border-surface-750 text-white font-bold cursor-pointer rounded-lg hover:bg-surface-850 transition-colors"
           >
             <span>
-              {statusFilter === 'all' && 'Semua'}
+              {statusFilter === 'all' && (lang === 'en' ? 'All' : 'Semua')}
               {statusFilter === 'overdue' && 'Overdue'}
-              {statusFilter === 'lancar' && 'Hampir'}
+              {statusFilter === 'lancar' && (lang === 'en' ? 'Active' : 'Hampir')}
             </span>
             <ChevronDown size={14} className="text-slate-500" />
           </button>
@@ -808,14 +847,15 @@ export const PelunasanSupplier: React.FC = () => {
       </div>
 
       {/* Supplier List Card Grid */}
-      {/* Supplier List Card Grid */}
       {!searchQuery.trim() ? (
         <div className="card p-16 text-center text-slate-400 border border-surface-700/60 bg-surface-800/20 flex flex-col items-center justify-center gap-3 rounded-xl">
           <div className="p-4 bg-surface-750/50 rounded-full border border-surface-700 shadow-inner">
             <Search size={28} className="text-primary-500/80 animate-pulse" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
-            Silakan ketik nama supplier pada kolom pencarian untuk menampilkan data hutang.
+            {lang === 'en'
+              ? 'Please type a supplier name in the search field to view debt records.'
+              : 'Silakan ketik nama supplier pada kolom pencarian untuk menampilkan data hutang.'}
           </p>
         </div>
       ) : !isConfirmed ? (
@@ -824,7 +864,15 @@ export const PelunasanSupplier: React.FC = () => {
             <Search size={28} className="text-amber-500/80 animate-bounce" />
           </div>
           <p className="max-w-md text-xs leading-relaxed text-slate-400 font-medium">
-            Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih supplier dan menampilkan data hutang.
+            {lang === 'en' ? (
+              <>
+                Press <span className="font-extrabold text-blue-600 font-mono">Enter</span> to select supplier and load debt details.
+              </>
+            ) : (
+              <>
+                Tekan <span className="font-extrabold text-blue-600 font-mono">Enter</span> untuk memilih supplier dan menampilkan data hutang.
+              </>
+            )}
           </p>
         </div>
       ) : isLoading ? (
@@ -835,7 +883,9 @@ export const PelunasanSupplier: React.FC = () => {
         </div>
       ) : filteredData.length === 0 ? (
         <div className="card p-12 text-center text-slate-500 italic text-xs border border-surface-700">
-          Tidak ada hutang aktif yang ditemukan berdasarkan filter pencarian.
+          {lang === 'en'
+            ? 'No active debts found matching search filter.'
+            : 'Tidak ada hutang aktif yang ditemukan berdasarkan filter pencarian.'}
         </div>
       ) : (
         <div className="space-y-4">
@@ -869,15 +919,21 @@ export const PelunasanSupplier: React.FC = () => {
                     <div>
                       <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
                         <span>{supp.nama}</span>
-                        <span className="text-[10px] bg-surface-700 text-slate-400 font-mono font-normal py-0.5 px-2 rounded-full border border-surface-650">Kode: {supp.kode}</span>
+                        <span className="text-[10px] bg-surface-700 text-slate-400 font-mono font-normal py-0.5 px-2 rounded-full border border-surface-650">
+                          {lang === 'en' ? 'Code:' : 'Kode:'} {supp.kode}
+                        </span>
                       </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Alamat: {supp.alamat || '-'}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {lang === 'en' ? 'Address:' : 'Alamat:'} {supp.alamat || '-'}
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-xs">
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block uppercase">Total Sisa Hutang</span>
+                      <span className="text-[10px] text-slate-400 block uppercase">
+                        {lang === 'en' ? 'Total Remaining Debt' : 'Total Sisa Hutang'}
+                      </span>
                       <strong className="text-sm font-black text-rose-500">{formatCurrency(group.total_hutang)}</strong>
                     </div>
                   </div>
@@ -891,14 +947,14 @@ export const PelunasanSupplier: React.FC = () => {
                         <thead>
                           <tr className="bg-surface-850/80 text-slate-400 font-bold uppercase text-[9px] border-b border-surface-750">
                             <th className="p-2 w-12 text-center">No</th>
-                            <th className="p-2 w-32">No. PO</th>
-                            <th className="p-2 w-28">Tgl Order</th>
-                            <th className="p-2 w-28">Jatuh Tempo</th>
+                            <th className="p-2 w-32">{lang === 'en' ? 'PO No.' : 'No. PO'}</th>
+                            <th className="p-2 w-28">{lang === 'en' ? 'Order Date' : 'Tgl Order'}</th>
+                            <th className="p-2 w-28">{lang === 'en' ? 'Due Date' : 'Jatuh Tempo'}</th>
                             <th className="p-2 w-24">Terms</th>
-                            <th className="p-2 w-32 text-right">Total PO</th>
-                            <th className="p-2 w-36 text-center">Pengiriman (F2)</th>
-                            <th className="p-2 w-32 text-right">Terbayar</th>
-                            <th className="p-2 w-36 text-right">Sisa Hutang</th>
+                            <th className="p-2 w-32 text-right">{lang === 'en' ? 'Total PO' : 'Total PO'}</th>
+                            <th className="p-2 w-36 text-center">{lang === 'en' ? 'Shipping (F2)' : 'Pengiriman (F2)'}</th>
+                            <th className="p-2 w-32 text-right">{lang === 'en' ? 'Paid' : 'Terbayar'}</th>
+                            <th className="p-2 w-36 text-right">{lang === 'en' ? 'Remaining Debt' : 'Sisa Hutang'}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-surface-750/50">
@@ -1015,8 +1071,20 @@ export const PelunasanSupplier: React.FC = () => {
                     </div>
 
                     <div className="pt-2 text-[10px] text-slate-500 flex justify-between">
-                      <span>Tekan <kbd className="shortcut-badge">F4</kbd> lihat item PO  <kbd className="shortcut-badge">F10</kbd> catat pelunasan</span>
-                      <span>Gunakan panah <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk navigasi</span>
+                      <span>
+                        {lang === 'en' ? (
+                          <>Press <kbd className="shortcut-badge">F4</kbd> view PO items <kbd className="shortcut-badge">F10</kbd> record payment</>
+                        ) : (
+                          <>Tekan <kbd className="shortcut-badge">F4</kbd> lihat item PO <kbd className="shortcut-badge">F10</kbd> catat pelunasan</>
+                        )}
+                      </span>
+                      <span>
+                        {lang === 'en' ? (
+                          <>Use arrows <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> to navigate</>
+                        ) : (
+                          <>Gunakan panah <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk navigasi</>
+                        )}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1043,7 +1111,9 @@ export const PelunasanSupplier: React.FC = () => {
           >
             <div className="flex justify-between items-center border-b border-surface-700 pb-3 shrink-0">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <span>Filter Status Piutang (F3)</span>
+                <span>
+                  {lang === 'en' ? 'Filter Debt Status (F3)' : 'Filter Status Piutang (F3)'}
+                </span>
               </h3>
               <button
                 type="button"
@@ -1056,9 +1126,9 @@ export const PelunasanSupplier: React.FC = () => {
 
             <div className="space-y-2">
               {[
-                { label: 'Semua Status Hutang', color: 'bg-slate-400' },
-                { label: 'Hanya Jatuh Tempo (Overdue)', color: 'bg-rose-500' },
-                { label: 'Hampir Jatuh Tempo (Lancar)', color: 'bg-emerald-500' }
+                { label: lang === 'en' ? 'All Debt Statuses' : 'Semua Status Hutang', color: 'bg-slate-400' },
+                { label: lang === 'en' ? 'Overdue Only' : 'Hanya Jatuh Tempo (Overdue)', color: 'bg-rose-500' },
+                { label: lang === 'en' ? 'Near Due / Active' : 'Hampir Jatuh Tempo (Lancar)', color: 'bg-emerald-500' }
               ].map((opt, idx) => {
                 const isSelected = idx === selectedFilterOptionIdx;
                 const options: ('all' | 'overdue' | 'lancar')[] = ['all', 'overdue', 'lancar'];
@@ -1083,7 +1153,9 @@ export const PelunasanSupplier: React.FC = () => {
                       <span>{opt.label}</span>
                     </div>
                     {isCurrent && (
-                      <span className="text-[10px] text-primary-500 font-normal italic">Aktif</span>
+                      <span className="text-[10px] text-primary-500 font-normal italic">
+                        {lang === 'en' ? 'Active' : 'Aktif'}
+                      </span>
                     )}
                   </button>
                 );
@@ -1091,8 +1163,20 @@ export const PelunasanSupplier: React.FC = () => {
             </div>
 
             <div className="pt-2 text-[10px] text-slate-500 flex justify-between">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</span>
+              <span>
+                {lang === 'en' ? (
+                  <>Use <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> to select</>
+                ) : (
+                  <>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</>
+                )}
+              </span>
+              <span>
+                {lang === 'en' ? (
+                  <><kbd className="shortcut-badge">Enter</kbd> select | <kbd className="shortcut-badge">Esc</kbd> close</>
+                ) : (
+                  <><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</>
+                )}
+              </span>
             </div>
           </div>
         </div>
@@ -1112,7 +1196,9 @@ export const PelunasanSupplier: React.FC = () => {
             <div className="flex justify-between items-center w-full border-b border-surface-700 pb-3 shrink-0">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Search size={18} />
-                <span>Pilih Pemasok (Supplier)</span>
+                <span>
+                  {lang === 'en' ? 'Select Supplier' : 'Pilih Pemasok (Supplier)'}
+                </span>
               </h3>
               <button
                 onClick={() => {
@@ -1128,11 +1214,13 @@ export const PelunasanSupplier: React.FC = () => {
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
               {isLoading ? (
                 <div className="py-8 text-center text-slate-500 italic text-xs">
-                  Memuat data pelanggan...
+                  {lang === 'en' ? 'Loading supplier data...' : 'Memuat data pelanggan...'}
                 </div>
               ) : filteredData.length === 0 ? (
                 <div className="py-8 text-center text-slate-500 italic text-xs">
-                  Tidak ada pelanggan yang cocok dengan pencarian "{searchQuery}".
+                  {lang === 'en'
+                    ? `No suppliers match search query "${searchQuery}".`
+                    : `Tidak ada pelanggan yang cocok dengan pencarian "${searchQuery}".`}
                 </div>
               ) : (
                 filteredData.map((group, idx) => (
@@ -1160,11 +1248,17 @@ export const PelunasanSupplier: React.FC = () => {
                   >
                     <div>
                       <p className="font-semibold text-slate-850">{group.supplier.nama}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Alamat: {group.supplier.alamat || '-'}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {lang === 'en' ? 'Address:' : 'Alamat:'} {group.supplier.alamat || '-'}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block uppercase font-mono">Kode: {group.supplier.kode}</span>
-                      <span className="text-[11px] font-bold text-rose-400 block mt-0.5">Hutang: {formatCurrency(group.total_hutang)}</span>
+                      <span className="text-[10px] text-slate-400 block uppercase font-mono">
+                        {lang === 'en' ? 'Code:' : 'Kode:'} {group.supplier.kode}
+                      </span>
+                      <span className="text-[11px] font-bold text-rose-400 block mt-0.5">
+                        {lang === 'en' ? 'Debt:' : 'Hutang:'} {formatCurrency(group.total_hutang)}
+                      </span>
                     </div>
                   </button>
                 ))
@@ -1172,16 +1266,25 @@ export const PelunasanSupplier: React.FC = () => {
             </div>
 
             <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[10px] text-slate-500 shrink-0">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</span>
+              <span>
+                {lang === 'en' ? (
+                  <>Use <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> to select</>
+                ) : (
+                  <>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</>
+                )}
+              </span>
+              <span>
+                {lang === 'en' ? (
+                  <><kbd className="shortcut-badge">Enter</kbd> select | <kbd className="shortcut-badge">Esc</kbd> close</>
+                ) : (
+                  <><kbd className="shortcut-badge">Enter</kbd> pilih | <kbd className="shortcut-badge">Esc</kbd> tutup</>
+                )}
+              </span>
             </div>
           </div>
         </div>
         </ModalPortal>
       )}
-
-      {/* Detail Modal is rendered inline in full-page style above */}
-
 
       {/* Global Supplier Payment Modal (F10) */}
       {showPaymentModal && filteredData[selectedSuppIdx] && (
@@ -1195,7 +1298,9 @@ export const PelunasanSupplier: React.FC = () => {
             <div className="bg-blue-600 px-6 py-4 flex justify-between items-center text-white shrink-0">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <DollarSign size={18} />
-                <span>Catat Pelunasan Hutang Supplier</span>
+                <span>
+                  {lang === 'en' ? 'Record Supplier Debt Settlement' : 'Catat Pelunasan Hutang Supplier'}
+                </span>
               </h3>
               <button
                 type="button"
@@ -1210,12 +1315,16 @@ export const PelunasanSupplier: React.FC = () => {
               {/* Supplier Info */}
               <div className="p-3 bg-blue-50/50 border border-blue-100/60 rounded-lg text-xs space-y-1 shrink-0">
                 <p className="text-slate-655">Supplier: <strong className="text-slate-900">{filteredData[selectedSuppIdx].supplier.nama} ({filteredData[selectedSuppIdx].supplier.kode})</strong></p>
-                <p className="text-slate-655">Total Sisa Hutang: <strong className="text-rose-600 font-bold">{formatCurrency(filteredData[selectedSuppIdx].total_hutang)}</strong></p>
+                <p className="text-slate-655">
+                  {lang === 'en' ? 'Total Remaining Debt:' : 'Total Sisa Hutang:'} <strong className="text-rose-600 font-bold">{formatCurrency(filteredData[selectedSuppIdx].total_hutang)}</strong>
+                </p>
               </div>
 
               {/* Payment Mode */}
               <div>
-                <label className="block text-xs font-semibold text-slate-655 mb-1">Mode Pembayaran</label>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">
+                  {lang === 'en' ? 'Payment Mode' : 'Mode Pembayaran'}
+                </label>
                 <div className="flex gap-2">
                   <button
                     ref={paymentModeFifoRef}
@@ -1227,7 +1336,7 @@ export const PelunasanSupplier: React.FC = () => {
                     }}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMode === 'fifo' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'}`}
                   >
-                    FIFO Otomatis (PO Terlama)
+                    {lang === 'en' ? 'Automatic FIFO (Oldest PO)' : 'FIFO Otomatis (PO Terlama)'}
                   </button>
                   <button
                     ref={paymentModeManualRef}
@@ -1239,14 +1348,16 @@ export const PelunasanSupplier: React.FC = () => {
                     }}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMode === 'manual' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'}`}
                   >
-                    Pilihan Manual Per PO
+                    {lang === 'en' ? 'Manual Selection Per PO' : 'Pilihan Manual Per PO'}
                   </button>
                 </div>
               </div>
 
               {/* Payment Date */}
               <div>
-                <label className="block text-xs font-semibold text-slate-655 mb-1">Tanggal Pelunasan</label>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">
+                  {lang === 'en' ? 'Settlement Date' : 'Tanggal Pelunasan'}
+                </label>
                 <input
                   ref={paymentDateRef}
                   type="date"
@@ -1276,7 +1387,9 @@ export const PelunasanSupplier: React.FC = () => {
                     {/* FIFO Mode Amount Input */}
               {paymentMode === 'fifo' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-655 mb-1">Nominal Pelunasan (Rp)</label>
+                  <label className="block text-xs font-semibold text-slate-655 mb-1">
+                    {lang === 'en' ? 'Settlement Amount (Rp)' : 'Nominal Pelunasan (Rp)'}
+                  </label>
                   <input
                     ref={paymentAmountRef}
                     type="text"
@@ -1287,14 +1400,19 @@ export const PelunasanSupplier: React.FC = () => {
                         e.preventDefault();
                         const limit = filteredData[selectedSuppIdx]?.total_hutang || 0;
                         if (Number(paymentAmount) > Number(limit)) {
-                          showToast('Nominal pelunasan melebihi total hutang aktif!', 'error');
+                          showToast(
+                            lang === 'en'
+                              ? 'Settlement amount exceeds total active debt!'
+                              : 'Nominal pelunasan melebihi total hutang aktif!',
+                            'error'
+                          );
                           return;
                         }
                         paymentMethodCashRef.current?.focus();
                       }
                     }}
                     required
-                    placeholder="Masukkan nominal pelunasan..."
+                    placeholder={lang === 'en' ? 'Enter settlement amount...' : 'Masukkan nominal pelunasan...'}
                     className="input-field w-full py-2 text-xs font-mono text-right bg-slate-50 border border-slate-250 text-emerald-600 font-bold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                   />
                 </div>
@@ -1302,7 +1420,9 @@ export const PelunasanSupplier: React.FC = () => {
 
               {/* Payment Method */}
               <div>
-                <label className="block text-xs font-semibold text-slate-655 mb-1">Metode Pembayaran</label>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">
+                  {lang === 'en' ? 'Payment Method' : 'Metode Pembayaran'}
+                </label>
                 <div className="flex gap-2">
                   <button
                     ref={paymentMethodCashRef}
@@ -1314,7 +1434,7 @@ export const PelunasanSupplier: React.FC = () => {
                     }}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMethod === 'cash' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'}`}
                   >
-                    Tunai / Cash
+                    {lang === 'en' ? 'Cash' : 'Tunai / Cash'}
                   </button>
                   <button
                     ref={paymentMethodTransferRef}
@@ -1326,21 +1446,27 @@ export const PelunasanSupplier: React.FC = () => {
                     }}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${paymentMethod === 'transfer' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-slate-50 border-slate-250 text-slate-500 hover:bg-slate-100'}`}
                   >
-                    Transfer Bank
+                    {lang === 'en' ? 'Bank Transfer' : 'Transfer Bank'}
                   </button>
                 </div>
               </div>
 
               {/* Note */}
               <div>
-                <label className="block text-xs font-semibold text-slate-655 mb-1">Catatan Pembayaran</label>
+                <label className="block text-xs font-semibold text-slate-655 mb-1">
+                  {lang === 'en' ? 'Payment Note' : 'Catatan Pembayaran'}
+                </label>
                 <textarea
                   ref={paymentNoteRef}
                   value={paymentNote}
                   onChange={(e) => setPaymentNote(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); savePayment(); } }}
                   rows={2}
-                  placeholder="Keterangan transfer bank, no referensi, dll... (Opsional)"
+                  placeholder={
+                    lang === 'en'
+                      ? 'Bank transfer details, reference no, etc... (Optional)'
+                      : 'Keterangan transfer bank, no referensi, dll... (Opsional)'
+                  }
                   className="input-field w-full py-1.5 text-xs resize-none bg-slate-50 border border-slate-250 text-slate-800 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                 />
               </div>
@@ -1354,13 +1480,13 @@ export const PelunasanSupplier: React.FC = () => {
                   onClick={() => setShowPaymentModal(false)}
                   className="btn-secondary py-1.5 px-3 text-xs font-bold rounded-lg cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-350 text-slate-800 whitespace-nowrap"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="submit"
                   className="btn-primary py-1.5 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
                 >
-                  Simpan Pelunasan
+                  {lang === 'en' ? 'Save Settlement' : 'Simpan Pelunasan'}
                 </button>
               </div>
             </div>
@@ -1371,7 +1497,9 @@ export const PelunasanSupplier: React.FC = () => {
             <div className="bg-white border border-slate-200 rounded-xl w-full md:w-80 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
               <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
                 <FileText size={18} />
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Preview Distribusi (FIFO)</h4>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                  {lang === 'en' ? 'Distribution Preview (FIFO)' : 'Preview Distribusi (FIFO)'}
+                </h4>
               </div>
               <div className="p-4 overflow-y-auto space-y-2 text-xs flex-1 bg-slate-50/30">
                 <div className="space-y-2 text-[11px]">
@@ -1380,17 +1508,21 @@ export const PelunasanSupplier: React.FC = () => {
                       <div className="flex justify-between font-mono font-bold text-slate-800">
                         <span>{alloc.no_faktur || alloc.no_order}</span>
                         {alloc.remainingAfter === 0 ? (
-                          <span className="text-emerald-600 font-bold flex items-center gap-0.5">Lunas ✓</span>
+                          <span className="text-emerald-600 font-bold flex items-center gap-0.5">
+                            {lang === 'en' ? 'Paid ✓' : 'Lunas ✓'}
+                          </span>
                         ) : (
-                          <span className="text-amber-600 font-semibold flex items-center gap-0.5">Sebagian</span>
+                          <span className="text-amber-600 font-semibold flex items-center gap-0.5">
+                            {lang === 'en' ? 'Partial' : 'Sebagian'}
+                          </span>
                         )}
                       </div>
                       <div className="flex justify-between text-slate-500">
-                        <span>Hutang Awal:</span>
+                        <span>{lang === 'en' ? 'Initial Debt:' : 'Hutang Awal:'}</span>
                         <span>{formatCurrency(alloc.remaining)}</span>
                       </div>
                       <div className="flex justify-between border-t border-dashed border-slate-200 pt-1 font-semibold text-emerald-600">
-                        <span>Bayar:</span>
+                        <span>{lang === 'en' ? 'Pay:' : 'Bayar:'}</span>
                         <span>{formatCurrency(alloc.allocated)}</span>
                       </div>
                     </div>
@@ -1405,16 +1537,18 @@ export const PelunasanSupplier: React.FC = () => {
             <div className="bg-white border border-slate-200 rounded-xl w-full md:w-96 shadow-2xl animate-scale-in flex flex-col max-h-[90vh] overflow-hidden shrink-0">
               <div className="bg-blue-600 px-5 py-4 flex items-center gap-2 text-white shrink-0">
                 <FileText size={18} />
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Input Pelunasan Per PO</h4>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                  {lang === 'en' ? 'Enter Settlement Per PO' : 'Input Pelunasan Per PO'}
+                </h4>
               </div>
               <div className="p-4 overflow-y-auto space-y-3 flex-1 bg-slate-50/30">
                 <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto bg-white shadow-sm">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
                       <tr className="text-slate-500 text-[10px] font-bold uppercase">
-                        <th className="p-2">No. PO</th>
-                        <th className="p-2 text-right">Sisa Hutang</th>
-                        <th className="p-2 text-center w-36">Nominal Bayar</th>
+                        <th className="p-2">{lang === 'en' ? 'PO No.' : 'No. PO'}</th>
+                        <th className="p-2 text-right">{lang === 'en' ? 'Remaining Debt' : 'Sisa Hutang'}</th>
+                        <th className="p-2 text-center w-36">{lang === 'en' ? 'Pay Amount' : 'Nominal Bayar'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, todayString } from '@/lib/utils';
 import {
   Search,
@@ -80,6 +81,7 @@ interface CompletedReturnSlip {
 
 export const ReturPenjualan: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
 
   // Basic Form States
   const [returMetaSaved] = useState(() => {
@@ -438,7 +440,7 @@ export const ReturPenjualan: React.FC = () => {
       rp => rp.id === historyPopupProduct.id && rp.history.some(h => h.sale_id === selectedItem.sale_id)
     );
     if (exists) {
-      showToast('Transaksi barang ini sudah ditambahkan ke daftar retur.', 'error');
+      showToast(lang === 'en' ? 'This item transaction has already been added to the return list.' : 'Transaksi barang ini sudah ditambahkan ke daftar retur.', 'error');
       closeHistoryPopup();
       return;
     }
@@ -469,7 +471,7 @@ export const ReturPenjualan: React.FC = () => {
     setShowHistoryPopup(false);
     setHistoryPopupProduct(null);
     setHistoryPopupList([]);
-    showToast('Transaksi berhasil ditambahkan ke daftar retur.', 'success');
+    showToast(lang === 'en' ? 'Transaction successfully added to return list.' : 'Transaksi berhasil ditambahkan ke daftar retur.', 'success');
 
     setTimeout(() => {
       productSearchRef.current?.focus();
@@ -541,8 +543,12 @@ export const ReturPenjualan: React.FC = () => {
       }));
 
       if (historyList.length === 0) {
-        setFormError(`Customer "${selectedCustomer.nama}" belum pernah membeli "${p.nama}" di sistem.`);
-        showToast('Customer belum pernah membeli barang ini.', 'error');
+        setFormError(
+          lang === 'en'
+            ? `Customer "${selectedCustomer.nama}" has never purchased "${p.nama}" in the system.`
+            : `Customer "${selectedCustomer.nama}" belum pernah membeli "${p.nama}" di sistem.`
+        );
+        showToast(lang === 'en' ? 'Customer has never purchased this item.' : 'Customer belum pernah membeli barang ini.', 'error');
       } else {
         setFormError(null);
         setHistoryPopupProduct(p);
@@ -555,7 +561,7 @@ export const ReturPenjualan: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
-      showToast('Gagal memuat riwayat penjualan customer.', 'error');
+      showToast(lang === 'en' ? 'Failed to load customer sales history.' : 'Gagal memuat riwayat penjualan customer.', 'error');
     }
 
     setProductQuery('');
@@ -649,7 +655,7 @@ export const ReturPenjualan: React.FC = () => {
       const card = flatHistoryCards[idx];
       if (card) {
         removeProduct(card.productId);
-        showToast('Produk berhasil dihapus dari daftar retur.', 'success');
+        showToast(lang === 'en' ? 'Product successfully removed from return list.' : 'Produk berhasil dihapus dari daftar retur.', 'success');
         setActiveStep('product');
         setTimeout(() => {
           productSearchRef.current?.focus();
@@ -674,7 +680,7 @@ export const ReturPenjualan: React.FC = () => {
           }
         }, 50);
       } else {
-        showToast('Masukkan Qty Diretur terlebih dahulu.', 'error');
+        showToast(lang === 'en' ? 'Please enter returned quantity first.' : 'Masukkan Qty Diretur terlebih dahulu.', 'error');
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -788,12 +794,16 @@ export const ReturPenjualan: React.FC = () => {
   const handlePrintTrigger = () => {
     setFormError(null);
     if (!selectedCustomer) {
-      setFormError('Pilih customer terlebih dahulu.');
+      setFormError(lang === 'en' ? 'Please select a customer first.' : 'Pilih customer terlebih dahulu.');
       return;
     }
     const totalItems = calculateTotalItems();
     if (totalItems <= 0) {
-      setFormError('Masukkan jumlah retur minimal 1 barang di card riwayat penjualan.');
+      setFormError(
+        lang === 'en'
+          ? 'Please enter a return quantity of at least 1 item in the sales history card.'
+          : 'Masukkan jumlah retur minimal 1 barang di card riwayat penjualan.'
+      );
       return;
     }
     setShowConfirmPrintModal(true);
@@ -894,7 +904,7 @@ export const ReturPenjualan: React.FC = () => {
       }
 
       setCompletedReturns(createdSlips);
-      showToast('Retur penjualan berhasil disimpan!', 'success');
+      showToast(lang === 'en' ? 'Sales return successfully saved!' : 'Retur penjualan berhasil disimpan!', 'success');
       setShowConfirmPrintModal(false);
 
       setTimeout(() => {
@@ -904,7 +914,7 @@ export const ReturPenjualan: React.FC = () => {
 
     } catch (err: any) {
       console.error(err);
-      showToast(err.response?.data?.error || 'Gagal menyimpan retur penjualan.', 'error');
+      showToast(err.response?.data?.error || (lang === 'en' ? 'Failed to save sales return.' : 'Gagal menyimpan retur penjualan.'), 'error');
       setShowConfirmPrintModal(false);
     }
   };
@@ -923,13 +933,13 @@ export const ReturPenjualan: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 print:hidden">
         <div>
-          <div className="flex items-center gap-1.5 text-slate-550 text-xs">
-            <span>Modul Penjualan</span>
+          <div className="flex items-center gap-1.5 text-slate-555 text-xs">
+            <span>{lang === 'en' ? 'Sales Module' : 'Modul Penjualan'}</span>
             <ChevronRight size={12} />
-            <span className="text-slate-900 font-medium">Retur Penjualan</span>
+            <span className="text-slate-900 font-medium">{lang === 'en' ? 'Sales Return' : 'Retur Penjualan'}</span>
           </div>
           <h1 className="text-xl font-extrabold text-slate-950 mt-0.5 flex items-center gap-2">
-            Retur Penjualan (Sales Return)
+            {lang === 'en' ? 'Sales Return' : 'Retur Penjualan (Sales Return)'}
           </h1>
         </div>
       </div>
@@ -938,11 +948,13 @@ export const ReturPenjualan: React.FC = () => {
       <div className="card card-hovered p-4 bg-white border border-blue-100 shadow-md space-y-4 animate-fade-in print:hidden">
         <div className="flex items-center justify-between border-b border-blue-50 pb-2">
           <div className="flex flex-col md:flex-row md:items-center gap-2">
-            <h2 className="text-sm font-bold text-slate-800">Formulir Retur Penjualan Tanpa Nota</h2>
+            <h2 className="text-sm font-bold text-slate-800">
+              {lang === 'en' ? 'Sales Return Form (Without Invoice)' : 'Formulir Retur Penjualan Tanpa Nota'}
+            </h2>
           </div>
           <button
             onClick={() => navigate('/penjualan')}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-650 hover:bg-slate-100 transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-655 hover:bg-slate-100 transition-colors"
           >
             <X size={18} />
           </button>
@@ -961,7 +973,7 @@ export const ReturPenjualan: React.FC = () => {
           <div className="space-y-1 relative">
             <label className="text-[10px] font-bold text-slate-600 uppercase flex items-center gap-1.5">
               <User size={12} className="text-slate-400" />
-              Customer (F1)
+              {lang === 'en' ? 'Customer (F1)' : 'Customer (F1)'}
             </label>
             {selectedCustomer ? (
               <div className="flex items-center justify-between border border-blue-100 bg-blue-50/20 rounded-lg py-1 px-2.5 h-8">
@@ -971,7 +983,7 @@ export const ReturPenjualan: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetCustomer}
-                  className="p-0.5 hover:bg-blue-100 rounded text-slate-500 hover:text-slate-700 transition-colors ml-1"
+                  className="p-0.5 hover:bg-blue-100 rounded text-slate-505 hover:text-slate-700 transition-colors ml-1"
                 >
                   <X size={12} />
                 </button>
@@ -980,7 +992,7 @@ export const ReturPenjualan: React.FC = () => {
               <input
                 ref={customerSearchRef}
                 type="text"
-                placeholder="Ketik nama customer..."
+                placeholder={lang === 'en' ? 'Type customer name...' : 'Ketik nama customer...'}
                 value={customerQuery}
                 onFocus={() => setActiveStep('customer')}
                 onChange={(e) => setCustomerQuery(e.target.value)}
@@ -995,12 +1007,16 @@ export const ReturPenjualan: React.FC = () => {
           <div className="space-y-1 relative">
             <label className="text-[10px] font-bold text-slate-600 uppercase flex items-center gap-1.5">
               <Search size={12} className="text-slate-400" />
-              Cari & Tambah Barang (F2)
+              {lang === 'en' ? 'Search & Add Item (F2)' : 'Cari & Tambah Barang (F2)'}
             </label>
             <input
               ref={productSearchRef}
               type="text"
-              placeholder={selectedCustomer ? "Cari barang..." : "Pilih customer dulu..."}
+              placeholder={
+                selectedCustomer
+                  ? (lang === 'en' ? 'Search product...' : 'Cari barang...')
+                  : (lang === 'en' ? 'Select customer first...' : 'Pilih customer dulu...')
+              }
               value={productQuery}
               onFocus={() => setActiveStep('product')}
               onChange={(e) => setProductQuery(e.target.value)}
@@ -1015,7 +1031,7 @@ export const ReturPenjualan: React.FC = () => {
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-600 uppercase flex items-center gap-1.5">
               <Calendar size={12} className="text-slate-400" />
-              Tanggal Retur
+              {lang === 'en' ? 'Return Date' : 'Tanggal Retur'}
             </label>
             <input
               ref={dateInputRef}
@@ -1033,13 +1049,17 @@ export const ReturPenjualan: React.FC = () => {
         <div className="space-y-3">
           <div className="bg-blue-50/40 px-4 py-2 border-t border-b border-blue-100/60 flex items-center gap-2">
             <ShoppingBag size={14} className="text-blue-500" />
-            <span className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">Kartu Riwayat Penjualan </span>
+            <span className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">
+              {lang === 'en' ? 'Sales History Card' : 'Kartu Riwayat Penjualan'}
+            </span>
           </div>
 
           {returnProducts.length === 0 ? (
-            <div className="text-center py-6 border-2 border-dashed border-blue-100/60 rounded-xl text-slate-400 text-xs bg-slate-55/20">
+            <div className="text-center py-6 border-2 border-dashed border-blue-100/60 rounded-xl text-slate-450 text-xs bg-slate-55/20">
               <Info size={24} className="mx-auto text-slate-300 mb-1" />
-              Daftar barang kosong. Cari dan tambah barang di atas untuk memuat riwayat.
+              {lang === 'en'
+                ? 'Empty item list. Search and add items above to load history.'
+                : 'Daftar barang kosong. Cari dan tambah barang di atas untuk memuat riwayat.'}
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -1057,7 +1077,7 @@ export const ReturPenjualan: React.FC = () => {
                       type="button"
                       onClick={() => removeProduct(p.id)}
                       className="p-0.5 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 transition-colors"
-                      title="Hapus Produk"
+                      title={lang === 'en' ? 'Delete Product' : 'Hapus Produk'}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -1084,16 +1104,18 @@ export const ReturPenjualan: React.FC = () => {
                           key={h.sale_id}
                           style={{ outline: 'none' }}
                           className={`border rounded-xl p-3 space-y-2.5 transition-all relative ${isFocusedCard
-                            ? 'border-l-4 border-blue-600 bg-blue-100 shadow-md text-blue-950 border-blue-300 scale-[1.01]'
+                            ? 'border-l-4 border-blue-600 bg-blue-100 shadow-md text-blue-900 border-blue-300 scale-[1.01]'
                             : h.qty_retur > 0
-                              ? 'border-slate-200 bg-blue-50/10 shadow-xs'
-                              : 'border-slate-200 bg-slate-50/20 hover:border-blue-200'
+                              ? 'border-slate-205 bg-blue-50/10 shadow-xs'
+                              : 'border-slate-205 bg-slate-50/20 hover:border-blue-200'
                             }`}
                         >
                           {/* Order info badge */}
                           <div className="flex justify-between items-start">
                             <div>
-                              <span className="text-[8px] text-slate-400 uppercase font-bold tracking-wider block">Nota Asal</span>
+                              <span className="text-[8px] text-slate-400 uppercase font-bold tracking-wider block">
+                                {lang === 'en' ? 'Origin Invoice' : 'Nota Asal'}
+                              </span>
                               <p className="text-xs font-bold text-slate-800 font-mono leading-none mt-0.5">{h.no_faktur || h.no_order}</p>
                             </div>
                             <span className="text-[9px] text-slate-500 font-medium">
@@ -1104,11 +1126,15 @@ export const ReturPenjualan: React.FC = () => {
                           {/* Order terms & prices */}
                           <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 border border-slate-100 rounded-lg p-2">
                             <div>
-                              <span className="text-slate-400">Harga Jual:</span>
-                              <p className="font-semibold text-slate-705">{formatCurrency(h.unit_price)}</p>
+                              <span className="text-slate-400">
+                                {lang === 'en' ? 'Selling Price:' : 'Harga Jual:'}
+                              </span>
+                              <p className="font-semibold text-slate-700">{formatCurrency(h.unit_price)}</p>
                             </div>
                             <div>
-                              <span className="text-slate-400">Sisa Beli:</span>
+                              <span className="text-slate-400">
+                                {lang === 'en' ? 'Purchase Qty Remaining:' : 'Sisa Beli:'}
+                              </span>
                               <p className="font-bold text-slate-800">{h.qty_remaining} {p.satuan}</p>
                             </div>
                           </div>
@@ -1116,7 +1142,9 @@ export const ReturPenjualan: React.FC = () => {
                           {/* Input Return Qty and Condition selector in an elegant side-by-side row */}
                           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-150/50">
                             <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Qty Diretur</span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                {lang === 'en' ? 'Return Qty' : 'Qty Diretur'}
+                              </span>
                               <div className="flex items-center border border-slate-300 rounded px-2 py-0.5 bg-white h-7 focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                                 <input
                                   ref={el => { qtyInputRefs.current[cardKey] = el; }}
@@ -1140,7 +1168,9 @@ export const ReturPenjualan: React.FC = () => {
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Kondisi Barang</span>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                {lang === 'en' ? 'Item Condition' : 'Kondisi Barang'}
+                              </span>
                               <div className="flex rounded border border-slate-300 overflow-hidden text-[9px] font-bold h-7">
                                 <button
                                   ref={el => { bagusBtnRefs.current[cardKey] = el; }}
@@ -1154,10 +1184,10 @@ export const ReturPenjualan: React.FC = () => {
                                   onClick={() => handleKondisiCardChange(p.id, h.sale_id, 'bagus')}
                                   className={`flex-1 py-1 text-center transition-all focus:ring-2 focus:ring-blue-500 focus:ring-inset focus:outline-none ${h.kondisi === 'bagus'
                                     ? 'bg-success-600 text-white'
-                                    : 'bg-white text-slate-55 hover:bg-slate-50 focus:bg-blue-50/50'
+                                    : 'bg-white text-slate-50 hover:bg-slate-50 focus:bg-blue-50/50'
                                     } ${h.qty_retur <= 0 ? 'opacity-40' : ''}`}
                                 >
-                                  Bagus
+                                  {lang === 'en' ? 'Good' : 'Bagus'}
                                 </button>
                                 <button
                                   ref={el => { rusakBtnRefs.current[cardKey] = el; }}
@@ -1174,7 +1204,7 @@ export const ReturPenjualan: React.FC = () => {
                                     : 'bg-white text-slate-55 hover:bg-slate-50 focus:bg-blue-50/50'
                                     } ${h.qty_retur <= 0 ? 'opacity-40' : ''}`}
                                 >
-                                  Rusak
+                                  {lang === 'en' ? 'Damaged' : 'Rusak'}
                                 </button>
                               </div>
                             </div>
@@ -1182,21 +1212,23 @@ export const ReturPenjualan: React.FC = () => {
 
                           {/* Catatan / Keterangan per card */}
                           <div className="space-y-1 pt-2 border-t border-slate-150/50">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Catatan / Alasan Retur</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">
+                              {lang === 'en' ? 'Notes / Return Reason' : 'Catatan / Alasan Retur'}
+                            </span>
                             <div className="flex items-center border border-slate-300 rounded px-2 py-0.5 bg-slate-50 h-7 focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                               <input
-                                ref={el => { catatanInputRefs.current[cardKey] = el; }}
-                                type="text"
-                                placeholder="Alasan retur (opsional)..."
-                                value={h.catatan || ''}
-                                onFocus={() => {
-                                  setActiveStep('catatan');
-                                  setFocusedCardIdx(flatIdx);
-                                }}
-                                onKeyDown={(e) => handleCatatanCardKeyDown(e, cardKey, p.id, h.sale_id)}
-                                onChange={(e) => handleCatatanCardChange(p.id, h.sale_id, e.target.value)}
-                                style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
-                                className="w-full bg-transparent text-xs font-bold text-slate-800 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                                  ref={el => { catatanInputRefs.current[cardKey] = el; }}
+                                  type="text"
+                                  placeholder={lang === 'en' ? 'Return reason (optional)...' : 'Alasan retur (opsional)...'}
+                                  value={h.catatan || ''}
+                                  onFocus={() => {
+                                    setActiveStep('catatan');
+                                    setFocusedCardIdx(flatIdx);
+                                  }}
+                                  onKeyDown={(e) => handleCatatanCardKeyDown(e, cardKey, p.id, h.sale_id)}
+                                  onChange={(e) => handleCatatanCardChange(p.id, h.sale_id, e.target.value)}
+                                  style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
+                                  className="w-full bg-transparent text-xs font-bold text-slate-800 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                               />
                             </div>
                           </div>
@@ -1213,12 +1245,16 @@ export const ReturPenjualan: React.FC = () => {
         {/* Footer Actions / Totals */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-3">
           <div className="text-[10px] text-slate-400 font-medium">
-            Navigasi: <kbd className="shortcut-badge">F1</kbd> Customer, <kbd className="shortcut-badge">F2</kbd> Tambah Barang, <kbd className="shortcut-badge">F3</kbd> Pilih Kartu, <kbd className="shortcut-badge">F10</kbd> Simpan & Cetak.
+            {lang === 'en'
+              ? 'Navigation: F1 Customer, F2 Add Item, F3 Select Card, F10 Save & Print.'
+              : 'Navigasi: F1 Customer, F2 Tambah Barang, F3 Pilih Kartu, F10 Simpan & Cetak.'}
           </div>
 
           <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
             <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-slate-400">Total Pengembalian Uang</p>
+              <p className="text-[10px] uppercase font-bold text-slate-400">
+                {lang === 'en' ? 'Total Refund' : 'Total Pengembalian Uang'}
+              </p>
               <p className="text-base font-extrabold text-blue-600 leading-none mt-1">{formatCurrency(calculateTotalRefund())}</p>
             </div>
 
@@ -1228,7 +1264,7 @@ export const ReturPenjualan: React.FC = () => {
                 onClick={() => navigate('/penjualan')}
                 className="px-3.5 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors"
               >
-                Batal (Esc)
+                {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
               </button>
               <button
                 type="button"
@@ -1236,7 +1272,7 @@ export const ReturPenjualan: React.FC = () => {
                 className="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-all flex items-center gap-1.5"
               >
                 <Printer size={13} />
-                Cetak Retur (F10)
+                {lang === 'en' ? 'Print Return (F10)' : 'Cetak Retur (F10)'}
               </button>
             </div>
           </div>
@@ -1256,7 +1292,7 @@ export const ReturPenjualan: React.FC = () => {
             <div className="flex justify-between items-center w-full">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <Search size={18} className="text-blue-500" />
-                <span>Pilih Pelanggan (Customer)</span>
+                <span>{lang === 'en' ? 'Select Customer' : 'Pilih Pelanggan (Customer)'}</span>
               </h3>
               <button onClick={() => setShowCustomerPopup(false)} className="text-slate-400 hover:text-slate-650">
                 <X size={18} />
@@ -1277,26 +1313,29 @@ export const ReturPenjualan: React.FC = () => {
                   >
                     <div>
                       <p className={`font-semibold ${idx === focusedCustIdx ? 'text-blue-900' : 'text-slate-900'}`}>{cust.nama}</p>
-                      <p className="text-[10px] text-slate-450 mt-0.5">Alamat: {cust.alamat || '-'}</p>
+                      <p className="text-[10px] text-slate-450 mt-0.5">
+                        {lang === 'en' ? 'Address:' : 'Alamat:'} {cust.alamat || '-'}
+                      </p>
                     </div>
                     <span className="text-[10px] text-slate-400 font-bold">ID: {cust.kode}</span>
                   </button>
                 ))
               ) : (
                 <div className="text-center py-8 text-slate-500 text-xs">
-                  Tidak ada pelanggan yang cocok dengan "{customerQuery}".
+                  {lang === 'en'
+                    ? `No customer matches found for "${customerQuery}".`
+                    : `Tidak ada pelanggan yang cocok dengan "${customerQuery}".`}
                 </div>
               )}
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              <span>{lang === 'en' ? 'Use ↑ ↓ to choose' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+              <span><kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm' : 'untuk konfirmasi'}, <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'to cancel' : 'batal'}</span>
             </div>
           </div>
         </div>
         </ModalPortal>
       )}
-
       {/* PRODUCT SEARCH POPUP MODAL */}
       {showProductPopup && (
         <ModalPortal>
@@ -1310,9 +1349,9 @@ export const ReturPenjualan: React.FC = () => {
             <div className="flex justify-between items-center w-full">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <Search size={18} className="text-blue-500" />
-                <span>Pilih Produk</span>
+                <span>{lang === 'en' ? 'Select Product' : 'Pilih Produk'}</span>
               </h3>
-              <button onClick={() => setShowProductPopup(false)} className="text-slate-400 hover:text-slate-650">
+              <button onClick={() => setShowProductPopup(false)} className="text-slate-400 hover:text-slate-655">
                 <X size={18} />
               </button>
             </div>
@@ -1334,19 +1373,23 @@ export const ReturPenjualan: React.FC = () => {
                       <p className="text-[10px] text-slate-450 font-mono mt-0.5">{prod.kode}</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-500 font-semibold">Stok: {Number(prod.stok)} {prod.satuan}</span>
+                      <span className="text-[10px] text-slate-505 font-semibold">
+                        {lang === 'en' ? 'Stock:' : 'Stok:'} {Number(prod.stok)} {prod.satuan}
+                      </span>
                     </div>
                   </button>
                 ))
               ) : (
                 <div className="text-center py-8 text-slate-500 text-xs">
-                  Tidak ada produk yang cocok dengan "{productQuery}".
+                  {lang === 'en'
+                    ? `No products match "${productQuery}".`
+                    : `Tidak ada produk yang cocok dengan "${productQuery}".`}
                 </div>
               )}
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              <span>{lang === 'en' ? 'Use ↑ ↓ to choose' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+              <span><kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm' : 'untuk konfirmasi'}, <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'to cancel' : 'batal'}</span>
             </div>
           </div>
         </div>
@@ -1366,9 +1409,11 @@ export const ReturPenjualan: React.FC = () => {
               <div className="flex justify-between items-center w-full pb-3 border-b border-slate-100">
                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                   <Search size={18} className="text-blue-500" />
-                  <span>Pilih Transaksi - {historyPopupProduct.nama}</span>
+                  <span>
+                    {lang === 'en' ? 'Select Transaction' : 'Pilih Transaksi'} - {historyPopupProduct.nama}
+                  </span>
                 </h3>
-                <button onClick={closeHistoryPopup} className="text-slate-400 hover:text-slate-650">
+                <button onClick={closeHistoryPopup} className="text-slate-400 hover:text-slate-655">
                   <X size={18} />
                 </button>
               </div>
@@ -1377,10 +1422,10 @@ export const ReturPenjualan: React.FC = () => {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-100 text-slate-650 font-bold border-b border-slate-200">
-                        <th className="p-3">No Order</th>
-                        <th className="p-3">Tanggal</th>
-                        <th className="p-3 text-right">Harga Jual</th>
-                        <th className="p-3 text-right">Qty Tersedia</th>
+                        <th className="p-3">{lang === 'en' ? 'Order No' : 'No Order'}</th>
+                        <th className="p-3">{lang === 'en' ? 'Date' : 'Tanggal'}</th>
+                        <th className="p-3 text-right">{lang === 'en' ? 'Selling Price' : 'Harga Jual'}</th>
+                        <th className="p-3 text-right">{lang === 'en' ? 'Available Qty' : 'Qty Tersedia'}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1409,8 +1454,8 @@ export const ReturPenjualan: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
-                <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-                <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+                <span>{lang === 'en' ? 'Use ↑ ↓ to choose' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+                <span><kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm' : 'untuk konfirmasi'}, <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'to cancel' : 'batal'}</span>
               </div>
             </div>
           </div>
@@ -1427,42 +1472,52 @@ export const ReturPenjualan: React.FC = () => {
               {/* Colored Header */}
               <div className="bg-blue-600 text-white px-5 py-4 flex items-center gap-2">
                 <Printer size={18} />
-                <h3 className="font-bold text-xs uppercase tracking-wider">Konfirmasi Simpan & Cetak</h3>
+                <h3 className="font-bold text-xs uppercase tracking-wider">
+                  {lang === 'en' ? 'Confirm Save & Print' : 'Konfirmasi Simpan & Cetak'}
+                </h3>
               </div>
 
               {/* Body */}
               <div className="p-5 space-y-4">
                 <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-                  Apakah Anda yakin ingin memproses retur penjualan ini? Dokumen retur akan disimpan dan nota transaksi akan langsung dicetak.
+                  {lang === 'en'
+                    ? 'Are you sure you want to process this sales return? Return document will be saved and transaction invoice will be printed immediately.'
+                    : 'Apakah Anda yakin ingin memproses retur penjualan ini? Dokumen retur akan disimpan dan nota transaksi akan langsung dicetak.'}
                 </p>
 
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Barang</span>
-                    <p className="font-bold text-slate-800 mt-1">{calculateTotalItems()} item</p>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {lang === 'en' ? 'Total Items' : 'Total Barang'}
+                    </span>
+                    <p className="font-bold text-slate-800 mt-1">
+                      {calculateTotalItems()} {lang === 'en' ? 'item(s)' : 'item'}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Ganti Rugi</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {lang === 'en' ? 'Total Refund' : 'Total Ganti Rugi'}
+                    </span>
                     <p className="font-bold text-blue-600 mt-1">{formatCurrency(calculateTotalRefund())}</p>
                   </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="bg-slate-50 px-5 py-3.5 flex justify-end gap-2.5 border-t border-slate-200">
+              <div className="bg-slate-55 px-5 py-3.5 flex justify-end gap-2.5 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setShowConfirmPrintModal(false)}
                   className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-655 hover:bg-slate-100 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmSaveAndPrint}
                   className="px-4.5 py-2 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-500/10 flex items-center gap-1"
                 >
-                  Cetak Nota (P)
+                  {lang === 'en' ? 'Print Invoice (P)' : 'Cetak Nota (P)'}
                 </button>
               </div>
 
@@ -1480,27 +1535,35 @@ export const ReturPenjualan: React.FC = () => {
               <div className="flex justify-between items-start border-b border-blue-600 pb-4">
                 <div>
                   <h1 className="text-base font-bold uppercase tracking-wider text-blue-650">Maju Mulia Bersama</h1>
-                  <p className="text-[10px] text-slate-700">Distributor Bahan Bangunan & Logam</p>
+                  <p className="text-[10px] text-slate-700">
+                    {lang === 'en' ? 'Building Materials & Metals Distributor' : 'Distributor Bahan Bangunan & Logam'}
+                  </p>
                   <p className="text-[10px] text-slate-700">Jl. Raya Industri Utama No. 88, Cikarang, Bekasi</p>
                   <p className="text-[10px] text-slate-700">Telp: (021) 89876543</p>
                 </div>
                 <div className="text-right">
-                  <h2 className="text-sm font-bold uppercase text-blue-650">Nota Retur Penjualan</h2>
+                  <h2 className="text-sm font-bold uppercase text-blue-655">
+                    {lang === 'en' ? 'Sales Return Invoice' : 'Nota Retur Penjualan'}
+                  </h2>
                   <p className="text-[10px] font-semibold font-mono text-blue-600">{slip.no_retur}</p>
-                  <p className="text-[10px] mt-1">No. Faktur Retur: {slip.no_faktur || '-'}</p>
-                  <p className="text-[9px] mt-1 text-slate-650">Tanggal Retur: {formatDate(slip.retur_date)}</p>
+                  <p className="text-[10px] mt-1">
+                    {lang === 'en' ? 'Return Invoice No.:' : 'No. Faktur Retur:'} {slip.no_faktur || '-'}
+                  </p>
+                  <p className="text-[9px] mt-1 text-slate-650">
+                    {lang === 'en' ? 'Return Date:' : 'Tanggal Retur:'} {formatDate(slip.retur_date)}
+                  </p>
                 </div>
               </div>
 
               {/* Metadata */}
               <div className="grid grid-cols-2 gap-4 text-[9px]">
                 <div>
-                  <p className="font-bold text-blue-500 uppercase">Pelanggan:</p>
+                  <p className="font-bold text-blue-500 uppercase">{lang === 'en' ? 'Customer:' : 'Pelanggan:'}</p>
                   <p className="font-bold text-[10px] text-slate-800">{slip.customer_nama}</p>
                 </div>
                 <div>
-                  <p className="font-bold text-blue-500 uppercase">Keterangan:</p>
-                  <p className="italic text-slate-700">"{slip.catatan || 'Tidak ada catatan'}"</p>
+                  <p className="font-bold text-blue-500 uppercase">{lang === 'en' ? 'Notes:' : 'Keterangan:'}</p>
+                  <p className="italic text-slate-700">"{slip.catatan || (lang === 'en' ? 'No notes' : 'Tidak ada catatan')}"</p>
                 </div>
               </div>
 
@@ -1509,11 +1572,11 @@ export const ReturPenjualan: React.FC = () => {
                 <thead>
                   <tr className="bg-blue-50/40 border-b border-blue-600 font-bold uppercase text-[8px] text-blue-900">
                     <th className="p-1 border-r border-blue-600 w-6 text-center">No</th>
-                    <th className="p-1 border-r border-blue-600">Kode Barang</th>
-                    <th className="p-1 border-r border-blue-600">Nama Produk</th>
-                    <th className="p-1 border-r border-blue-600 text-center w-16">Kuantitas</th>
-                    <th className="p-1 border-r border-blue-600 text-center w-16">Kondisi</th>
-                    <th className="p-1 border-r border-blue-600 text-right w-24">Harga</th>
+                    <th className="p-1 border-r border-blue-600">{lang === 'en' ? 'Product Code' : 'Kode Barang'}</th>
+                    <th className="p-1 border-r border-blue-600">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                    <th className="p-1 border-r border-blue-600 text-center w-16">{lang === 'en' ? 'Quantity' : 'Kuantitas'}</th>
+                    <th className="p-1 border-r border-blue-600 text-center w-16">{lang === 'en' ? 'Condition' : 'Kondisi'}</th>
+                    <th className="p-1 border-r border-blue-600 text-right w-24">{lang === 'en' ? 'Price' : 'Harga'}</th>
                     <th className="p-1 text-right w-24">Subtotal</th>
                   </tr>
                 </thead>
@@ -1524,14 +1587,16 @@ export const ReturPenjualan: React.FC = () => {
                       <td className="p-1 border-r border-blue-600 font-mono text-slate-700">{item.product_kode}</td>
                       <td className="p-1 border-r border-blue-600 font-bold text-slate-800">{item.product_nama}</td>
                       <td className="p-1 border-r border-blue-600 text-center">{item.qty} {item.satuan}</td>
-                      <td className="p-1 border-r border-blue-600 text-center uppercase font-bold text-slate-700">{item.kondisi}</td>
+                      <td className="p-1 border-r border-blue-600 text-center uppercase font-bold text-slate-700">
+                        {item.kondisi === 'bagus' ? (lang === 'en' ? 'GOOD' : 'BAGUS') : (lang === 'en' ? 'DAMAGED' : 'RUSAK')}
+                      </td>
                       <td className="p-1 border-r border-blue-600 text-right">{formatCurrency(item.unit_price)}</td>
                       <td className="p-1 text-right text-slate-800">{formatCurrency(item.total)}</td>
                     </tr>
                   ))}
                   <tr className="bg-blue-50/20 border-t border-blue-600">
                     <td colSpan={6} className="p-1 border-r border-blue-600 text-right font-bold uppercase text-blue-900">
-                      Total Pengembalian
+                      {lang === 'en' ? 'Total Refund' : 'Total Pengembalian'}
                     </td>
                     <td className="p-1 text-right font-black text-blue-800">
                       {formatCurrency(slip.total)}
@@ -1543,11 +1608,11 @@ export const ReturPenjualan: React.FC = () => {
               {/* Signatures */}
               <div className="grid grid-cols-2 gap-4 text-center text-[9px] pt-8 text-slate-800">
                 <div className="space-y-12">
-                  <p>Customer / Pelanggan</p>
+                  <p>{lang === 'en' ? 'Customer / Recipient' : 'Customer / Pelanggan'}</p>
                   <p className="underline font-bold text-slate-900">( ____________________ )</p>
                 </div>
                 <div className="space-y-12">
-                  <p>Hormat Kami, Kasir</p>
+                  <p>{lang === 'en' ? 'Sincerely, Cashier' : 'Hormat Kami, Kasir'}</p>
                   <p className="underline font-bold text-slate-900">( Maju Mulia Bersama )</p>
                 </div>
               </div>

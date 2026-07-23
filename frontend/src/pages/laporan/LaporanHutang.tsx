@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { exportStyledExcel } from '@/lib/excelHelper';
 import { 
   TrendingDown, 
@@ -32,6 +33,7 @@ interface Purchase {
 
 export const LaporanHutang: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,23 +134,29 @@ export const LaporanHutang: React.FC = () => {
     if (purchases.length === 0) return;
     const excelRows = filteredPurchases.map((p) => {
       return {
-        'No. Order PO': p.no_order,
-        'Nama Supplier': p.supplier?.nama || '-',
-        'Tanggal Order': formatDate(p.order_date),
-        'Jatuh Tempo (Term)': p.terms,
-        'Estimasi Jatuh Tempo': calculateDueDate(p.order_date, p.terms),
-        'Status Penerimaan': p.status,
-        'Nilai Hutang': Number(p.subtotal),
+        [lang === 'en' ? 'PO Order No.' : 'No. Order PO']: p.no_order,
+        [lang === 'en' ? 'Supplier Name' : 'Nama Supplier']: p.supplier?.nama || '-',
+        [lang === 'en' ? 'Order Date' : 'Tanggal Order']: formatDate(p.order_date),
+        [lang === 'en' ? 'Due Date (Term)' : 'Jatuh Tempo (Term)']: p.terms === 'tunai' ? (lang === 'en' ? 'Cash' : 'Tunai') : `${p.terms} ${lang === 'en' ? 'Months' : 'Bulan'}`,
+        [lang === 'en' ? 'Estimated Due Date' : 'Estimasi Jatuh Tempo']: calculateDueDate(p.order_date, p.terms),
+        [lang === 'en' ? 'Received Status' : 'Status Penerimaan']: p.status,
+        [lang === 'en' ? 'Debt Value' : 'Nilai Hutang']: Number(p.subtotal),
       };
     });
 
     exportStyledExcel(
       excelRows,
       `Laporan_Hutang_Dagang_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      'Laporan Hutang Dagang',
+      lang === 'en' ? 'Accounts Payable Report' : 'Laporan Hutang Dagang',
       [],
-      ['No. Order PO', 'Tanggal Order', 'Jatuh Tempo (Term)', 'Estimasi Jatuh Tempo', 'Status Penerimaan'],
-      ['Nilai Hutang']
+      [
+        lang === 'en' ? 'PO Order No.' : 'No. Order PO',
+        lang === 'en' ? 'Order Date' : 'Tanggal Order',
+        lang === 'en' ? 'Due Date (Term)' : 'Jatuh Tempo (Term)',
+        lang === 'en' ? 'Estimated Due Date' : 'Estimasi Jatuh Tempo',
+        lang === 'en' ? 'Received Status' : 'Status Penerimaan'
+      ],
+      [lang === 'en' ? 'Debt Value' : 'Nilai Hutang']
     );
   };
 
@@ -161,7 +169,7 @@ export const LaporanHutang: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -170,6 +178,7 @@ export const LaporanHutang: React.FC = () => {
 
   // Helper to calculate estimated due date based on terms
   const calculateDueDate = (orderDateStr: string, terms: string) => {
+    if (terms === 'tunai') return lang === 'en' ? 'Cash' : 'Tunai';
     const orderDate = new Date(orderDateStr);
     let monthsToAdd = 0;
     if (terms === '1') monthsToAdd = 1;
@@ -202,10 +211,16 @@ export const LaporanHutang: React.FC = () => {
             onClick={() => navigate('/laporan')}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mb-2 transition-colors font-semibold focus:outline-none"
           >
-            <ArrowLeft size={12} /> Kembali ke Menu (Esc)
+            <ArrowLeft size={12} /> {lang === 'en' ? 'Back to Menu (Esc)' : 'Kembali ke Menu (Esc)'}
           </button>
-          <h1 className="text-2xl font-extrabold text-slate-950">Laporan Hutang Dagang (AP)</h1>
-          <p className="text-slate-550 text-xs mt-1">Rekapitulasi tagihan kewajiban pembelian kredit (Accounts Payable) ke supplier yang jatuh tempo.</p>
+          <h1 className="text-2xl font-extrabold text-slate-950">
+            {lang === 'en' ? 'Accounts Payable Report (AP)' : 'Laporan Hutang Dagang (AP)'}
+          </h1>
+          <p className="text-slate-555 text-xs mt-1">
+            {lang === 'en'
+              ? 'Summary of credit purchase obligations (Accounts Payable) due to suppliers.'
+              : 'Rekapitulasi tagihan kewajiban pembelian kredit (Accounts Payable) ke supplier yang jatuh tempo.'}
+          </p>
         </div>
 
         <div className="flex gap-2 text-xs">
@@ -215,7 +230,7 @@ export const LaporanHutang: React.FC = () => {
             className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             <Download size={14} className="text-slate-500" />
-            <span>Ekspor Excel (F10)</span>
+            <span>{lang === 'en' ? 'Export Excel (F10)' : 'Ekspor Excel (F10)'}</span>
           </button>
         </div>
       </div>
@@ -225,7 +240,9 @@ export const LaporanHutang: React.FC = () => {
         {/* Metric 1 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-orange-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Total Outstanding Hutang</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Total Outstanding Payables' : 'Total Outstanding Hutang'}
+            </span>
             <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(totalHutangVal)}</span>
           </div>
           <div className="p-2.5 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl">
@@ -236,7 +253,9 @@ export const LaporanHutang: React.FC = () => {
         {/* Metric 2 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-indigo-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Rata-rata Tagihan PO</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Average PO Billing' : 'Rata-rata Tagihan PO'}
+            </span>
             <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{formatCurrency(averageHutangVal)}</span>
           </div>
           <div className="p-2.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl">
@@ -247,8 +266,12 @@ export const LaporanHutang: React.FC = () => {
         {/* Metric 3 */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500">
           <div>
-            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Banyak Faktur Hutang</span>
-            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">{filteredPurchases.length} Nota PO</span>
+            <span className="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">
+              {lang === 'en' ? 'Total Payable Invoices' : 'Banyak Faktur Hutang'}
+            </span>
+            <span className="text-xl font-extrabold text-slate-900 block mt-0.5 font-mono">
+              {filteredPurchases.length} {lang === 'en' ? 'PO Invoices' : 'Nota PO'}
+            </span>
           </div>
           <div className="p-2.5 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl">
             <Layers size={20} />
@@ -260,13 +283,15 @@ export const LaporanHutang: React.FC = () => {
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search */}
         <div className="relative w-full md:col-span-2">
-          <label className="block text-[10px] text-slate-500 mb-1.5 font-bold uppercase tracking-wider">Cari Supplier / No PO (F1)</label>
+          <label className="block text-[10px] text-slate-505 mb-1.5 font-bold uppercase tracking-wider">
+            {lang === 'en' ? 'Search Supplier / PO No. (F1)' : 'Cari Supplier / No PO (F1)'}
+          </label>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Nama supplier atau no order PO..."
+              placeholder={lang === 'en' ? 'Supplier name or PO order number...' : 'Nama supplier atau no order PO...'}
               value={searchQuery}
               onKeyDown={handleFilterEnter}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -277,8 +302,16 @@ export const LaporanHutang: React.FC = () => {
 
         {/* Hints */}
         <div className="text-left md:text-right flex flex-col justify-end text-[10px] text-slate-500 leading-relaxed">
-          <p>Laporan ini hanya memuat transaksi pembelian berstatus kredit yang aktif.</p>
-          <p className="mt-0.5">Pintasan: <kbd className="shortcut-badge text-[9px]">F1</kbd> cari data, <kbd className="shortcut-badge text-[9px]">F10</kbd> ekspor Excel.</p>
+          <p>
+            {lang === 'en'
+              ? 'This report only includes active credit purchase transactions.'
+              : 'Laporan ini hanya memuat transaksi pembelian berstatus kredit yang aktif.'}
+          </p>
+          <p className="mt-0.5 font-semibold text-slate-400">
+            {lang === 'en'
+              ? 'Shortcuts: F1 search data, F10 export Excel.'
+              : 'Pintasan: F1 cari data, F10 ekspor Excel.'}
+          </p>
         </div>
       </div>
 
@@ -293,26 +326,26 @@ export const LaporanHutang: React.FC = () => {
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
               <th className="p-3 w-12 text-center">No</th>
-              <th className="p-3">No. Order PO</th>
-              <th className="p-3">Nama Supplier</th>
-              <th className="p-3">Tanggal Order</th>
-              <th className="p-3 text-center">Termin J.Tempo</th>
-              <th className="p-3">Estimasi Jatuh Tempo</th>
-              <th className="p-3 text-center">Status Penerimaan</th>
-              <th className="p-3 text-right">Nilai Hutang</th>
+              <th className="p-3">{lang === 'en' ? 'PO Order No.' : 'No. Order PO'}</th>
+              <th className="p-3">{lang === 'en' ? 'Supplier Name' : 'Nama Supplier'}</th>
+              <th className="p-3">{lang === 'en' ? 'Order Date' : 'Tanggal Order'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Due Term' : 'Termin J.Tempo'}</th>
+              <th className="p-3">{lang === 'en' ? 'Estimated Due Date' : 'Estimasi Jatuh Tempo'}</th>
+              <th className="p-3 text-center">{lang === 'en' ? 'Received Status' : 'Status Penerimaan'}</th>
+              <th className="p-3 text-right">{lang === 'en' ? 'Payable Value' : 'Nilai Hutang'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-505 italic">
-                  Sedang merekap data tagihan supplier...
+                  {lang === 'en' ? 'Summarizing supplier billing data...' : 'Sedang merekap data tagihan supplier...'}
                 </td>
               </tr>
             ) : filteredPurchases.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-slate-400 italic">
-                  Tidak ada data hutang dagang terdeteksi untuk filter ini.
+                  {lang === 'en' ? 'No accounts payable data detected for this filter.' : 'Tidak ada data hutang dagang terdeteksi untuk filter ini.'}
                 </td>
               </tr>
             ) : (
@@ -350,7 +383,7 @@ export const LaporanHutang: React.FC = () => {
                     </td>
                     <td className={getTdClass('middle')}>{formatDate(p.order_date)}</td>
                     <td className={getTdClass('middle') + " text-center font-semibold text-slate-550"}>
-                      {p.terms === 'tunai' ? 'Tunai' : `${p.terms} Bulan`}
+                      {p.terms === 'tunai' ? (lang === 'en' ? 'Cash' : 'Tunai') : `${p.terms} ${lang === 'en' ? 'Months' : 'Bulan'}`}
                     </td>
                     <td className={getTdClass('middle') + " text-slate-700 font-bold"}>
                       {calculateDueDate(p.order_date, p.terms)}
@@ -375,7 +408,11 @@ export const LaporanHutang: React.FC = () => {
         </table>
       </div>
       <div className="flex justify-end text-[10px] text-slate-400 mt-2">
-        <span>Gunakan kursor atau klik tabel untuk fokus, tombol <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih.</span>
+        <span>
+          {lang === 'en'
+            ? 'Use cursor or click table to focus, ↑ ↓ keys to select.'
+            : 'Gunakan kursor atau klik tabel untuk fokus, tombol ↑ ↓ untuk memilih.'}
+        </span>
       </div>
     </div>
   );

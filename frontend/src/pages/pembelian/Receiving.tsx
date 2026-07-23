@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   CheckSquare, Search, Play, Check, AlertTriangle, X,
@@ -36,6 +37,7 @@ type ModalState = 'none' | 'summary' | 'confirmed';
 
 export const Receiving: React.FC = () => {
   const navigate = useNavigate();
+  const { lang } = useTranslation();
 
   // PO List States
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -103,11 +105,20 @@ export const Receiving: React.FC = () => {
     fetchPurchases();
     const updateTime = () => {
       const now = new Date();
-      const fmt = now.toLocaleDateString('id-ID', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-      }) + ' - ' + now.toLocaleTimeString('id-ID', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-      });
+      const fmt =
+        now.toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }) +
+        ' - ' +
+        now.toLocaleTimeString(lang === 'en' ? 'en-US' : 'id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        });
       setRealtimeTime(fmt);
     };
     updateTime();
@@ -117,7 +128,7 @@ export const Receiving: React.FC = () => {
       searchInputRef.current?.select();
     }, 150);
     return () => clearInterval(timer);
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     if (activePo) {
@@ -244,7 +255,12 @@ export const Receiving: React.FC = () => {
       });
 
       await api.patch(`/purchases/${activePo.id}/receive`, { items });
-      showToast('✅ Penerimaan PO diselesaikan! Stok gudang berhasil diperbarui.', 'success');
+      showToast(
+        lang === 'en'
+          ? '✅ PO receiving completed! Warehouse stock successfully updated.'
+          : '✅ Penerimaan PO diselesaikan! Stok gudang berhasil diperbarui.',
+        'success'
+      );
       setActivePo(null);
       setModalState('none');
       fetchPurchases();
@@ -254,7 +270,10 @@ export const Receiving: React.FC = () => {
         searchInputRef.current?.select();
       }, 150);
     } catch {
-      showToast('Gagal menyelesaikan penerimaan PO', 'error');
+      showToast(
+        lang === 'en' ? 'Failed to complete PO receiving' : 'Gagal menyelesaikan penerimaan PO',
+        'error'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -496,8 +515,14 @@ export const Receiving: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Receiving Gudang</h1>
-          <p className="text-slate-400 text-sm">Verifikasi fisik barang yang datang · input qty datang &amp; qty rusak per item</p>
+          <h1 className="text-2xl font-extrabold text-white">
+            {lang === 'en' ? 'Warehouse Receiving' : 'Receiving Gudang'}
+          </h1>
+          <p className="text-slate-400 text-sm">
+            {lang === 'en'
+              ? 'Verify incoming items · input received qty & damaged qty per item'
+              : 'Verifikasi fisik barang yang datang · input qty datang & qty rusak per item'}
+          </p>
         </div>
       </div>
 
@@ -511,7 +536,11 @@ export const Receiving: React.FC = () => {
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Cari nomor PO atau nama supplier (F1)..."
+                placeholder={
+                  lang === 'en'
+                    ? 'Search PO number or supplier name (F1)...'
+                    : 'Cari nomor PO atau nama supplier (F1)...'
+                }
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setIsTableFocused(false); }}
                 onKeyDown={handleSearchKeyDown}
@@ -535,9 +564,9 @@ export const Receiving: React.FC = () => {
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                      <th className="p-4">Nomor PO</th>
+                      <th className="p-4">{lang === 'en' ? 'PO Number' : 'Nomor PO'}</th>
                       <th className="p-4">Supplier</th>
-                      <th className="p-4">Tanggal Order</th>
+                      <th className="p-4">{lang === 'en' ? 'Order Date' : 'Tanggal Order'}</th>
                       <th className="p-4 text-right">Subtotal</th>
                     </tr>
                   </thead>
@@ -582,8 +611,14 @@ export const Receiving: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20">
               <CheckSquare className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-              <h3 className="text-lg font-bold text-slate-400">Tidak ada PO yang Siap Diterima</h3>
-              <p className="text-sm mt-1">Belum ada pesanan selesai yang siap untuk diterima di gudang.</p>
+              <h3 className="text-lg font-bold text-slate-400">
+                {lang === 'en' ? 'No PO Ready for Receiving' : 'Tidak ada PO yang Siap Diterima'}
+              </h3>
+              <p className="text-sm mt-1">
+                {lang === 'en'
+                  ? 'There are no completed orders ready to be received in the warehouse.'
+                  : 'Belum ada pesanan selesai yang siap untuk diterima di gudang.'}
+              </p>
             </div>
           )}
         </div>
@@ -598,8 +633,16 @@ export const Receiving: React.FC = () => {
                 <PackageCheck size={18} className="text-white" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">Proses Penerimaan Barang · {activePo.no_order} ({activePo.supplier?.nama})</h2>
-                <p className="text-xs text-primary-200 mt-0.5 font-medium">Input qty datang &amp; qty rusak untuk setiap item PO</p>
+                <h2 className="text-base font-bold text-white">
+                  {lang === 'en'
+                    ? `Item Receiving Process · ${activePo.no_order} (${activePo.supplier?.nama})`
+                    : `Proses Penerimaan Barang · ${activePo.no_order} (${activePo.supplier?.nama})`}
+                </h2>
+                <p className="text-xs text-primary-200 mt-0.5 font-medium">
+                  {lang === 'en'
+                    ? 'Input received qty & damaged qty for each PO item'
+                    : 'Input qty datang & qty rusak untuk setiap item PO'}
+                </p>
               </div>
             </div>
             <button onClick={() => setActivePo(null)} className="text-white/80 hover:text-white transition-colors">
@@ -612,7 +655,9 @@ export const Receiving: React.FC = () => {
             {showSupplierInfo && (
               <div className="border border-blue-200 bg-gradient-to-r from-blue-50/30 via-white to-blue-50/30 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-slate-800 shadow-sm animate-slide-down">
                 <div>
-                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Nomor PO</span>
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">
+                    {lang === 'en' ? 'PO Number' : 'Nomor PO'}
+                  </span>
                   <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">{activePo.no_order}</span>
                 </div>
                 <div>
@@ -620,12 +665,18 @@ export const Receiving: React.FC = () => {
                   <span className="text-xs font-bold text-slate-800 mt-0.5 block">{activePo.supplier?.nama}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Tanggal Order</span>
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">
+                    {lang === 'en' ? 'Order Date' : 'Tanggal Order'}
+                  </span>
                   <span className="text-xs font-bold text-slate-800 mt-0.5 block">{formatDate(activePo.order_date)}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">Termin</span>
-                  <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">{activePo.terms || '-'}</span>
+                  <span className="text-[10px] font-semibold text-slate-450 uppercase tracking-wider block">
+                    {lang === 'en' ? 'Terms' : 'Termin'}
+                  </span>
+                  <span className="text-xs font-bold text-slate-800 mt-0.5 block uppercase">
+                    {activePo.terms === 'tunai' ? (lang === 'en' ? 'Cash' : 'Tunai') : (activePo.terms || '-')}
+                  </span>
                 </div>
               </div>
             )}
@@ -635,36 +686,48 @@ export const Receiving: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] bg-slate-100 p-2.5 rounded-lg border border-slate-200 animate-slide-down">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                    <Info size={12} className="text-slate-450" />
-                    Keterangan status:
+                    <Info size={12} className="text-slate-455" />
+                    {lang === 'en' ? 'Status explanation:' : 'Keterangan status:'}
                   </span>
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
-                    Sesuai
+                    {lang === 'en' ? 'Matched' : 'Sesuai'}
                   </span>
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 font-bold">
-                    Kurang
+                    {lang === 'en' ? 'Shortage' : 'Kurang'}
                   </span>
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 font-bold">
-                    Ada Rusak
+                    {lang === 'en' ? 'Damaged' : 'Ada Rusak'}
                   </span>
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold">
-                    Lebih
+                    {lang === 'en' ? 'Excess' : 'Lebih'}
                   </span>
                 </div>
                 <div className="text-slate-500 font-semibold flex flex-wrap gap-1.5 justify-end">
-                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase"><kbd>F1</kbd> Info PO</span>
-                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase"><kbd>F2</kbd> Baris Pertama</span>
-                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase"><kbd>Enter</kbd> Masuk Qty</span>
+                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase">
+                    <kbd>F1</kbd> {lang === 'en' ? 'PO Info' : 'Info PO'}
+                  </span>
+                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase">
+                    <kbd>F2</kbd> {lang === 'en' ? 'First Row' : 'Baris Pertama'}
+                  </span>
+                  <span className="badge bg-slate-200 text-slate-750 font-mono text-[9px] uppercase">
+                    <kbd>Enter</kbd> {lang === 'en' ? 'Enter Qty' : 'Masuk Qty'}
+                  </span>
                 </div>
               </div>
             )}
-
-            {/* Retur note banner - Hideable via F1 toggle */}
             {showSupplierInfo && (
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-xs animate-slide-down">
                 <AlertCircle size={14} className="mt-0.5 shrink-0 text-amber-600" />
                 <span>
-                  <strong>Instruksi Keyboard:</strong> Gunakan <kbd className="shortcut-badge text-[9px] font-mono">↑ / ↓</kbd> untuk berpindah baris. Tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> untuk memfokuskan kursor ke Qty Datang. Isi nilainya, lalu tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> lagi untuk berpindah ke Qty Rusak. Tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> sekali lagi untuk menyimpan dan beralih ke baris berikutnya. Tekan <kbd className="shortcut-badge text-[9px] font-mono">← / →</kbd> saat input aktif untuk menambah / mengurangi kuantitas.
+                  {lang === 'en' ? (
+                    <>
+                      <strong>Keyboard Instructions:</strong> Use <kbd className="shortcut-badge text-[9px] font-mono">↑ / ↓</kbd> to move between rows. Press <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> to focus cursor on Received Qty. Fill the value, then press <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> again to move to Damaged Qty. Press <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> once more to save and proceed to the next row. Press <kbd className="shortcut-badge text-[9px] font-mono">← / →</kbd> when input is active to increase / decrease quantity.
+                    </>
+                  ) : (
+                    <>
+                      <strong>Instruksi Keyboard:</strong> Gunakan <kbd className="shortcut-badge text-[9px] font-mono">↑ / ↓</kbd> untuk berpindah baris. Tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> untuk memfokuskan kursor ke Qty Datang. Isi nilainya, lalu tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> lagi untuk berpindah ke Qty Rusak. Tekan <kbd className="shortcut-badge text-[9px] font-mono">Enter</kbd> sekali lagi untuk menyimpan dan beralih ke baris berikutnya. Tekan <kbd className="shortcut-badge text-[9px] font-mono">← / →</kbd> saat input aktif untuk menambah / mengurangi kuantitas.
+                    </>
+                  )}
                 </span>
               </div>
             )}
@@ -672,9 +735,13 @@ export const Receiving: React.FC = () => {
             {/* Items Table */}
             <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden flex flex-col">
               <div className="border-b border-slate-100 px-4 py-2.5 flex justify-between items-center bg-slate-50/50">
-                <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Tabel Verifikasi Penerimaan Barang</h3>
+                <h3 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">
+                  {lang === 'en' ? 'Goods Verification Table' : 'Tabel Verifikasi Penerimaan Barang'}
+                </h3>
                 <span className="text-[10px] text-slate-500 font-semibold hidden sm:inline">
-                  Gunakan <kbd className="shortcut-badge text-[9px] font-mono">PgUp / PgDn</kbd> untuk scroll cepat
+                  {lang === 'en' ? 'Use ' : 'Gunakan '}
+                  <kbd className="shortcut-badge text-[9px] font-mono">PgUp / PgDn</kbd>
+                  {lang === 'en' ? ' for fast scrolling' : ' untuk scroll cepat'}
                 </span>
               </div>
 
@@ -684,12 +751,18 @@ export const Receiving: React.FC = () => {
                   <thead className="sticky top-0 bg-primary-600 text-white font-bold text-xs uppercase z-10 shadow-sm">
                     <tr>
                       <th className="p-3.5 w-10 text-center">#</th>
-                      <th className="p-3.5 w-32">Kode SKU</th>
-                      <th className="p-3.5">Nama Barang</th>
+                      <th className="p-3.5 w-32">{lang === 'en' ? 'SKU Code' : 'Kode SKU'}</th>
+                      <th className="p-3.5">{lang === 'en' ? 'Product Name' : 'Nama Barang'}</th>
                       <th className="p-3.5 text-right w-24">Qty PO</th>
-                      <th className="p-3.5 text-center w-32" style={{ textAlign: 'center' }}>Qty Datang</th>
-                      <th className="p-3.5 text-center w-32" style={{ textAlign: 'center' }}>Qty Rusak</th>
-                      <th className="p-3.5 text-right w-24">Qty Layak</th>
+                      <th className="p-3.5 text-center w-32" style={{ textAlign: 'center' }}>
+                        {lang === 'en' ? 'Received Qty' : 'Qty Datang'}
+                      </th>
+                      <th className="p-3.5 text-center w-32" style={{ textAlign: 'center' }}>
+                        {lang === 'en' ? 'Damaged Qty' : 'Qty Rusak'}
+                      </th>
+                      <th className="p-3.5 text-right w-24">
+                        {lang === 'en' ? 'Acceptable Qty' : 'Qty Layak'}
+                      </th>
                       <th className="p-3.5 w-8 text-center">Status</th>
                     </tr>
                   </thead>
@@ -702,10 +775,26 @@ export const Receiving: React.FC = () => {
                       const status = getItemStatus(item);
 
                       const statusBadge = {
-                        ok:     <span className="flex items-center justify-center text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5 text-[10px]">Sesuai</span>,
-                        kurang: <span className="flex items-center justify-center text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 text-[10px]">Kurang</span>,
-                        lebih:  <span className="flex items-center justify-center text-blue-700 font-bold bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 text-[10px]">Lebih</span>,
-                        rusak:  <span className="flex items-center justify-center text-red-600 font-bold bg-red-50 border border-red-100 rounded px-1.5 py-0.5 text-[10px]">Rusak</span>,
+                        ok: (
+                          <span className="flex items-center justify-center text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5 text-[10px]">
+                            {lang === 'en' ? 'Matched' : 'Sesuai'}
+                          </span>
+                        ),
+                        kurang: (
+                          <span className="flex items-center justify-center text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 text-[10px]">
+                            {lang === 'en' ? 'Shortage' : 'Kurang'}
+                          </span>
+                        ),
+                        lebih: (
+                          <span className="flex items-center justify-center text-blue-700 font-bold bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 text-[10px]">
+                            {lang === 'en' ? 'Excess' : 'Lebih'}
+                          </span>
+                        ),
+                        rusak: (
+                          <span className="flex items-center justify-center text-red-600 font-bold bg-red-50 border border-red-100 rounded px-1.5 py-0.5 text-[10px]">
+                            {lang === 'en' ? 'Damaged' : 'Rusak'}
+                          </span>
+                        ),
                       }[status];
 
                       const rowBg = isActive ? 'bg-blue-100/60 font-medium' : 'hover:bg-slate-50/50';
@@ -807,11 +896,11 @@ export const Receiving: React.FC = () => {
               <div className="bg-slate-50/50 border-t border-blue-200 p-3.5 flex flex-wrap justify-between items-center gap-3">
                 {/* Quick stats */}
                 <div className="flex items-center gap-3 text-[11px] text-slate-650 font-semibold">
-                  <span>{poItems.length} Item Barang</span>
+                  <span>{poItems.length} {lang === 'en' ? 'Item(s)' : 'Item Barang'}</span>
                   {summary.itemsWithIssue > 0 && (
                     <span className="flex items-center gap-1 text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
                       <AlertTriangle size={11} />
-                      {summary.itemsWithIssue} Item Bermasalah
+                      {summary.itemsWithIssue} {lang === 'en' ? 'Problematic Item(s)' : 'Item Bermasalah'}
                     </span>
                   )}
                 </div>
@@ -821,7 +910,7 @@ export const Receiving: React.FC = () => {
                     onClick={() => setActivePo(null)}
                     className="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm bg-white"
                   >
-                    Batal <kbd className="text-[10px] text-slate-400 font-bold ml-1 font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">Esc</kbd>
+                    {lang === 'en' ? 'Cancel' : 'Batal'} <kbd className="text-[10px] text-slate-400 font-bold ml-1 font-mono uppercase bg-slate-50 border border-slate-200 px-1 py-0.5 rounded">Esc</kbd>
                   </button>
                   <button
                     type="button"
@@ -829,7 +918,7 @@ export const Receiving: React.FC = () => {
                     className="px-5 py-2.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-550 transition-all shadow-md shadow-emerald-500/10 flex items-center gap-1.5"
                   >
                     <Check size={14} className="!text-white" />
-                    <span className="!text-white">Selesaikan Penerimaan (F10)</span>
+                    <span className="!text-white">{lang === 'en' ? 'Complete Receiving (F10)' : 'Selesaikan Penerimaan (F10)'}</span>
                   </button>
                 </div>
               </div>
@@ -846,7 +935,9 @@ export const Receiving: React.FC = () => {
             {/* Modal Header */}
             <div className="bg-primary-600 text-white px-6 py-5 flex flex-col items-center justify-center gap-2">
               <Package size={28} className="text-white animate-pulse" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">Rangkuman Penerimaan Gudang</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-center text-white">
+                {lang === 'en' ? 'Warehouse Receiving Summary' : 'Rangkuman Penerimaan Gudang'}
+              </h3>
               <p className="text-xs text-primary-200 font-mono">{activePo.no_order}</p>
             </div>
 
@@ -854,22 +945,30 @@ export const Receiving: React.FC = () => {
               {/* Stats grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Total Qty PO</p>
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                    {lang === 'en' ? 'Total PO Qty' : 'Total Qty PO'}
+                  </p>
                   <p className="text-xl font-extrabold text-slate-800 mt-0.5">{summary.totalPo}</p>
                 </div>
                 <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Qty Layak (Stok)</p>
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">
+                    {lang === 'en' ? 'Acceptable Qty (Stock)' : 'Qty Layak (Stok)'}
+                  </p>
                   <p className="text-xl font-extrabold text-emerald-700 mt-0.5">{summary.totalLayak}</p>
                 </div>
                 {summary.totalKurang > 0 && (
                   <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
-                    <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider">Kurang Kirim</p>
+                    <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider">
+                      {lang === 'en' ? 'Shortage' : 'Kurang Kirim'}
+                    </p>
                     <p className="text-xl font-extrabold text-amber-700 mt-0.5">{summary.totalKurang}</p>
                   </div>
                 )}
                 {summary.totalRusak > 0 && (
                   <div className="bg-red-50 rounded-xl p-3 border border-red-100">
-                    <p className="text-[10px] text-red-600 font-semibold uppercase tracking-wider">Qty Rusak</p>
+                    <p className="text-[10px] text-red-600 font-semibold uppercase tracking-wider">
+                      {lang === 'en' ? 'Damaged Qty' : 'Qty Rusak'}
+                    </p>
                     <p className="text-xl font-extrabold text-red-700 mt-0.5">{summary.totalRusak}</p>
                   </div>
                 )}
@@ -879,12 +978,30 @@ export const Receiving: React.FC = () => {
               {summary.totalRusak > 0 && (
                 <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-xs">
                   <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-600" />
-                  <span><strong>{summary.totalRusak}</strong> item rusak tidak akan masuk stok. <strong>Modul Retur Pembelian belum tersedia</strong> — pencatatan retur ke supplier dapat dilakukan secara manual sementara ini.</span>
+                  <span>
+                    {lang === 'en' ? (
+                      <>
+                        <strong>{summary.totalRusak}</strong> damaged item(s) will not enter stock. <strong>Purchase Return module is not yet available</strong> — recording returns to supplier can be done manually for now.
+                      </>
+                    ) : (
+                      <>
+                        <strong>{summary.totalRusak}</strong> item rusak tidak akan masuk stok. <strong>Modul Retur Pembelian belum tersedia</strong> — pencatatan retur ke supplier dapat dilakukan secara manual sementara ini.
+                      </>
+                    )}
+                  </span>
                 </div>
               )}
 
               <p className="text-xs text-slate-500 text-center leading-relaxed font-semibold">
-                Konfirmasi akan menambahkan <strong className="text-emerald-700">{summary.totalLayak} unit</strong> ke stok gudang dan menutup PO <strong>{activePo.no_order}</strong>.
+                {lang === 'en' ? (
+                  <>
+                    Confirmation will add <strong className="text-emerald-700">{summary.totalLayak} unit(s)</strong> to warehouse stock and close PO <strong>{activePo.no_order}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Konfirmasi akan menambahkan <strong className="text-emerald-700">{summary.totalLayak} unit</strong> ke stok gudang dan menutup PO <strong>{activePo.no_order}</strong>.
+                  </>
+                )}
               </p>
 
               <div className="flex justify-center gap-3 pt-4 border-t border-slate-100">
@@ -893,7 +1010,7 @@ export const Receiving: React.FC = () => {
                   onClick={() => setModalState('none')}
                   className="px-5 py-2 rounded-lg border border-slate-200 text-slate-655 text-xs font-bold hover:bg-slate-50 transition-all bg-white"
                 >
-                  Batal (Esc)
+                  {lang === 'en' ? 'Cancel (Esc)' : 'Batal (Esc)'}
                 </button>
                 <button
                   type="button"
@@ -901,8 +1018,8 @@ export const Receiving: React.FC = () => {
                   disabled={isSubmitting}
                   className="px-5 py-2 rounded-lg bg-emerald-600 !text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-md disabled:opacity-60 flex items-center gap-1.5"
                 >
-                  {isSubmitting ? 'Memproses...' : (
-                    <><Check size={13} className="!text-white" /> Ya, Selesaikan (Enter)</>
+                  {isSubmitting ? (lang === 'en' ? 'Processing...' : 'Memproses...') : (
+                    <><Check size={13} className="!text-white" /> {lang === 'en' ? 'Yes, Complete (Enter)' : 'Ya, Selesaikan (Enter)'}</>
                   )}
                 </button>
               </div>
