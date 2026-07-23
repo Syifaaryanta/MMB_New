@@ -79,6 +79,45 @@ interface CompletedReturnSlip {
   }[];
 }
 
+const rankResults = (items: any[], query: string, searchKeys: string[] = ['nama', 'kode']) => {
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery) {
+    return [...items].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+  }
+  const tokens = cleanQuery.split(/\s+/).filter(Boolean);
+  return items
+    .map((item) => {
+      let matchedCount = 0;
+      let minMatchIndex = Infinity;
+
+      tokens.forEach((token) => {
+        let foundInKey = false;
+        searchKeys.forEach((key) => {
+          const value = (item[key] || '').toLowerCase();
+          const idx = value.indexOf(token);
+          if (idx !== -1) {
+            foundInKey = true;
+            minMatchIndex = Math.min(minMatchIndex, idx);
+          }
+        });
+        if (foundInKey) matchedCount++;
+      });
+
+      return { item, matchedCount, minMatchIndex };
+    })
+    .filter((res) => res.matchedCount > 0)
+    .sort((a, b) => {
+      if (b.matchedCount !== a.matchedCount) {
+        return b.matchedCount - a.matchedCount;
+      }
+      if (a.minMatchIndex !== b.minMatchIndex) {
+        return a.minMatchIndex - b.minMatchIndex;
+      }
+      return (a.item.nama || '').localeCompare(b.item.nama || '');
+    })
+    .map((res) => res.item);
+};
+
 export const ReturPenjualan: React.FC = () => {
   const navigate = useNavigate();
   const { lang } = useTranslation();
@@ -249,8 +288,10 @@ export const ReturPenjualan: React.FC = () => {
     if (customerQuery.trim().length >= 2 && !selectedCustomer) {
       const delay = setTimeout(async () => {
         try {
-          const res = await api.get(`/customers?q=${customerQuery}`);
-          setCustomers(res.data.data || []);
+          const res = await api.get(`/customers?q=${customerQuery}&limit=50`);
+          const rawData = res.data.data || [];
+          const ranked = rankResults(rawData, customerQuery);
+          setCustomers(ranked);
           setFocusedCustIdx(0);
         } catch (err) {
           console.error(err);
@@ -267,8 +308,10 @@ export const ReturPenjualan: React.FC = () => {
     if (productQuery.trim().length >= 2) {
       const delay = setTimeout(async () => {
         try {
-          const res = await api.get(`/products?q=${productQuery}`);
-          setProducts(res.data.data || []);
+          const res = await api.get(`/products?q=${productQuery}&limit=50`);
+          const rawData = res.data.data || [];
+          const ranked = rankResults(rawData, productQuery);
+          setProducts(ranked);
           setFocusedProdIdx(0);
         } catch (err) {
           console.error(err);
@@ -334,13 +377,24 @@ export const ReturPenjualan: React.FC = () => {
   }, { enableOnFormTags: true }, [showConfirmPrintModal]);
 
   // Hotkeys for Customer Autocomplete input
-  const handleCustomerKeyDown = (e: React.KeyboardEvent) => {
+  const handleCustomerKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (selectedCustomer && customerQuery.trim().toLowerCase() === selectedCustomer.nama.toLowerCase()) {
+      const trimmed = customerQuery.trim();
+      if (selectedCustomer && trimmed.toLowerCase() === selectedCustomer.nama.toLowerCase()) {
         setActiveStep('product');
         setTimeout(() => productSearchRef.current?.focus(), 50);
       } else {
+        if (!trimmed) {
+          try {
+            const res = await api.get(`/customers?limit=50`);
+            const rawData = res.data.data || [];
+            const ranked = rankResults(rawData, '');
+            setCustomers(ranked);
+          } catch (err) {
+            console.error(err);
+          }
+        }
         setShowCustomerPopup(true);
         setFocusedCustIdx(0);
       }
@@ -372,9 +426,20 @@ export const ReturPenjualan: React.FC = () => {
   };
 
   // Hotkeys for Product Autocomplete input
-  const handleProductKeyDown = (e: React.KeyboardEvent) => {
+  const handleProductKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      const trimmed = productQuery.trim();
+      if (!trimmed) {
+        try {
+          const res = await api.get('/products?limit=50');
+          const rawData = res.data.data || [];
+          const ranked = rankResults(rawData, '');
+          setProducts(ranked);
+        } catch (err) {
+          console.error(err);
+        }
+      }
       setShowProductPopup(true);
       setFocusedProdIdx(0);
     } else if (e.key === 'Escape') {
@@ -1047,7 +1112,7 @@ export const ReturPenjualan: React.FC = () => {
 
         {/* LIST OF PRODUCTS AND THEIR PURCHASE CARDS */}
         <div className="space-y-3">
-          <div className="bg-blue-50/40 px-4 py-2 border-t border-b border-blue-100/60 flex items-center gap-2">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <ShoppingBag size={14} className="text-blue-500" />
             <span className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">
               {lang === 'en' ? 'Sales History Card' : 'Kartu Riwayat Penjualan'}

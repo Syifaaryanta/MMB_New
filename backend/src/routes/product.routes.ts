@@ -16,10 +16,15 @@ productRouter.get('/', authenticate, async (req: AuthRequest, res: Response): Pr
     };
     if (archived !== 'true') where.aktif = true;
     if (q) {
-      where.OR = [
-        { nama: { contains: q as string } },
-        { kode: { contains: q as string } },
-      ];
+      const terms = (q as string).trim().split(/\s+/).filter(Boolean);
+      if (terms.length > 0) {
+        where.AND = terms.map((term) => ({
+          OR: [
+            { nama: { contains: term } },
+            { kode: { contains: term } },
+          ],
+        }));
+      }
     }
 
     const [products, total] = await Promise.all([

@@ -10,7 +10,7 @@ customerRouter.get('/', authenticate, async (req: AuthRequest, res: Response): P
     const { q, aktif = 'true', page = '1', limit = '50' } = req.query;
     const where: any = {};
     if (aktif !== 'all') where.aktif = aktif === 'true';
-    if (q) where.OR = [{ nama: { contains: q as string } }, { kode: { contains: q as string } }];
+    if (q) where.OR = [{ nama: { startsWith: q as string } }, { kode: { startsWith: q as string } }];
 
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
     const [data, total] = await Promise.all([

@@ -17,13 +17,23 @@ export const Login: React.FC = () => {
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
-  // Auto redirect if already logged in
+  // Auto redirect if already logged in and clean inputs
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
+    } else {
+      setUsername('');
+      setPassword('');
+      setTimeout(() => usernameRef.current?.focus(), 50);
     }
-    usernameRef.current?.focus();
   }, [isAuthenticated, navigate]);
+
+  const handleUsernameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      passwordRef.current?.focus();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,8 +102,10 @@ export const Login: React.FC = () => {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Masukkan username (contoh: admin)"
+                onKeyDown={handleUsernameKeyDown}
+                placeholder="Masukkan username"
                 className="input-field pl-10"
+                autoComplete="off"
                 disabled={isLoading}
               />
             </div>
@@ -115,6 +127,7 @@ export const Login: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="input-field pl-10 pr-10"
+                autoComplete="new-password"
                 disabled={isLoading}
               />
               <button
@@ -139,7 +152,7 @@ export const Login: React.FC = () => {
                 <span>Memproses...</span>
               </>
             ) : (
-              <span>Masuk Aplikasi</span>
+              <span>Masuk</span>
             )}
           </button>
         </form>

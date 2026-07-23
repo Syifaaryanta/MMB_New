@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
 
@@ -111,6 +113,11 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+html.dark .glass {
+  background: rgba(30, 41, 59, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .glass-light {
@@ -1120,13 +1127,21 @@ html.dark tbody tr:hover {
   background-color: rgba(255, 255, 255, 0.03) !important;
 }
 
-/* Modals & Popups (e.g. Pilih Pemasok / Pilih Barang / Pilih Pelanggan) */
-html.dark .modal-overlay > div > div {
+/* Modals & Popups (e.g. Pilih Pemasok / Pilih Barang / Pilih Pelanggan / Edit Produk) */
+html.dark .modal-overlay > div,
+html.dark .modal-overlay > form,
+html.dark .modal-overlay > div > div,
+html.dark .modal-overlay > div > form {
+  background: #1e293b !important;
   background-color: #1e293b !important;
   border: 1px solid #334155 !important;
+  border-color: #334155 !important;
 }
 
-html.dark .modal-overlay > div > div div {
+html.dark .modal-overlay > div div,
+html.dark .modal-overlay > form div,
+html.dark .modal-overlay > div > div div,
+html.dark .modal-overlay > div > form > div div {
   border-color: #334155 !important;
 }
 
@@ -1250,9 +1265,10 @@ html.dark .bg-slate-55\/50 {
 }
 
 html.dark .bg-blue-50\/50,
-html.dark .bg-blue-50,
 html.dark .bg-blue-50\/30,
-html.dark .bg-primary-50\/50 {
+html.dark .bg-blue-50\/10,
+html.dark .bg-primary-50\/50,
+html.dark .bg-primary-50 {
   background-color: rgba(30, 41, 59, 0.5) !important; /* Soft dark slate background */
   background: rgba(30, 41, 59, 0.5) !important;
   border-color: #334155 !important;
@@ -1274,10 +1290,13 @@ html.dark .divide-slate-150 {
   border-color: #334155 !important; /* Consistent dark borders */
 }
 
-/* Override shorthand background gradients (which hide background-color) on modal windows */
-html.dark .modal-overlay > div > div {
-  background: #1e293b !important; /* Slate-800 dark base */
-  background-color: #1e293b !important;
+/* Override light blue borders and backgrounds in dark mode */
+html.dark .border-blue-200,
+html.dark .border-blue-100,
+html.dark .border-blue-100\/60,
+html.dark .border-blue-50,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-100 {
   border-color: #334155 !important;
 }
 
@@ -1306,4 +1325,15 @@ html.dark .inline-flex.bg-surface-800 {
   background-color: #1e293b !important;
   background: #1e293b !important;
   border-color: #334155 !important;
+}
+
+/* Focused selection items in dark mode for blue-themed autocomplete list items */
+html.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: #60a5fa !important;
+}
+
+html.dark .text-blue-900 {
+  color: #60a5fa !important;
 }

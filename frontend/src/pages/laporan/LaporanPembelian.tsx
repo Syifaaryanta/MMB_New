@@ -20,6 +20,7 @@ interface Supplier {
   id: string;
   kode: string;
   nama: string;
+  alamat?: string | null;
 }
 
 interface PurchaseItem {

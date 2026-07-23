@@ -75,6 +75,45 @@ interface CompletedReturnSlip {
   }[];
 }
 
+const rankResults = (items: any[], query: string, searchKeys: string[] = ['nama', 'kode']) => {
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery) {
+    return [...items].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+  }
+  const tokens = cleanQuery.split(/\s+/).filter(Boolean);
+  return items
+    .map((item) => {
+      let matchedCount = 0;
+      let minMatchIndex = Infinity;
+
+      tokens.forEach((token) => {
+        let foundInKey = false;
+        searchKeys.forEach((key) => {
+          const value = (item[key] || '').toLowerCase();
+          const idx = value.indexOf(token);
+          if (idx !== -1) {
+            foundInKey = true;
+            minMatchIndex = Math.min(minMatchIndex, idx);
+          }
+        });
+        if (foundInKey) matchedCount++;
+      });
+
+      return { item, matchedCount, minMatchIndex };
+    })
+    .filter((res) => res.matchedCount > 0)
+    .sort((a, b) => {
+      if (b.matchedCount !== a.matchedCount) {
+        return b.matchedCount - a.matchedCount;
+      }
+      if (a.minMatchIndex !== b.minMatchIndex) {
+        return a.minMatchIndex - b.minMatchIndex;
+      }
+      return (a.item.nama || '').localeCompare(b.item.nama || '');
+    })
+    .map((res) => res.item);
+};
+
 export const ReturPembelian: React.FC = () => {
   const navigate = useNavigate();
   const { lang } = useTranslation();
@@ -245,8 +284,10 @@ export const ReturPembelian: React.FC = () => {
     if (supplierQuery.trim().length >= 2 && !selectedSupplier) {
       const delay = setTimeout(async () => {
         try {
-          const res = await api.get(`/suppliers?q=${supplierQuery}`);
-          setSuppliers(res.data.data || []);
+          const res = await api.get(`/suppliers?q=${supplierQuery}&limit=50`);
+          const rawData = res.data.data || [];
+          const ranked = rankResults(rawData, supplierQuery);
+          setSuppliers(ranked);
           setFocusedSuppIdx(0);
         } catch (err) {
           console.error(err);
@@ -263,8 +304,10 @@ export const ReturPembelian: React.FC = () => {
     if (productQuery.trim().length >= 2) {
       const delay = setTimeout(async () => {
         try {
-          const res = await api.get(`/products?q=${productQuery}`);
-          setProducts(res.data.data || []);
+          const res = await api.get(`/products?q=${productQuery}&limit=50`);
+          const rawData = res.data.data || [];
+          const ranked = rankResults(rawData, productQuery);
+          setProducts(ranked);
           setFocusedProdIdx(0);
         } catch (err) {
           console.error(err);
@@ -330,13 +373,24 @@ export const ReturPembelian: React.FC = () => {
   }, { enableOnFormTags: true }, [showConfirmPrintModal]);
 
   // Hotkeys for Supplier Autocomplete input
-  const handleSupplierKeyDown = (e: React.KeyboardEvent) => {
+  const handleSupplierKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (selectedSupplier && supplierQuery.trim().toLowerCase() === selectedSupplier.nama.toLowerCase()) {
+      const trimmed = supplierQuery.trim();
+      if (selectedSupplier && trimmed.toLowerCase() === selectedSupplier.nama.toLowerCase()) {
         setActiveStep('product');
         setTimeout(() => productSearchRef.current?.focus(), 50);
       } else {
+        if (!trimmed) {
+          try {
+            const res = await api.get(`/suppliers?limit=50`);
+            const rawData = res.data.data || [];
+            const ranked = rankResults(rawData, '');
+            setSuppliers(ranked);
+          } catch (err) {
+            console.error(err);
+          }
+        }
         setShowSupplierPopup(true);
         setFocusedSuppIdx(0);
       }
@@ -368,9 +422,20 @@ export const ReturPembelian: React.FC = () => {
   };
 
   // Hotkeys for Product Autocomplete input
-  const handleProductKeyDown = (e: React.KeyboardEvent) => {
+  const handleProductKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      const trimmed = productQuery.trim();
+      if (!trimmed) {
+        try {
+          const res = await api.get('/products?limit=50');
+          const rawData = res.data.data || [];
+          const ranked = rankResults(rawData, '');
+          setProducts(ranked);
+        } catch (err) {
+          console.error(err);
+        }
+      }
       setShowProductPopup(true);
       setFocusedProdIdx(0);
     } else if (e.key === 'Escape') {
@@ -1063,7 +1128,7 @@ export const ReturPembelian: React.FC = () => {
 
         {/* LIST OF PRODUCTS AND THEIR PURCHASE CARDS */}
         <div className="space-y-3">
-          <div className="bg-blue-50/40 px-4 py-2 border-t border-b border-blue-100/60 flex items-center gap-2">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <ShoppingBag size={14} className="text-blue-500" />
             <span className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">Kartu Riwayat Pembelian </span>
           </div>

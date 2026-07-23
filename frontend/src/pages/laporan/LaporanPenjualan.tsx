@@ -20,6 +20,7 @@ interface Customer {
   id: string;
   kode: string;
   nama: string;
+  alamat?: string | null;
 }
 
 interface SaleItem {
@@ -37,6 +38,7 @@ interface Sale {
   no_faktur: string | null;
   order_date: string;
   customer_nama: string;
+  customer_alamat?: string | null;
   subtotal: number;
   diantar: boolean;
   limit_bulan: number;

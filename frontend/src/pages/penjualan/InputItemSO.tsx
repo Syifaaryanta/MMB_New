@@ -39,6 +39,45 @@ interface SOItem {
   is_adjustment?: boolean;
 }
 
+const rankResults = (items: any[], query: string, searchKeys: string[] = ['nama', 'kode']) => {
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery) {
+    return [...items].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+  }
+  const tokens = cleanQuery.split(/\s+/).filter(Boolean);
+  return items
+    .map((item) => {
+      let matchedCount = 0;
+      let minMatchIndex = Infinity;
+
+      tokens.forEach((token) => {
+        let foundInKey = false;
+        searchKeys.forEach((key) => {
+          const value = (item[key] || '').toLowerCase();
+          const idx = value.indexOf(token);
+          if (idx !== -1) {
+            foundInKey = true;
+            minMatchIndex = Math.min(minMatchIndex, idx);
+          }
+        });
+        if (foundInKey) matchedCount++;
+      });
+
+      return { item, matchedCount, minMatchIndex };
+    })
+    .filter((res) => res.matchedCount > 0)
+    .sort((a, b) => {
+      if (b.matchedCount !== a.matchedCount) {
+        return b.matchedCount - a.matchedCount;
+      }
+      if (a.minMatchIndex !== b.minMatchIndex) {
+        return a.minMatchIndex - b.minMatchIndex;
+      }
+      return (a.item.nama || '').localeCompare(b.item.nama || '');
+    })
+    .map((res) => res.item);
+};
+
 export const InputItemSO: React.FC = () => {
   const navigate = useNavigate();
   const { lang } = useTranslation();
@@ -190,14 +229,16 @@ export const InputItemSO: React.FC = () => {
 
   // Fetch products
   useEffect(() => {
-    if (!prodQuery) {
+    if (!prodQuery.trim()) {
       setProducts([]);
       return;
     }
     const delay = setTimeout(async () => {
       try {
-        const res = await api.get(`/products?q=${prodQuery}`);
-        setProducts(res.data.data || []);
+        const res = await api.get(`/products?q=${prodQuery}&limit=50`);
+        const rawData = res.data.data || [];
+        const ranked = rankResults(rawData, prodQuery);
+        setProducts(ranked);
         setFocusedProdIdx(0);
       } catch (err) {
         console.error(err);
@@ -207,13 +248,24 @@ export const InputItemSO: React.FC = () => {
     return () => clearTimeout(delay);
   }, [prodQuery]);
 
-  const handleProductKeyDown = (e: React.KeyboardEvent) => {
+  const handleProductKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight') {
       e.preventDefault();
       qtyInputRef.current?.focus();
       setTimeout(() => qtyInputRef.current?.select(), 50);
     } else if (e.key === 'Enter') {
       e.preventDefault();
+      const trimmed = prodQuery.trim();
+      if (!trimmed) {
+        try {
+          const res = await api.get('/products?limit=50');
+          const rawData = res.data.data || [];
+          const ranked = rankResults(rawData, '');
+          setProducts(ranked);
+        } catch (err) {
+          console.error(err);
+        }
+      }
       setShowProductPopup(true);
       setFocusedProdIdx(0);
     }
