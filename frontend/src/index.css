@@ -925,8 +925,10 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
 }
 
 /* Card Focused Style for Navigation grids */
-.card-focused {
+.card-focused,
+main button.card.card-focused {
   border-color: rgba(37, 99, 235, 0.6) !important;
+  border-left: 4px solid #2563eb !important;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(219, 234, 254, 0.9) 100%) !important;
   box-shadow: 0 8px 32px rgba(37, 99, 235, 0.12) !important;
 }
@@ -993,6 +995,10 @@ html.dark .card {
 }
 
 /* Fix specificity for card hovers and focused state in dark mode */
+html.dark main button.card.card-focused,
+html.dark main button.card:hover,
+html.dark main a.card:hover,
+html.dark main .card[onClick]:hover,
 html.dark .card:hover,
 html.dark .card-focused,
 html.dark .card-hovered,
@@ -1000,7 +1006,8 @@ html.dark .card-hovered:hover,
 html.dark .card:has(*:focus),
 html.dark .card:focus-within {
   border-color: rgba(59, 130, 246, 0.6) !important;
-  background: linear-gradient(135deg, #1e293b 0%, #1e293b 100%) !important;
+  background: #1e293b !important;
+  background-image: none !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -1217,4 +1224,78 @@ html.dark .table-row-selected td:first-child {
 }
 html.dark .table-row-selected td:last-child {
   border-right: 2px solid #2563eb !important;
+}
+
+/* Custom global overrides for Dark Mode to resolve text visibility, light boxes, and cursor focus issues */
+html.dark .text-slate-855,
+html.dark .text-slate-750,
+html.dark .text-slate-655,
+html.dark .text-slate-555,
+html.dark .text-slate-550 {
+  color: #cbd5e1 !important; /* Muted text to light gray for readability */
+}
+
+html.dark .text-slate-855 strong,
+html.dark .text-slate-655 strong {
+  color: #ffffff !important; /* Make title/strong labels bright white */
+}
+
+html.dark .bg-slate-55,
+html.dark .bg-slate-60,
+html.dark .bg-slate-150,
+html.dark .bg-slate-100,
+html.dark .bg-slate-50,
+html.dark .bg-slate-55\/50 {
+  background-color: #0f172a !important; /* Make light gray backgrounds dark */
+}
+
+html.dark .bg-blue-50\/50,
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/30,
+html.dark .bg-primary-50\/50 {
+  background-color: rgba(30, 41, 59, 0.5) !important; /* Soft dark slate background */
+  background: rgba(30, 41, 59, 0.5) !important;
+  border-color: #334155 !important;
+}
+
+/* Ensure focus states on inputs/buttons with light blue backgrounds are darkened */
+html.dark .focus\:bg-blue-50\/50:focus,
+html.dark .focus\:bg-blue-50:focus,
+html.dark .focus\:bg-blue-50\/30:focus {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+  border-color: #3b82f6 !important;
+}
+
+html.dark .border-slate-350,
+html.dark .border-slate-250,
+html.dark .border-slate-150,
+html.dark .divide-slate-150 {
+  border-color: #334155 !important; /* Consistent dark borders */
+}
+
+/* Override shorthand background gradients (which hide background-color) on modal windows */
+html.dark .modal-overlay > div > div {
+  background: #1e293b !important; /* Slate-800 dark base */
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* Highlight hover indicators in dark mode with a subtle translucent layer */
+html.dark .hover\:bg-slate-55:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Dark mode overrides for charts default tooltips */
+html.dark .recharts-default-tooltip {
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Specific left border highlight for focused cards in dark mode */
+html.dark main button.card.card-focused,
+html.dark .card-focused {
+  border-left: 4px solid #3b82f6 !important;
 }
