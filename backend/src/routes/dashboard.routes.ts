@@ -11,14 +11,9 @@ dashboardRouter.get('/kpi', authenticate, async (req: AuthRequest, res: Response
     const from = new Date();
     from.setDate(from.getDate() - days);
 
-    // Today's date is based on the latest completed sales transaction to align with active business day
-    const latestSaleForKpi = await prisma.sale.findFirst({
-      where: { status: 'completed' },
-      orderBy: { order_date: 'desc' },
-    });
-    const todayStart = latestSaleForKpi ? new Date(latestSaleForKpi.order_date) : new Date();
+    const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
+    const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
     const [
@@ -169,13 +164,9 @@ dashboardRouter.get('/kpi', authenticate, async (req: AuthRequest, res: Response
 
 dashboardRouter.get('/recent-barang-keluar', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const latestSaleForItems = await prisma.sale.findFirst({
-      where: { status: 'completed' },
-      orderBy: { order_date: 'desc' },
-    });
-    const todayStart = latestSaleForItems ? new Date(latestSaleForItems.order_date) : new Date();
+    const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
+    const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
     const recentSales = await prisma.sale.findMany({
