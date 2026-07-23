@@ -1299,3 +1299,11 @@ html.dark main button.card.card-focused,
 html.dark .card-focused {
   border-left: 4px solid #3b82f6 !important;
 }
+
+/* Dashboard period filter button group background override in dark mode */
+html.dark .inline-flex.bg-surface-800.border-surface-700,
+html.dark .inline-flex.bg-surface-800 {
+  background-color: #1e293b !important;
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
