@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../lib/prisma';
 import { authenticate, authorize, AuthRequest, ROLES } from '../middleware/auth.middleware';
+import { emitRealtimeEvent } from '../lib/socket';
 
 async function decrementSupplierStock(productId: string, qtyToDeduct: number) {
   let remainingQty = qtyToDeduct;
@@ -230,6 +231,17 @@ saleRouter.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async (r
       },
       include: { customer: true, sale_items: { include: { product: true } } },
     });
+
+    emitRealtimeEvent('so_created', {
+      action: 'create',
+      id: sale.id,
+      no_order: sale.no_order,
+      customer_nama: sale.customer_nama,
+      subtotal: Number(sale.subtotal),
+      created_by_username: req.user ? (req.user as any).username || (req.user as any).nama || 'admin' : 'admin',
+      timestamp: new Date(),
+    });
+
     res.status(201).json(sale);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
@@ -322,6 +334,15 @@ saleRouter.put('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.SALES), async 
       },
       include: { customer: true, sale_items: { include: { product: true } } },
     });
+
+    emitRealtimeEvent('so_updated', {
+      action: 'update',
+      id: sale.id,
+      no_order: sale.no_order,
+      customer_nama: sale.customer_nama,
+      timestamp: new Date(),
+    });
+
     res.json(sale);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
@@ -352,6 +373,15 @@ saleRouter.patch('/:id/complete', authenticate, authorize(ROLES.ADMIN, ROLES.SAL
       where: { id: req.params.id as string },
       data: { status: 'completed' },
     });
+
+    emitRealtimeEvent('so_updated', {
+      action: 'complete',
+      id: updated.id,
+      no_order: sale.no_order,
+      customer_nama: sale.customer_nama,
+      timestamp: new Date(),
+    });
+
     res.json(updated);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
@@ -416,6 +446,15 @@ saleRouter.delete('/:id', authenticate, authorize(ROLES.ADMIN), async (req: Auth
     }
 
     await prisma.sale.delete({ where: { id: req.params.id as string } });
+
+    emitRealtimeEvent('so_updated', {
+      action: 'delete',
+      id: req.params.id,
+      no_order: sale.no_order,
+      customer_nama: sale.customer_nama,
+      timestamp: new Date(),
+    });
+
     res.json({ message: 'Penjualan dibatalkan dan stok dikembalikan' });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });

@@ -7,6 +7,8 @@ import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, parseAdjustments, formatExtraChargeDesc } from '@/lib/utils';
 import { Clock, Search, X, Printer, Trash2, Truck, User, CheckCircle, XCircle, AlertTriangle, FileText } from 'lucide-react';
 
+import { useRealtime } from '@/context/RealtimeContext';
+
 interface SaleItem {
   id: string;
   product_nama: string;
@@ -64,6 +66,8 @@ export const DraftSO: React.FC = () => {
   const [sortOption, setSortOption] = useState<'asli' | 'abjad' | 'qty' | 'harga'>('asli');
   const confirmModalRef = useRef<HTMLDivElement>(null);
 
+  const { onSoChanged } = useRealtime();
+
   const fetchDrafts = async () => {
     setIsLoading(true);
     try {
@@ -79,6 +83,11 @@ export const DraftSO: React.FC = () => {
 
   useEffect(() => {
     fetchDrafts();
+    const unsubscribe = onSoChanged(() => {
+      console.log('🔄 [DraftSO] Auto-refreshing drafts list due to real-time SO event');
+      fetchDrafts();
+    });
+    return () => unsubscribe();
   }, []);
 
   // Update Real-time Time Clock (every second)

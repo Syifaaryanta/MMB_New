@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { formatCurrency, formatDate, parseAdjustments, formatExtraChargeDesc } from '@/lib/utils';
 import { Search, Calendar, User, FileText, X, Eye, Trash2, Printer, AlertTriangle, Info } from 'lucide-react';
+import { useRealtime } from '@/context/RealtimeContext';
 
 interface Sale {
   id: string;
@@ -96,6 +97,28 @@ export const DaftarPenjualan: React.FC = () => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+
+  const { onSoChanged } = useRealtime();
+
+  const refetchCompletedSales = () => {
+    let url = `/sales?status=completed&limit=1000`;
+    if (fromDate) url += `&from=${fromDate}`;
+    if (toDate) url += `&to=${toDate}`;
+    api.get(url)
+      .then((res) => {
+        setSales(res.data.data || []);
+        setTotal(res.data.total || 0);
+      })
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    const unsubscribe = onSoChanged(() => {
+      console.log('🔄 [DaftarPenjualan] Auto-refreshing sales list due to real-time SO event');
+      refetchCompletedSales();
+    });
+    return () => unsubscribe();
+  }, [fromDate, toDate]);
 
   useEffect(() => {
     if (initDate) {

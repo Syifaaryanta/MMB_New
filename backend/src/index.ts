@@ -1,7 +1,9 @@
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import prisma from './lib/prisma';
+import { initSocketServer } from './lib/socket';
 import { authRouter } from './routes/auth.routes';
 import { profileRouter } from './routes/profile.routes';
 import { productRouter } from './routes/product.routes';
@@ -20,7 +22,11 @@ import { historyRouter } from './routes/history.routes';
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Initialize Socket.IO Real-Time Engine
+initSocketServer(server);
 
 // Middleware
 app.use(cors({
@@ -100,10 +106,11 @@ async function syncDatabaseStockDiscrepancies() {
   }
 }
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 MMB Backend API running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   syncDatabaseStockDiscrepancies();
 });
 
 export default app;
+

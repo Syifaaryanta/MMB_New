@@ -8,12 +8,19 @@ async function main() {
   console.log('🧹 Menghapus semua data lama...');
 
   // Hapus semua data dengan urutan yang benar (respecting foreign keys)
-  await prisma.stockAdjustment.deleteMany({});
+  await prisma.billingAllocation.deleteMany({});
+  await prisma.billingSession.deleteMany({});
+  await prisma.supplierPayment.deleteMany({});
   await prisma.salesPayment.deleteMany({});
+  await prisma.saleReturnItem.deleteMany({});
+  await prisma.saleReturn.deleteMany({});
   await prisma.saleItem.deleteMany({});
   await prisma.sale.deleteMany({});
+  await prisma.purchaseReturnItem.deleteMany({});
+  await prisma.purchaseReturn.deleteMany({});
   await prisma.purchaseItem.deleteMany({});
   await prisma.purchase.deleteMany({});
+  await prisma.stockAdjustment.deleteMany({});
   await prisma.productPrice.deleteMany({});
   await prisma.product.deleteMany({});
   await prisma.customer.deleteMany({});
@@ -27,7 +34,7 @@ async function main() {
   // 1. USER ACCOUNTS
   // ─────────────────────────────────────────
   const adminId = uuidv4();
-  const admin = await prisma.profile.create({
+  await prisma.profile.create({
     data: {
       id: adminId,
       email: 'admin@mmb.com',
@@ -76,7 +83,7 @@ async function main() {
   });
 
   // ─────────────────────────────────────────
-  // 2. SUPPLIERS (Pemasok Sparepart AC Mobil)
+  // 2. SUPPLIERS
   // ─────────────────────────────────────────
   const supplier1 = await prisma.supplier.create({
     data: {
@@ -103,9 +110,9 @@ async function main() {
   });
 
   // ─────────────────────────────────────────
-  // 3. CUSTOMERS (Bengkel / Toko Sparepart)
+  // 3. CUSTOMERS
   // ─────────────────────────────────────────
-  const customer1 = await prisma.customer.create({
+  await prisma.customer.create({
     data: {
       id: uuidv4(),
       kode: 'CUST-001',
@@ -119,7 +126,7 @@ async function main() {
     },
   });
 
-  const customer2 = await prisma.customer.create({
+  await prisma.customer.create({
     data: {
       id: uuidv4(),
       kode: 'CUST-002',
@@ -134,201 +141,129 @@ async function main() {
   });
 
   // ─────────────────────────────────────────
-  // 4. PRODUCTS (5 Sparepart AC Mobil)
+  // 4. PRODUCTS (10 Sparepart AC Mobil)
   // ─────────────────────────────────────────
-
-  // Produk 1: Kompresor AC
-  const product1 = await prisma.product.create({
-    data: {
-      id: uuidv4(),
+  const productsData = [
+    {
       kode: 'AC-KMP-001',
-      nama: 'Kompresor AC Denso 10S17C',
-      deskripsi: 'Kompresor AC Denso tipe scroll 10S17C, cocok untuk Toyota Kijang Innova, Fortuner, Hilux. Kapasitas: 170cc, Voltase: 12V DC. Original Denso Japan.',
-      stok: 0,
+      nama: 'MC Terios std/Xenia New',
+      deskripsi: 'Magnet Clutch AC Terios std / Xenia New 12V. Kompatibel untuk Terios std dan Xenia New.',
       satuan: 'pcs',
-      aktif: true,
-      is_archived: false,
+      harga_sup1: 3250000,
+      harga_sup2: 3150000,
     },
-  });
-
-  // Produk 2: Kondensor AC
-  const product2 = await prisma.product.create({
-    data: {
-      id: uuidv4(),
+    {
       kode: 'AC-KND-001',
-      nama: 'Kondensor AC Universal Aluminium 60x40cm',
-      deskripsi: 'Kondensor AC mobil universal berbahan aluminium full, ukuran 60x40 cm, ketebalan 16mm. Kompatibel dengan berbagai jenis mobil MPV & SUV. Dilengkapi bracket besi.',
-      stok: 0,
+      nama: 'MC Avanza 1.3/Xenia 1.3',
+      deskripsi: 'Magnet Clutch AC Avanza 1.3 / Xenia 1.3 12V. Kompatibel untuk Avanza 1.3 dan Xenia 1.3.',
       satuan: 'pcs',
-      aktif: true,
-      is_archived: false,
+      harga_sup1: 485000,
+      harga_sup2: 465000,
     },
-  });
-
-  // Produk 3: Freon / Refrigerant
-  const product3 = await prisma.product.create({
-    data: {
-      id: uuidv4(),
+    {
       kode: 'AC-FRN-134',
-      nama: 'Freon AC R-134a Dupont 500gr',
-      deskripsi: 'Refrigerant / Freon AC mobil tipe R-134a merk Dupont USA, kemasan kaleng 500 gram. Ramah lingkungan (non-CFC). Cocok untuk semua mobil AC standar tahun 1994 ke atas.',
-      stok: 0,
+      nama: 'MC Innova Bensin/Fortuner Bensin',
+      deskripsi: 'Magnet Clutch AC Innova Bensin / Fortuner Bensin. Kompatibel untuk Innova dan Fortuner Bensin.',
       satuan: 'kaleng',
-      aktif: true,
-      is_archived: false,
+      harga_sup1: 130000,
+      harga_sup2: 125000,
     },
-  });
-
-  // Produk 4: Filter Dryer / Receiver Dryer
-  const product4 = await prisma.product.create({
-    data: {
-      id: uuidv4(),
+    {
       kode: 'AC-FDR-001',
-      nama: 'Filter Dryer / Receiver Drier Universal',
-      deskripsi: 'Filter dryer / receiver drier AC mobil universal, diameter 35mm, panjang 220mm. Berfungsi menyaring kotoran dan menyerap kelembaban dalam sistem AC. Material: aluminium.',
-      stok: 0,
+      nama: 'MC Jazz RS/City GM2',
+      deskripsi: 'Magnet Clutch AC Honda Jazz RS / City GM2. Kompatibel untuk Jazz RS dan City GM2.',
       satuan: 'pcs',
-      aktif: true,
-      is_archived: false,
+      harga_sup1: 95000,
+      harga_sup2: 88000,
     },
-  });
-
-  // Produk 5: Evaporator AC
-  const product5 = await prisma.product.create({
-    data: {
-      id: uuidv4(),
+    {
       kode: 'AC-EVP-AVZ',
-      nama: 'Evaporator AC Toyota Avanza / Xenia',
-      deskripsi: 'Evaporator AC khusus untuk Toyota Avanza generasi 1 (2004-2011) dan Daihatsu Xenia. Bahan aluminium fin copper tube. Dimensi: 22x20x5.5 cm. OEM quality.',
-      stok: 0,
+      nama: 'MC Ertiga/Splash/Swift',
+      deskripsi: 'Magnet Clutch AC Suzuki Ertiga / Splash / Swift. Kompatibel untuk Ertiga, Splash, dan Swift.',
       satuan: 'unit',
-      aktif: true,
-      is_archived: false,
+      harga_sup1: 380000,
+      harga_sup2: 370000,
     },
-  });
+    {
+      kode: 'AC-MGC-006',
+      nama: 'MC Yaris/Vios/New Altis',
+      deskripsi: 'Magnet Clutch AC Toyota Yaris / Vios / New Altis 12V High Quality',
+      satuan: 'pcs',
+      harga_sup1: 350000,
+      harga_sup2: 340000,
+    },
+    {
+      kode: 'AC-EXP-001',
+      nama: 'Expansi Avanza/Xenia/Rush/Terios',
+      deskripsi: 'Expansion Valve AC Mobil Avanza / Xenia / Rush / Terios OEM Quality',
+      satuan: 'pcs',
+      harga_sup1: 175000,
+      harga_sup2: 165000,
+    },
+    {
+      kode: 'AC-EXT-002',
+      nama: 'Ekstra Fan Denso Innova/Fortuner',
+      deskripsi: 'Extra Fan Motor AC Denso Innova / Fortuner 12V Complete Assembly',
+      satuan: 'pcs',
+      harga_sup1: 450000,
+      harga_sup2: 430000,
+    },
+    {
+      kode: 'AC-OIL-ND8',
+      nama: 'Oli Kompresor ND-8 Denso 250ml',
+      deskripsi: 'Oli Kompresor AC Mobil R134a Denso ND-8 Original 250ml',
+      satuan: 'botol',
+      harga_sup1: 85000,
+      harga_sup2: 80000,
+    },
+    {
+      kode: 'AC-MGC-007',
+      nama: 'MC Grand Livina/Latio/Evalia',
+      deskripsi: 'Magnet Clutch AC Nissan Grand Livina / Latio / Evalia 12V',
+      satuan: 'pcs',
+      harga_sup1: 380000,
+      harga_sup2: 365000,
+    },
+  ];
 
-  // ─────────────────────────────────────────
-  // 5. PRODUCT PRICES (Harga beli per supplier)
-  // ─────────────────────────────────────────
+  for (const item of productsData) {
+    const prod = await prisma.product.create({
+      data: {
+        id: uuidv4(),
+        kode: item.kode,
+        nama: item.nama,
+        deskripsi: item.deskripsi,
+        stok: 0,
+        satuan: item.satuan,
+        aktif: true,
+        is_archived: false,
+      },
+    });
 
-  // Kompresor — dari supplier 1 (Denso) & 2
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product1.id,
-      supplier_id: supplier1.id,
-      stok: 0,
-      harga_beli: 3250000, // Harga beli dari Denso
-      aktif: true,
-    },
-  });
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product1.id,
-      supplier_id: supplier2.id,
-      stok: 0,
-      harga_beli: 3150000, // Sedikit lebih murah dari distributor lain
-      aktif: true,
-    },
-  });
+    await prisma.productPrice.create({
+      data: {
+        id: uuidv4(),
+        product_id: prod.id,
+        supplier_id: supplier1.id,
+        stok: 0,
+        harga_beli: item.harga_sup1,
+        aktif: true,
+      },
+    });
 
-  // Kondensor — dari kedua supplier
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product2.id,
-      supplier_id: supplier1.id,
-      stok: 0,
-      harga_beli: 485000,
-      aktif: true,
-    },
-  });
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product2.id,
-      supplier_id: supplier2.id,
-      stok: 0,
-      harga_beli: 465000,
-      aktif: true,
-    },
-  });
+    await prisma.productPrice.create({
+      data: {
+        id: uuidv4(),
+        product_id: prod.id,
+        supplier_id: supplier2.id,
+        stok: 0,
+        harga_beli: item.harga_sup2,
+        aktif: true,
+      },
+    });
+  }
 
-  // Freon — hanya dari supplier 2 (distributor kimia)
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product3.id,
-      supplier_id: supplier2.id,
-      stok: 0,
-      harga_beli: 125000,
-      aktif: true,
-    },
-  });
-
-  // Filter Dryer — dari kedua supplier
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product4.id,
-      supplier_id: supplier1.id,
-      stok: 0,
-      harga_beli: 95000,
-      aktif: true,
-    },
-  });
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product4.id,
-      supplier_id: supplier2.id,
-      stok: 0,
-      harga_beli: 88000,
-      aktif: true,
-    },
-  });
-
-  // Evaporator — dari supplier 1 (Denso lebih spesifik)
-  await prisma.productPrice.create({
-    data: {
-      id: uuidv4(),
-      product_id: product5.id,
-      supplier_id: supplier1.id,
-      stok: 0,
-      harga_beli: 380000,
-      aktif: true,
-    },
-  });
-
-  // ─────────────────────────────────────────
-  // 6. RINGKASAN
-  // ─────────────────────────────────────────
-  console.log('✅ Database seeding selesai!\n');
-  console.log('╔════════════════════════════════════════════════╗');
-  console.log('║     CV MAJU MULIA BERSAMA — Initial Data       ║');
-  console.log('╠════════════════════════════════════════════════╣');
-  console.log('║  PRODUK (Sparepart AC Mobil):                  ║');
-  console.log('║  1. Kompresor AC Denso 10S17C        AC-KMP-001║');
-  console.log('║  2. Kondensor AC Aluminium 60x40     AC-KND-001║');
-  console.log('║  3. Freon R-134a Dupont 500gr        AC-FRN-134║');
-  console.log('║  4. Filter Dryer Universal           AC-FDR-001║');
-  console.log('║  5. Evaporator Toyota Avanza/Xenia   AC-EVP-AVZ║');
-  console.log('╠════════════════════════════════════════════════╣');
-  console.log('║  SUPPLIER:                                     ║');
-  console.log('║  SUP-001: PT. Denso Indonesia                  ║');
-  console.log('║  SUP-002: CV. Sinar Teknik Abadi               ║');
-  console.log('╠════════════════════════════════════════════════╣');
-  console.log('║  CUSTOMER (Bengkel / Toko):                    ║');
-  console.log('║  CUST-001: Bengkel AC Rizky Motor              ║');
-  console.log('║  CUST-002: Toko Sparepart Sejahtera            ║');
-  console.log('╠════════════════════════════════════════════════╣');
-  console.log('║  AKUN LOGIN:                                   ║');
-  console.log('║  admin@mmb.com        / admin123               ║');
-  console.log('║  gudang@mmb.com       / gudang123              ║');
-  console.log('║  sales@mmb.com        / sales123               ║');
-  console.log('║  kantor@mmb.com       / kantor123              ║');
-  console.log('╚════════════════════════════════════════════════╝');
+  console.log('✅ Database seeding selesai!');
 }
 
 main()

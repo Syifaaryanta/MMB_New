@@ -160,6 +160,8 @@ function RouteStateCleaner() {
   return null;
 }
 
+import { RealtimeProvider } from '@/context/RealtimeContext';
+
 function App() {
   const { isAuthenticated } = useAuthStore();
   const { initializeSettings } = useSettingsStore();
@@ -169,7 +171,8 @@ function App() {
   }, [initializeSettings]);
 
   return (
-    <BrowserRouter>
+    <RealtimeProvider>
+      <BrowserRouter>
       <RouteStateCleaner />
       <Routes>
         {/* Public Route */}
@@ -285,7 +288,8 @@ function App() {
         {/* Catch-all for main routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </RealtimeProvider>
   );
 }
 

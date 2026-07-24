@@ -4,6 +4,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import api from '@/lib/api';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
+import { useRealtime } from '@/context/RealtimeContext';
 import {
   TrendingUp,
   ShoppingCart,
@@ -147,8 +148,15 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const { onSoChanged } = useRealtime();
+
   useEffect(() => {
     fetchDashboardData(period);
+    const unsubscribe = onSoChanged(() => {
+      console.log('🔄 [Dashboard] Auto-refreshing dashboard data due to real-time SO event');
+      fetchDashboardData(period);
+    });
+    return () => unsubscribe();
   }, [period]);
 
   useEffect(() => {

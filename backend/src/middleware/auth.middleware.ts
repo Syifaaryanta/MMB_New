@@ -32,7 +32,7 @@ export const authenticate = async (
 
     const user = await prisma.profile.findUnique({
       where: { id: decoded.id, aktif: true },
-      select: { id: true, email: true, nama: true, role: true },
+      select: { id: true, email: true, username: true, nama: true, role: true },
     });
 
     if (!user) {

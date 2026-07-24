@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import api from '@/lib/api';
+import { SyncStatusBadge } from '@/components/ui/SyncStatusBadge';
 
 export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, login, token, logout, checkSessionExpiration } = useAuthStore();
@@ -360,9 +361,8 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
                 <span className="font-extrabold text-blue-500 tracking-wider bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/15">{realtimeClock}</span>
               </div>
 
-              {/* Small Keyboard Shortcut Badge */}
-              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 bg-surface-900/25 border border-surface-700/40 rounded-lg px-2.5 py-1" title="Tekan Ctrl+Shift+P untuk Profil">
-              </div>
+              {/* Sync Status Badge */}
+              <SyncStatusBadge />
             </div>
 
             {/* Profile trigger */}
