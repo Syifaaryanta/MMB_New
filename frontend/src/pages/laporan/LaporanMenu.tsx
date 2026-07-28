@@ -176,21 +176,6 @@ export const LaporanMenu: React.FC = () => {
           );
         })}
       </div>
-      <div className="flex justify-end text-[11px] text-slate-500 mt-4">
-        <span>
-          {lang === 'en'
-            ? 'Use '
-            : 'Gunakan '}
-          <kbd className="shortcut-badge">←</kbd> <kbd className="shortcut-badge">→</kbd> <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd>
-          {lang === 'en'
-            ? ' to select, '
-            : ' untuk memilih, '}
-          <kbd className="shortcut-badge">Enter</kbd>
-          {lang === 'en' ? ' to open, ' : ' masuk, '}
-          <kbd className="shortcut-badge">Esc</kbd>
-          {lang === 'en' ? ' to exit' : ' keluar'}
-        </span>
-      </div>
     </div>
   );
 };

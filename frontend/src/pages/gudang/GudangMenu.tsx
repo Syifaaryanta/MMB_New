@@ -102,12 +102,12 @@ export const GudangMenu: React.FC = () => {
   }, { enableOnFormTags: true });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+        <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white">
           {lang === 'en' ? 'Inventory & Warehouse Module' : 'Modul Gudang & Inventori'}
         </h1>
-        <p className="text-slate-400">
+        <p className="text-xs sm:text-sm text-slate-400">
           {lang === 'en'
             ? 'Manage product stock, check prices, and manage the MMB product catalog.'
             : 'Kelola persediaan barang, cek harga jual-beli, dan kelola katalog produk MMB.'}
@@ -116,42 +116,42 @@ export const GudangMenu: React.FC = () => {
 
       {/* Mini Stats Dashboard */}
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 skeleton" />
+            <div key={i} className="h-16 sm:h-24 skeleton" />
           ))}
         </div>
       ) : stats ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+          <div className="card p-2 sm:p-4 flex flex-col justify-between">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-400 uppercase tracking-tight sm:tracking-normal truncate">
               {lang === 'en' ? 'Total Active SKU' : 'Total SKU Aktif'}
             </span>
-            <span className="text-2xl font-bold text-white mt-1">{stats.totalSku}</span>
+            <span className="text-base sm:text-2xl font-bold text-white mt-0.5 sm:mt-1">{stats.totalSku}</span>
           </div>
-          <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">
+          <div className="card p-2 sm:p-4 flex flex-col justify-between">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-400 uppercase tracking-tight sm:tracking-normal truncate">
               {lang === 'en' ? 'Safe Stock' : 'Stok Aman'}
             </span>
-            <span className="text-2xl font-bold text-emerald-400 mt-1">{stats.amanStok}</span>
+            <span className="text-base sm:text-2xl font-bold text-emerald-400 mt-0.5 sm:mt-1">{stats.amanStok}</span>
           </div>
-          <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">
-              {lang === 'en' ? 'Critical Stock (Restock Needed)' : 'Stok Kritis (Perlu Restock)'}
+          <div className="card p-2 sm:p-4 flex flex-col justify-between">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-400 uppercase tracking-tight sm:tracking-normal truncate">
+              {lang === 'en' ? 'Critical Stock' : 'Stok Kritis'}
             </span>
-            <span className="text-2xl font-bold text-danger-400 mt-1">{stats.kritisStok}</span>
+            <span className="text-base sm:text-2xl font-bold text-danger-400 mt-0.5 sm:mt-1">{stats.kritisStok}</span>
           </div>
-          <div className="card p-4 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase">
+          <div className="card p-2 sm:p-4 flex flex-col justify-between">
+            <span className="text-[9px] sm:text-xs font-semibold text-slate-400 uppercase tracking-tight sm:tracking-normal truncate">
               {lang === 'en' ? 'Partner Suppliers' : 'Rekan Supplier'}
             </span>
-            <span className="text-2xl font-bold text-primary-400 mt-1">{stats.totalSupplier}</span>
+            <span className="text-base sm:text-2xl font-bold text-primary-400 mt-0.5 sm:mt-1">{stats.totalSupplier}</span>
           </div>
         </div>
       ) : null}
 
       {/* Sub Navigation Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-2.5 sm:gap-6">
         {subMenus.map((menu, idx) => {
           const Icon = menu.icon;
           const isFocused = idx === focusedIdx;
@@ -159,19 +159,19 @@ export const GudangMenu: React.FC = () => {
             <button
               key={menu.path}
               onClick={() => navigate(menu.path)}
-              className={`card text-left p-6 flex items-center gap-5 border transition-all duration-150 cursor-pointer ${isFocused
+              className={`card text-left p-2.5 sm:p-6 flex items-center gap-2.5 sm:gap-5 border transition-all duration-150 cursor-pointer ${isFocused
                 ? 'card-focused ring-2 ring-primary-500/30 scale-[1.01]'
                 : 'border-surface-700/50 hover:bg-surface-800'
                 }`}
             >
-              <div className={`p-3 rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
-                <Icon size={24} />
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl shrink-0 ${menu.iconColor} ${menu.iconBg}`}>
+                <Icon className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
-              <div className="flex-1 min-w-0 space-y-1">
-                <h3 className="font-bold text-lg text-white truncate">{menu.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{menu.desc}</p>
+              <div className="flex-1 min-w-0 space-y-0.5 sm:space-y-1">
+                <h3 className="font-bold text-xs sm:text-lg text-white truncate">{menu.title}</h3>
+                <p className="hidden sm:block text-xs sm:text-sm text-slate-400 leading-relaxed line-clamp-2">{menu.desc}</p>
               </div>
-              <ChevronRight size={16} className={`shrink-0 ${isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'}`} />
+              <ChevronRight size={16} className={`hidden sm:block shrink-0 ${isFocused ? 'text-primary-400 animate-pulse' : 'text-slate-500'}`} />
             </button>
           );
         })}

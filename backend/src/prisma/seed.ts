@@ -227,7 +227,7 @@ async function main() {
   ];
 
   for (const item of productsData) {
-    const prod = await prisma.product.create({
+    await prisma.product.create({
       data: {
         id: uuidv4(),
         kode: item.kode,
@@ -237,28 +237,6 @@ async function main() {
         satuan: item.satuan,
         aktif: true,
         is_archived: false,
-      },
-    });
-
-    await prisma.productPrice.create({
-      data: {
-        id: uuidv4(),
-        product_id: prod.id,
-        supplier_id: supplier1.id,
-        stok: 0,
-        harga_beli: item.harga_sup1,
-        aktif: true,
-      },
-    });
-
-    await prisma.productPrice.create({
-      data: {
-        id: uuidv4(),
-        product_id: prod.id,
-        supplier_id: supplier2.id,
-        stok: 0,
-        harga_beli: item.harga_sup2,
-        aktif: true,
       },
     });
   }

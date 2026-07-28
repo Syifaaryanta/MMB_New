@@ -11,12 +11,9 @@ import {
   DollarSign,
   TrendingUp,
   Database,
-  User,
   LogOut,
   Menu,
   X,
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
   History,
   UserCheck,
@@ -24,6 +21,122 @@ import {
 
 import api from '@/lib/api';
 import { SyncStatusBadge } from '@/components/ui/SyncStatusBadge';
+
+interface SidebarContentProps {
+  user: any;
+  allowedNavItems: any[];
+  focusedNavIdx: number;
+  location: any;
+  language: string;
+  isCollapsed: boolean;
+  forceExpand?: boolean;
+  onNavigate: () => void;
+  onLogout: () => void;
+}
+
+const SidebarContent: React.FC<SidebarContentProps> = React.memo(({
+  user,
+  allowedNavItems,
+  focusedNavIdx,
+  location,
+  language,
+  isCollapsed,
+  forceExpand = false,
+  onNavigate,
+  onLogout,
+}) => {
+  const collapsed = forceExpand ? false : isCollapsed;
+
+  return (
+    <div className="flex flex-col h-full bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 border-r border-blue-600/20 text-blue-100">
+      {/* Brand Logo Header */}
+      <div className={`flex items-center p-4 border-b border-blue-600/30 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-blue-700 shadow-md shrink-0">
+            M
+          </div>
+          {!collapsed && (
+            <span className="font-bold text-lg bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+              MMB System
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation Links */}
+      <nav className={`flex-1 py-4 space-y-2 overflow-y-auto ${collapsed ? 'px-0' : 'px-3'}`}>
+        {allowedNavItems.map((item, idx) => {
+          const Icon = item.icon;
+          const isActive = location.pathname.startsWith(item.path);
+          const isFocused = location.pathname === '/dashboard' && idx === focusedNavIdx;
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`nav-item ${isActive ? 'active' : ''} ${
+                collapsed 
+                  ? 'w-10 h-10 !p-0 rounded-xl mx-auto justify-center' 
+                  : ''
+              } ${isFocused ? 'border-2 border-white bg-white/10 shadow-lg shadow-white/5 ring-1 ring-white/30' : ''}`}
+              title={collapsed ? item.label : undefined}
+              onClick={onNavigate}
+            >
+              <Icon size={20} className={isActive || isFocused ? 'text-white' : 'text-blue-300'} />
+              {!collapsed && <span className={isActive || isFocused ? 'font-bold text-white' : 'font-medium'}>{item.label}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Footer Profile & Logout */}
+      <div className={`p-4 border-t border-blue-600/30 flex flex-col gap-3 ${collapsed ? 'items-center px-0' : ''}`}>
+        {collapsed ? (
+          <>
+            <Link
+              to="/profile"
+              className="w-10 h-10 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-xs font-bold text-white hover:bg-white/25 transition-all shadow-md shrink-0"
+              title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
+            >
+              {getInitials(user.username || user.nama).toUpperCase()}
+            </Link>
+            <button
+              onClick={onLogout}
+              className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:text-red-200 text-blue-200 flex items-center justify-center transition-all shrink-0"
+              title={language === 'id' ? 'Keluar' : 'Logout'}
+            >
+              <LogOut size={20} />
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 text-blue-100 transition-colors"
+              title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
+            >
+              <div className="w-9 h-9 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                {getInitials(user.username || user.nama).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{user.username || user.nama}</p>
+                <p className="text-xs text-blue-300 truncate capitalize">{user.role.replace('_', ' ')}</p>
+              </div>
+            </Link>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-red-500/20 hover:text-red-200 text-blue-200 transition-colors"
+              title={language === 'id' ? 'Keluar' : 'Logout'}
+            >
+              <LogOut size={20} />
+              <span className="font-medium text-sm">{language === 'id' ? 'Keluar' : 'Logout'}</span>
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, login, token, logout, checkSessionExpiration } = useAuthStore();
@@ -150,43 +263,18 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         if (res.data && token) {
           login(res.data, token);
         }
-      }).catch(() => {});
+      }).catch(() => {
+        checkSessionExpiration();
+      });
     }
-  }, [token, login]);
+  }, [token]);
 
-  // Session Expiration Check (18:00 Auto Logout)
-  useEffect(() => {
-    const checkExpiration = () => {
-      const isExpired = checkSessionExpiration();
-      if (isExpired) {
-        navigate('/login');
-      }
-    };
-    checkExpiration();
-    const interval = setInterval(checkExpiration, 10000);
-    return () => clearInterval(interval);
-  }, [checkSessionExpiration, navigate]);
-
-  // Escape: Close mobile drawer or return to dashboard (sidebar will automatically expand)
-  useHotkeys('esc', (e) => {
-    if (isMobileOpen) {
-      e.preventDefault();
-      setIsMobileOpen(false);
-      return;
-    }
-    if (location.pathname !== '/dashboard') {
-      e.preventDefault();
-      navigate('/dashboard');
-    }
-  }, { enableOnFormTags: false }, [location.pathname]);
-
-  // Ctrl+P / Cmd+P: Navigate to User Profile
-  useHotkeys('ctrl+p, cmd+p', (e) => {
+  useHotkeys('ctrl+p', (e) => {
     e.preventDefault();
     navigate('/profile');
-  }, { enableOnFormTags: true });
+  });
 
-  // Dashboard-specific Arrow keys and Enter to navigate Sidebar
+  // Global Dashboard Keyboard Navigation (Up/Down/Enter)
   useHotkeys('down', (e) => {
     e.preventDefault();
     if (allowedNavItems.length > 0) {
@@ -218,125 +306,60 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
 
   if (!user) return null;
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 border-r border-blue-600/20 text-blue-100">
-      {/* Brand Logo Header */}
-      <div className={`flex items-center p-4 border-b border-blue-600/30 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-blue-700 shadow-md shrink-0">
-            M
-          </div>
-          {!isCollapsed && (
-            <span className="font-bold text-lg bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-              MMB System
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation Links */}
-      <nav className={`flex-1 py-4 space-y-2 overflow-y-auto ${isCollapsed ? 'px-0' : 'px-3'}`}>
-        {allowedNavItems.map((item, idx) => {
-          const Icon = item.icon;
-          const isActive = location.pathname.startsWith(item.path);
-          const isFocused = location.pathname === '/dashboard' && idx === focusedNavIdx;
-
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`nav-item ${isActive ? 'active' : ''} ${
-                isCollapsed 
-                  ? 'w-10 h-10 !p-0 rounded-xl mx-auto justify-center' 
-                  : ''
-              } ${isFocused ? 'border-2 border-white bg-white/10 shadow-lg shadow-white/5 ring-1 ring-white/30' : ''}`}
-              title={isCollapsed ? item.label : undefined}
-              onClick={() => setIsMobileOpen(false)}
-            >
-              <Icon size={20} className={isActive || isFocused ? 'text-white' : 'text-blue-300'} />
-              {!isCollapsed && <span className={isActive || isFocused ? 'font-bold text-white' : 'font-medium'}>{item.label}</span>}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer Profile & Logout */}
-      <div className={`p-4 border-t border-blue-600/30 flex flex-col gap-3 ${isCollapsed ? 'items-center px-0' : ''}`}>
-        {isCollapsed ? (
-          <>
-            <Link
-              to="/profile"
-              className="w-10 h-10 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-xs font-bold text-white hover:bg-white/25 transition-all shadow-md shrink-0"
-              title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
-            >
-              {getInitials(user.username || user.nama).toUpperCase()}
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:text-red-200 text-blue-200 flex items-center justify-center transition-all shrink-0"
-              title={language === 'id' ? 'Keluar' : 'Logout'}
-            >
-              <LogOut size={20} />
-            </button>
-          </>
-        ) : (
-          <>
-            <Link
-              to="/profile"
-              className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 text-blue-100 transition-colors"
-              title={language === 'id' ? 'Profil Pengguna (Ctrl+P)' : 'User Profile (Ctrl+P)'}
-            >
-              <div className="w-9 h-9 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-sm font-bold text-white shrink-0">
-                {getInitials(user.username || user.nama).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{user.username || user.nama}</p>
-                <p className="text-xs text-blue-300 truncate capitalize">{user.role.replace('_', ' ')}</p>
-              </div>
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 p-2 rounded-xl hover:bg-red-500/20 hover:text-red-200 text-blue-200 transition-colors"
-              title={language === 'id' ? 'Keluar' : 'Logout'}
-            >
-              <LogOut size={20} />
-              <span className="font-medium text-sm">{language === 'id' ? 'Keluar' : 'Logout'}</span>
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div className="flex h-screen overflow-hidden bg-surface-900 text-slate-800 font-sans print:h-auto print:overflow-visible print:bg-white print:text-black">
-      {/* Sidebar for Desktop */}
-      <aside className={`hidden md:block transition-all duration-300 h-full print:hidden ${isCollapsed ? 'w-16' : 'w-64'}`}>
-        {sidebarContent}
+      {/* Sidebar for Desktop - Instant toggle without animation */}
+      <aside className={`hidden md:block h-full print:hidden ${isCollapsed ? 'w-16' : 'w-64'}`}>
+        <SidebarContent
+          user={user}
+          allowedNavItems={allowedNavItems}
+          focusedNavIdx={focusedNavIdx}
+          location={location}
+          language={language}
+          isCollapsed={isCollapsed}
+          forceExpand={false}
+          onNavigate={() => setIsMobileOpen(false)}
+          onLogout={handleLogout}
+        />
       </aside>
 
-      {/* Mobile Drawer Sidebar */}
+      {/* Mobile Drawer Sidebar - Instant display without animation */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden print:hidden">
-          {/* Overlay */}
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setIsMobileOpen(false)} />
-          {/* Content */}
-          <div className="relative flex flex-col w-64 max-w-xs h-full bg-gradient-to-b from-blue-700 to-indigo-900 animate-slide-left z-10">
+          {/* Dark Backdrop Overlay */}
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setIsMobileOpen(false)}
+          />
+          {/* Drawer Content */}
+          <div className="relative flex flex-col w-64 max-w-[280px] h-full bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 z-10 shadow-2xl">
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors z-20"
             >
               <X size={18} />
             </button>
-            <div className="flex-1 h-full">{sidebarContent}</div>
+            <div className="flex-1 h-full">
+              <SidebarContent
+                user={user}
+                allowedNavItems={allowedNavItems}
+                focusedNavIdx={focusedNavIdx}
+                location={location}
+                language={language}
+                isCollapsed={isCollapsed}
+                forceExpand={true}
+                onNavigate={() => setIsMobileOpen(false)}
+                onLogout={handleLogout}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {/* Main Layout Container */}
       <div className="flex-1 flex flex-col h-full overflow-hidden print:h-auto print:overflow-visible">
-        {/* Header */}
-        <header className="h-16 border-b border-surface-700 bg-surface-800/80 backdrop-blur-md flex items-center justify-between px-6 z-10 print:hidden">
+        {/* Header - High performance without backdrop blur */}
+        <header className="h-16 border-b border-surface-700 bg-surface-800 flex items-center justify-between px-6 z-10 print:hidden">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsMobileOpen(true)}
@@ -380,7 +403,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
 
         {/* Content Page wrapper */}
         <div id="main-portal-target" className="relative flex-1 overflow-hidden print:overflow-visible">
-          <main className="h-full overflow-y-auto p-6 md:p-8 animate-fade-in print:p-0 print:overflow-visible print:bg-white print:text-black">
+          <main className="h-full overflow-y-auto p-6 md:p-8 print:p-0 print:overflow-visible print:bg-white print:text-black">
             {children}
           </main>
         </div>

@@ -52,7 +52,7 @@ export const ArsipProduk: React.FC = () => {
   const fetchArchivedProducts = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get(`/products?q=${search}&archived=true&page=${page}&limit=10`);
+      const res = await api.get(`/products?q=${search}&archived=true&page=${page}&limit=20`);
       setProducts(res.data.data || []);
       setTotalProducts(res.data.total || 0);
       setSelectedIdx(0);
@@ -194,58 +194,59 @@ export const ArsipProduk: React.FC = () => {
       {/* Restore Confirm Modal */}
       {restoreTarget && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setRestoreTarget(null)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-center text-center gap-2 bg-blue-50 border-b border-blue-100 px-5 py-4">
-              <div className="p-2 bg-blue-100 rounded-full"><RotateCcw size={20} className="text-blue-600" /></div>
-              <div>
-                <h2 className="font-bold text-slate-800 text-sm">{lang === 'en' ? 'Restore Product' : 'Pulihkan Produk'}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{lang === 'en' ? 'Product will be active again and can be used in transactions' : 'Produk akan aktif kembali dan dapat digunakan dalam transaksi'}</p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setRestoreTarget(null)}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-md overflow-hidden animate-scale-in" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-col items-center text-center gap-1.5 bg-blue-50 border-b border-blue-100 px-4 py-3.5 sm:px-5 sm:py-4">
+                <div className="p-2 bg-blue-100 rounded-full"><RotateCcw size={18} className="text-blue-600" /></div>
+                <div>
+                  <h2 className="font-bold text-slate-800 text-xs sm:text-sm">{lang === 'en' ? 'Restore Product' : 'Pulihkan Produk'}</h2>
+                  <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{lang === 'en' ? 'Product will be active again' : 'Produk akan aktif kembali'}</p>
+                </div>
+              </div>
+              <div className="px-4 py-4 sm:px-5 sm:py-5 text-center">
+                <p className="text-slate-700 text-xs sm:text-sm leading-relaxed">
+                  {lang === 'en' ? 'Are you sure you want to restore product' : 'Apakah Anda yakin ingin memulihkan produk'}{' '}
+                  <span className="font-bold text-slate-900">"{restoreTarget.nama}"</span>?
+                </p>
+                <p className="text-[10px] sm:text-xs text-slate-400 mt-1.5">
+                  {lang === 'en' ? 'The product will reappear in the active list.' : 'Produk akan kembali muncul di daftar aktif.'}
+                </p>
+              </div>
+              <div className="flex gap-2 px-4 pb-4 sm:px-5 sm:pb-5 justify-center">
+                <button onClick={() => setRestoreTarget(null)} className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
+                  <kbd className="text-[9px] sm:text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
+                  {lang === 'en' ? 'Cancel' : 'Batal'}
+                </button>
+                <button onClick={confirmRestore} className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md shadow-blue-600/10">
+                  <kbd className="text-[9px] sm:text-[10px] bg-blue-500 border border-blue-400 rounded px-1 py-0.5 font-mono">Y</kbd>
+                  {lang === 'en' ? 'Yes, Restore' : 'Ya, Pulihkan'}
+                </button>
               </div>
             </div>
-            <div className="px-5 py-5 text-center">
-              <p className="text-slate-700 text-sm leading-relaxed">
-                {lang === 'en' ? 'Are you sure you want to restore product' : 'Apakah Anda yakin ingin memulihkan produk'}{' '}
-                <span className="font-bold text-slate-900">"{restoreTarget.nama}"</span>?
-              </p>
-              <p className="text-xs text-slate-400 mt-2">
-                {lang === 'en' ? 'The product will reappear in the active list and can be used in purchases or sales.' : 'Produk akan kembali muncul di daftar aktif dan bisa digunakan dalam transaksi pembelian maupun penjualan.'}
-              </p>
-            </div>
-            <div className="flex gap-2 px-5 pb-5 justify-center">
-              <button onClick={() => setRestoreTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
-                <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
-                {lang === 'en' ? 'Cancel' : 'Batal'}
-              </button>
-              <button onClick={confirmRestore} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md shadow-blue-600/10">
-                <kbd className="text-[10px] bg-blue-500 border border-blue-400 rounded px-1 py-0.5 font-mono">Y</kbd>
-                {lang === 'en' ? 'Yes, Restore' : 'Ya, Pulihkan'}
-              </button>
-            </div>
           </div>
-        </div>
         </ModalPortal>
       )}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white">
             {lang === 'en' ? 'Archived Products' : 'Arsip Produk'}
           </h1>
-          <p className="text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-400">
             {lang === 'en'
               ? 'Restore items that have been archived to be used again in transactions'
               : 'Pulihkan barang yang telah diarsipkan untuk digunakan kembali dalam transaksi'}
           </p>
         </div>
-        <button onClick={() => navigate('/gudang')} className="btn-secondary text-xs">
-          {lang === 'en' ? 'Back to Inventory' : 'Kembali ke Gudang'}
+        <button onClick={() => navigate('/gudang')} className="btn-secondary py-1.5 px-2.5 sm:px-3 text-xs shrink-0" title={lang === 'en' ? 'Back' : 'Kembali'}>
+          <span className="hidden sm:inline">{lang === 'en' ? 'Back to Inventory' : 'Kembali ke Gudang'}</span>
+          <span className="sm:hidden">{lang === 'en' ? 'Back' : 'Kembali'}</span>
         </button>
       </div>
 
       {/* Search Filter */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
+      <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-center justify-between w-full">
         <div className="relative flex-1 w-full">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
             <Search size={16} />
@@ -264,7 +265,7 @@ export const ArsipProduk: React.FC = () => {
               }
             }}
             placeholder={lang === 'en' ? 'Search Archived Products... (F1)' : 'Cari Produk Terarsip... (F1)'}
-            className="input-field pl-9 w-full"
+            className="input-field pl-9 w-full text-xs sm:text-sm"
           />
           {search && (
             <button
@@ -276,19 +277,19 @@ export const ArsipProduk: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+        <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-400 bg-surface-800/40 px-3 py-2 rounded-xl border border-surface-700/50 shrink-0 w-full md:w-auto">
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F1</kbd>
             <span>{lang === 'en' ? 'Search' : 'Cari'}</span>
           </span>
 
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F3 / Enter</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F3 / Enter</kbd>
             <span>{lang === 'en' ? 'Restore' : 'Pulihkan'}</span>
           </span>
 
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Esc</kbd>
             <span>{lang === 'en' ? 'Back' : 'Kembali'}</span>
           </span>
         </div>
@@ -303,14 +304,14 @@ export const ArsipProduk: React.FC = () => {
         </div>
       ) : products.length > 0 ? (
         <div className="card p-0 overflow-hidden border border-surface-700">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[500px] sm:min-w-0">
               <thead>
                 <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                  <th className="p-4">{lang === 'en' ? 'Code' : 'Kode'}</th>
-                  <th className="p-4">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
-                  <th className="p-4 text-right">{lang === 'en' ? 'Stock' : 'Stok'}</th>
-                  <th className="p-4 text-center">{lang === 'en' ? 'Action' : 'Aksi'}</th>
+                  <th className="px-3 py-2.5 sm:p-4">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                  <th className="px-3 py-2.5 sm:p-4">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 text-right">{lang === 'en' ? 'Stock' : 'Stok'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 text-center">{lang === 'en' ? 'Action' : 'Aksi'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-700/50">
@@ -322,13 +323,14 @@ export const ArsipProduk: React.FC = () => {
                     className={`hover:bg-surface-800/40 cursor-pointer transition-colors ${idx === selectedIdx ? 'table-row-selected' : ''
                       }`}
                   >
-                    <td className="p-4 font-mono text-slate-300 font-semibold">{p.kode}</td>
-                    <td className="p-4 font-bold text-white">{p.nama}</td>
-                    <td className="p-4 text-right font-semibold text-slate-200">{Number(p.stok)}</td>
-                    <td className="p-4 text-center">
+                    <td className="px-3 py-2.5 sm:p-4 font-mono text-slate-300 font-semibold">{p.kode}</td>
+                    <td className="px-3 py-2.5 sm:p-4 font-bold text-white max-w-[150px] sm:max-w-none truncate">{p.nama}</td>
+                    <td className="px-3 py-2.5 sm:p-4 text-right font-semibold text-slate-200">{Number(p.stok)}</td>
+                    <td className="px-3 py-2.5 sm:p-4 text-center">
                       <button
                         onClick={handleRestore}
-                        className="btn-secondary py-1 px-2.5 text-xs text-primary-400 hover:text-white"
+                        className="btn-secondary py-1 px-2 text-xs text-primary-400 hover:text-white flex items-center justify-center gap-1 mx-auto"
+                        title={lang === 'en' ? 'Restore' : 'Pulihkan'}
                       >
                         <RotateCcw size={12} />
                         <span>{lang === 'en' ? 'Restore' : 'Pulihkan'}</span>
@@ -341,8 +343,8 @@ export const ArsipProduk: React.FC = () => {
           </div>
 
           {/* Pagination Footer */}
-          <div className="flex items-center justify-between p-4 bg-surface-800/50 border-t border-surface-700">
-            <span className="text-xs text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 bg-surface-800/50 border-t border-surface-700 gap-2">
+            <span className="text-[11px] sm:text-xs text-slate-400">
               {lang === 'en'
                 ? `Showing ${products.length} of ${totalProducts} archived items`
                 : `Menampilkan ${products.length} dari ${totalProducts} barang terarsip`}
@@ -355,12 +357,12 @@ export const ArsipProduk: React.FC = () => {
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-xs px-3 font-semibold">
+              <span className="text-xs px-3 font-semibold font-mono">
                 {lang === 'en' ? `Page ${page}` : `Halaman ${page}`}
               </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
-                disabled={products.length < 10}
+                disabled={products.length < 20}
                 className="btn-secondary p-1.5 rounded-lg disabled:opacity-50"
               >
                 <ChevronRight size={16} />

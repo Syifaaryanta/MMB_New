@@ -248,41 +248,41 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner / Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white">
             {lang === 'en' ? 'Operational Dashboard' : 'Dashboard Operasional'}
           </h1>
-          <p className="text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-400">
             {lang === 'en' ? 'MMB performance summary for period ' : 'Ringkasan kinerja MMB untuk periode '} {getPeriodLabel()}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-lg p-0.5 bg-surface-800 border border-surface-700">
+          <div className="inline-flex rounded-lg p-0.5 bg-surface-800 border border-surface-700 text-xs">
             <button
               onClick={() => setPeriod('30')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === '30' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-md transition-all ${period === '30' ? 'bg-primary-600 !text-white shadow font-bold' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              {lang === 'en' ? '30 Days (F1)' : '30 Hari (F1)'}
+              {lang === 'en' ? '30 Days' : '30 Hari'} <span className="hidden sm:inline">(F1)</span>
             </button>
             <button
               onClick={() => setPeriod('180')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === '180' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-md transition-all ${period === '180' ? 'bg-primary-600 !text-white shadow font-bold' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              {lang === 'en' ? '6 Months (F2)' : '6 Bulan (F2)'}
+              {lang === 'en' ? '6 Months' : '6 Bulan'} <span className="hidden sm:inline">(F2)</span>
             </button>
             <button
               onClick={() => setPeriod('365')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === '365' ? 'bg-primary-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-md transition-all ${period === '365' ? 'bg-primary-600 !text-white shadow font-bold' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              {lang === 'en' ? '1 Year (F3)' : '1 Tahun (F3)'}
+              {lang === 'en' ? '1 Year' : '1 Tahun'} <span className="hidden sm:inline">(F3)</span>
             </button>
           </div>
 
           <button
             onClick={() => fetchDashboardData(period)}
-            className="btn-secondary px-3 py-2 text-xs"
+            className="btn-secondary px-2.5 py-1 sm:px-3 sm:py-2 text-xs"
             title="Refresh Data (F5)"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
@@ -292,107 +292,106 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {isLoading && !kpi ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 skeleton" />
+            <div key={i} className="h-24 sm:h-28 skeleton" />
           ))}
         </div>
       ) : kpi ? (
         <>
-          {/* Baris 1: KPI Stats Cards — 4 kolom */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="card-stat">
+          {/* Baris 1: KPI Stats Cards — 2 kolom mobile, 4 kolom desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6">
+            <div className="card-stat p-3 sm:p-5">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{lang === 'en' ? 'Total Sales Revenue' : 'Total Omzet SO'}</p>
-                  <p className="text-2xl font-bold mt-1 text-white currency">{formatCurrency(kpi.total_omzet)}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">{lang === 'en' ? 'Total Sales Revenue' : 'Total Omzet SO'}</p>
+                  <p className="text-sm sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white currency truncate">{formatCurrency(kpi.total_omzet)}</p>
                 </div>
-                <div className="p-2 bg-primary-950/50 border border-primary-500/30 rounded-lg text-primary-400">
-                  <TrendingUp size={20} />
+                <div className="p-1.5 sm:p-2 bg-primary-950/50 border border-primary-500/30 rounded-lg text-primary-400 shrink-0">
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
-                <span className="badge badge-green font-mono">{kpi.total_transaksi} SO</span>
-                <span>{lang === 'en' ? 'completed and processed' : 'telah selesai diproses'}</span>
+              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[9px] sm:text-xs text-slate-400">
+                <span className="badge badge-green font-mono text-[8px] sm:text-xs px-1 sm:px-2 py-0.5">{kpi.total_transaksi} SO</span>
+                <span className="hidden sm:inline">{lang === 'en' ? 'completed and processed' : 'telah selesai diproses'}</span>
               </div>
             </div>
 
-            <div className="card-stat">
+            <div className="card-stat p-3 sm:p-5">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{lang === 'en' ? 'Total Purchases PO' : 'Total Pembelian PO'}</p>
-                  <p className="text-2xl font-bold mt-1 text-white currency">{formatCurrency(kpi.total_pembelian)}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">{lang === 'en' ? 'Total Purchases PO' : 'Total Pembelian PO'}</p>
+                  <p className="text-sm sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white currency truncate">{formatCurrency(kpi.total_pembelian)}</p>
                 </div>
-                <div className="p-2 bg-purple-950/50 border border-purple-500/30 rounded-lg text-purple-400">
-                  <ShoppingCart size={20} />
+                <div className="p-1.5 sm:p-2 bg-purple-950/50 border border-purple-500/30 rounded-lg text-purple-400 shrink-0">
+                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
-                <span className="badge badge-blue font-mono">{kpi.pending_receiving} PO</span>
-                <span>{lang === 'en' ? 'awaiting physical receiving' : 'menunggu penerimaan fisik'}</span>
+              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[9px] sm:text-xs text-slate-400">
+                <span className="badge badge-blue font-mono text-[8px] sm:text-xs px-1 sm:px-2 py-0.5">{kpi.pending_receiving} PO</span>
+                <span className="hidden sm:inline">{lang === 'en' ? 'awaiting physical receiving' : 'menunggu penerimaan fisik'}</span>
               </div>
             </div>
 
-            <div className="card-stat">
+            <div className="card-stat p-3 sm:p-5">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{lang === 'en' ? 'Total Transactions' : 'Total Transaksi'}</p>
-                  <p className="text-2xl font-bold mt-1 text-white">{formatNumber(kpi.total_transaksi)} SO</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">{lang === 'en' ? 'Total Transactions' : 'Total Transaksi'}</p>
+                  <p className="text-sm sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white truncate">{formatNumber(kpi.total_transaksi)} SO</p>
                 </div>
-                <div className="p-2 bg-blue-950/50 border border-blue-500/30 rounded-lg text-blue-400">
-                  <ClipboardList size={20} />
+                <div className="p-1.5 sm:p-2 bg-blue-950/50 border border-blue-500/30 rounded-lg text-blue-400 shrink-0">
+                  <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
-                <span className="text-blue-400 font-semibold flex items-center gap-0.5">
-                  {lang === 'en' ? 'Total completed Sales Order invoices' : 'Total invoice Sales Order selesai'}
+              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[9px] sm:text-xs text-slate-400">
+                <span className="text-blue-400 font-semibold truncate">
+                  {lang === 'en' ? 'Total SO invoices' : 'Total invoice SO'}
                 </span>
               </div>
             </div>
 
-            <div className="card-stat">
+            <div className="card-stat p-3 sm:p-5">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Inventory SKU <span className="text-[10px] text-amber-400 font-mono">[F4]</span></p>
-                  <p className="text-2xl font-bold mt-1 text-white">{kpi.total_produk} {lang === 'en' ? 'Items' : 'Barang'}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">Inventory SKU</p>
+                  <p className="text-sm sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white truncate">{kpi.total_produk} {lang === 'en' ? 'Items' : 'Barang'}</p>
                 </div>
-                <div className="p-2 bg-amber-950/50 border border-amber-500/30 rounded-lg text-amber-400">
-                  <Package size={20} />
+                <div className="p-1.5 sm:p-2 bg-amber-950/50 border border-amber-500/30 rounded-lg text-amber-400 shrink-0">
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[9px] sm:text-xs text-slate-400">
                 {kpi.stok_kritis > 0 ? (
-                  <span className="badge badge-red font-mono flex items-center gap-1">
-                    <AlertTriangle size={12} />
+                  <span className="badge badge-red font-mono text-[8px] sm:text-xs px-1 sm:px-2 py-0.5 flex items-center gap-0.5">
+                    <AlertTriangle size={10} />
                     {kpi.stok_kritis} {lang === 'en' ? 'Critical' : 'Kritis'}
                   </span>
                 ) : (
-                  <span className="badge badge-green font-mono">{lang === 'en' ? 'Stock Safe' : 'Stok Aman'}</span>
+                  <span className="badge badge-green font-mono text-[8px] sm:text-xs px-1 sm:px-2 py-0.5">{lang === 'en' ? 'Stock Safe' : 'Stok Aman'}</span>
                 )}
-                <span>{lang === 'en' ? 'stock below minimum threshold' : 'stok di bawah batas minimal'}</span>
+                <span className="hidden sm:inline">{lang === 'en' ? 'stock below minimum threshold' : 'stok di bawah batas minimal'}</span>
               </div>
             </div>
           </div>
 
-          {/* Baris 2: Grafik Tren + Barang Keluar Hari Ini (Di atas Kalender) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Baris 2: Grafik Tren + Barang Keluar Hari Ini */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
             {/* Chart Area */}
-            <div className="card lg:col-span-2 space-y-4">
+            <div className="card lg:col-span-2 p-3 sm:p-6 space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white">
-                    {lang === 'en' ? 'Sales vs Purchase Trend' : 'Tren Nominal Penjualan vs Pembelian'}
+                  <h3 className="text-sm sm:text-lg font-bold text-white">
+                    {lang === 'en' ? 'Sales vs Purchase Trend' : 'Tren Sales vs Pembelian'}
                   </h3>
-
                 </div>
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <Calendar size={12} /> {lang === 'en' ? 'Real-time Chart Data' : 'Chart Data Real-time'}
+                <span className="text-[10px] sm:text-xs text-slate-400 flex items-center gap-1">
+                  <Calendar size={12} /> {lang === 'en' ? 'Real-time' : 'Real-time'}
                 </span>
               </div>
-              <div className="h-[300px] w-full">
+              <div className="h-[220px] sm:h-[300px] w-full">
                 {trend.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-slate-500 text-sm">
-                  {lang === 'en' ? 'No transaction data for this period' : 'Tidak ada data transaksi pada periode ini'}
+                  <div className="h-full flex items-center justify-center text-slate-500 text-xs sm:text-sm">
+                    {lang === 'en' ? 'No transaction data for this period' : 'Tidak ada data transaksi pada periode ini'}
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -401,24 +400,24 @@ export const Dashboard: React.FC = () => {
                       <XAxis
                         dataKey="date"
                         stroke="#64748b"
-                        fontSize={11}
+                        fontSize={9}
                         tickFormatter={(str) => {
                           try {
                             return new Date(str).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' });
                           } catch { return str; }
                         }}
                       />
-                      <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => lang === 'en' ? `${val / 1000000}M Rp` : `Rp ${val / 1000000}Jt`} />
+                      <YAxis stroke="#64748b" fontSize={9} tickFormatter={(val) => lang === 'en' ? `${val / 1000000}M` : `${val / 1000000}Jt`} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e2535', borderColor: '#3d4f6b', borderRadius: '8px' }}
-                        labelStyle={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}
-                        itemStyle={{ color: '#fff', fontSize: '13px' }}
+                        contentStyle={{ backgroundColor: '#1e2535', borderColor: '#3d4f6b', borderRadius: '8px', fontSize: '11px' }}
+                        labelStyle={{ color: '#94a3b8', fontSize: '11px', fontWeight: 'bold' }}
+                        itemStyle={{ color: '#fff', fontSize: '11px' }}
                         formatter={(value: any, name: any) => [formatCurrency(Number(value)), name]}
-                        labelFormatter={(label) => `${lang === 'en' ? 'Date' : 'Tanggal'}: ${new Date(label).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                        labelFormatter={(label) => `${lang === 'en' ? 'Date' : 'Tanggal'}: ${new Date(label).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                       />
-                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                      <Line type="monotone" dataKey="omzet" name={lang === 'en' ? 'Sales Revenue (Rp)' : 'Nominal Penjualan (Rp)'} stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} />
-                      <Line type="monotone" dataKey="pembelian" name={lang === 'en' ? 'Purchase Amount (Rp)' : 'Nominal Pembelian (Rp)'} stroke="#eab308" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '6px' }} />
+                      <Line type="monotone" dataKey="omzet" name={lang === 'en' ? 'Sales (Rp)' : 'Penjualan (Rp)'} stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 5 }} />
+                      <Line type="monotone" dataKey="pembelian" name={lang === 'en' ? 'Purchase (Rp)' : 'Pembelian (Rp)'} stroke="#eab308" strokeWidth={2} activeDot={{ r: 5 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 )}
@@ -426,16 +425,16 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Transaksi Hari Ini */}
-            <div className="card space-y-4 flex flex-col">
+            <div className="card p-3 sm:p-6 space-y-3 sm:space-y-4 flex flex-col">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
                     <ClipboardList size={16} className="text-blue-400" />
                     {lang === 'en' ? "Today's Transactions" : 'Transaksi Hari Ini'}
-                    <span className="text-[10px] bg-blue-500/10 text-blue-400 font-mono px-1.5 py-0.5 rounded border border-blue-500/20">F4</span>
+                    <span className="hidden sm:inline-block text-[10px] bg-blue-500/10 text-blue-400 font-mono px-1.5 py-0.5 rounded border border-blue-500/20">F4</span>
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {lang === 'en' ? 'Total:' : 'Total:'} <span className="font-bold text-blue-300">{kpi.today_transaksi} {lang === 'en' ? 'Transactions' : 'Transaksi'}</span>
+                  <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+                    {lang === 'en' ? 'Total:' : 'Total:'} <span className="font-bold text-blue-300">{kpi.today_transaksi} {lang === 'en' ? 'Tx' : 'Transaksi'}</span>
                   </p>
                 </div>
                 <button
@@ -450,8 +449,8 @@ export const Dashboard: React.FC = () => {
               {/* List 5 transaksi terbaru */}
               <div className="flex-1 space-y-2">
                 {recentBarangKeluar.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-40 text-center space-y-2">
-                    <Package size={24} className="text-slate-600" />
+                  <div className="flex flex-col items-center justify-center h-32 sm:h-40 text-center space-y-2">
+                    <Package size={20} className="text-slate-600" />
                     <p className="text-xs text-slate-500">
                       {lang === 'en' ? 'No transactions today yet' : 'Belum ada transaksi hari ini'}
                     </p>
@@ -461,22 +460,22 @@ export const Dashboard: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => navigate('/penjualan/list', { state: { skipFilter: true } })}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-surface-800/50 border border-surface-700/40 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all text-left group"
+                      className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-xl bg-surface-800/50 border border-surface-700/40 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all text-left group"
                     >
-                      <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-[10px] font-bold text-blue-400 shrink-0">
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-blue-400 shrink-0">
                         {idx + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate group-hover:text-blue-300 transition-colors">
+                        <p className="text-[11px] sm:text-xs font-semibold text-white truncate group-hover:text-blue-300 transition-colors">
                           {item.customer}
                         </p>
-                        <p className="text-[10px] text-slate-500 truncate">
+                        <p className="text-[9px] sm:text-[10px] text-slate-500 truncate">
                           {item.no_order} · {item.itemCount} item ({item.totalQty} pcs)
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-xs font-bold text-emerald-400 currency">{formatCurrency(item.total)}</p>
-                        <p className="text-[10px] text-slate-500 flex items-center justify-end gap-0.5">
+                        <p className="text-[11px] sm:text-xs font-bold text-emerald-400 currency">{formatCurrency(item.total)}</p>
+                        <p className="text-[9px] sm:text-[10px] text-slate-500 flex items-center justify-end gap-0.5">
                           <Clock size={9} />
                           {formatWaktu(item.waktu)}
                         </p>
@@ -489,31 +488,31 @@ export const Dashboard: React.FC = () => {
               {/* Footer link ke history */}
               <button
                 onClick={() => navigate('/penjualan/list', { state: { skipFilter: true } })}
-                className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-slate-400 hover:text-blue-400 border border-dashed border-surface-700 hover:border-blue-500/40 rounded-xl transition-all"
+                className="flex items-center justify-center gap-1.5 w-full py-1.5 sm:py-2 text-[11px] sm:text-xs text-slate-400 hover:text-blue-400 border border-dashed border-surface-700 hover:border-blue-500/40 rounded-xl transition-all"
               >
-                {lang === 'en' ? 'View All Sales History (F4)' : 'Lihat Semua History Penjualan (F4)'}
+                {lang === 'en' ? 'View All Sales History' : 'Lihat History Penjualan'} <span className="hidden sm:inline">(F4)</span>
                 <ArrowUpRight size={12} />
               </button>
             </div>
           </div>
 
-          {/* Baris 3: Kalender Kepadatan (Lebar sama dengan Grafik) + Card Detail Tanggal (Tepat di bawah Barang Keluar) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Kalender (col-span-2 agar ukurannya sama dengan grafik di atasnya) */}
-            <div className="card space-y-4 lg:col-span-2">
-              <div className="w-full space-y-4">
+          {/* Baris 3: Kalender Kepadatan + Card Detail Tanggal */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
+            {/* Kalender */}
+            <div className="card p-3 sm:p-6 space-y-3 sm:space-y-4 lg:col-span-2">
+              <div className="w-full space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
                     <Calendar size={16} className="text-primary-400" />
                     <span>{lang === 'en' ? 'Density Calendar' : 'Kalender Kepadatan'}</span>
-                    <span className="text-[10px] bg-indigo-500/10 text-indigo-400 font-mono px-1.5 py-0.5 rounded border border-indigo-500/20">F6</span>
+                    <span className="hidden sm:inline-block text-[10px] bg-indigo-500/10 text-indigo-400 font-mono px-1.5 py-0.5 rounded border border-indigo-500/20">F6</span>
                   </h3>
                   <div className="flex gap-1 items-center">
                     <button onClick={prevMonth} className="p-1 hover:bg-surface-750 text-slate-400 hover:text-white rounded transition-colors">
                       <ChevronLeft size={16} />
                     </button>
                     <span className="text-xs font-semibold text-white px-1 whitespace-nowrap">
-                      {currentDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'long', year: 'numeric' })}
+                      {currentDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'short', year: 'numeric' })}
                     </span>
                     <button onClick={nextMonth} className="p-1 hover:bg-surface-750 text-slate-400 hover:text-white rounded transition-colors">
                       <ChevronRight size={16} />
@@ -522,7 +521,7 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Day Labels */}
-                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-slate-500 border-b border-surface-700/40 pb-1.5">
+                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[9px] sm:text-[10px] text-slate-500 border-b border-surface-700/40 pb-1">
                   {(lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['S', 'S', 'R', 'K', 'J', 'S', 'M']).map((dayLabel, idx) => (
                     <span key={idx}>{dayLabel}</span>
                   ))}
@@ -532,12 +531,11 @@ export const Dashboard: React.FC = () => {
                 <div className="grid grid-cols-7 gap-1">
                   {getCalendarDays().map((day, idx) => {
                     if (day === null) {
-                      return <div key={`empty-${idx}`} className="h-10 md:h-12" />;
+                      return <div key={`empty-${idx}`} className="h-8 sm:h-10 md:h-12" />;
                     }
                     const isSelected = selectedDay === day;
                     const sales = getDailySales(day);
 
-                    // Check if this cell is today
                     const todayObj = new Date();
                     const isToday = currentDate.getFullYear() === todayObj.getFullYear() &&
                       currentDate.getMonth() === todayObj.getMonth() &&
@@ -578,7 +576,7 @@ export const Dashboard: React.FC = () => {
                           setSelectedDay(day);
                           setIsCalendarFocused(true);
                         }}
-                        className={`h-10 md:h-12 text-[11px] font-semibold rounded flex items-center justify-center transition-all ${bgClass} ${textClass} ${borderClass} ${scaleClass}`}
+                        className={`h-8 sm:h-10 md:h-12 text-[10px] sm:text-[11px] font-semibold rounded flex items-center justify-center transition-all ${bgClass} ${textClass} ${borderClass} ${scaleClass}`}
                       >
                         {day}
                       </button>
@@ -587,30 +585,30 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Legenda warna */}
-                <div className="flex items-center gap-4 text-[10px] text-slate-500 pt-2 border-t border-surface-700/40">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500/40 inline-block" />
+                <div className="flex items-center gap-3 sm:gap-4 text-[9px] sm:text-[10px] text-slate-500 pt-1.5 border-t border-surface-700/40">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500/40 inline-block" />
                     {lang === 'en' ? 'High' : 'Tinggi'}
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/20 border border-amber-500/40 inline-block" />
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm bg-amber-500/20 border border-amber-500/40 inline-block" />
                     {lang === 'en' ? 'Medium' : 'Sedang'}
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-rose-500/10 border border-rose-500/20 inline-block" />
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm bg-rose-500/10 border border-rose-500/20 inline-block" />
                     {lang === 'en' ? 'Low' : 'Rendah'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Card Detail Tanggal (col-span-1 agar di bawah persis card barang keluar dengan ukuran sama) */}
-            <div className="card space-y-4 lg:col-span-1 flex flex-col justify-start">
-              <div className="flex items-center justify-between pb-3 border-b border-surface-700/40">
-                <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+            {/* Card Detail Tanggal */}
+            <div className="card p-3 sm:p-6 space-y-3 sm:space-y-4 lg:col-span-1 flex flex-col justify-start">
+              <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-surface-700/40">
+                <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
                   <TrendingUp size={16} className="text-primary-400" />
-                  <span>{lang === 'en' ? 'Daily Transaction Details' : 'Detail Transaksi Harian'}</span>
-                  <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-mono px-1.5 py-0.5 rounded border border-emerald-500/20">Enter</span>
+                  <span>{lang === 'en' ? 'Daily Details' : 'Detail Harian'}</span>
+                  <span className="hidden sm:inline-block text-[10px] bg-emerald-500/10 text-emerald-400 font-mono px-1.5 py-0.5 rounded border border-emerald-500/20">Enter</span>
                 </h3>
               </div>
 
@@ -636,29 +634,29 @@ export const Dashboard: React.FC = () => {
                   const aov = dayData.penjualan > 0 ? Math.round(dayData.omzet / dayData.penjualan) : 0;
 
                   return (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {/* Tanggal & Status */}
                       <div className="flex justify-between items-center pb-2 border-b border-surface-700/40">
                         <div>
-                          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                          <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
                             {lang === 'en' ? 'Selected Date' : 'Tanggal Terpilih'}
                           </p>
-                          <h4 className="text-sm font-bold text-white mt-0.5">
-                            {new Date(year, month, selectedDay).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          <h4 className="text-xs sm:text-sm font-bold text-white mt-0.5">
+                            {new Date(year, month, selectedDay).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </h4>
                         </div>
-                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${statusColor} ${badgeBg}`}>
+                        <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${statusColor} ${badgeBg}`}>
                           {targetStatus}
                         </span>
                       </div>
 
                       {/* Progress Bar target harian */}
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs text-slate-400">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] sm:text-xs text-slate-400">
                           <span>{lang === 'en' ? 'Daily Target' : 'Target Harian'}</span>
                           <span className={`font-bold ${statusColor}`}>{progressPct.toFixed(1)}%</span>
                         </div>
-                        <div className="w-full h-2.5 bg-surface-800 rounded-full overflow-hidden border border-surface-700/50">
+                        <div className="w-full h-2 sm:h-2.5 bg-surface-800 rounded-full overflow-hidden border border-surface-700/50">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${isHigh ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]' : isMedium ? 'bg-amber-400' : 'bg-rose-500'}`}
                             style={{ width: `${progressPct}%` }}
@@ -667,69 +665,67 @@ export const Dashboard: React.FC = () => {
                       </div>
 
                       {/* Rincian Angka/KPI List */}
-                      <div className="space-y-2 pt-2">
+                      <div className="space-y-1.5 sm:space-y-2 pt-1">
                         {/* Omzet Card */}
-                        <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp size={14} className="text-emerald-400" />
-                            <span className="text-[11px] text-slate-300">
+                        <div className="p-2 sm:p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <TrendingUp size={13} className="text-emerald-400 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] text-slate-300">
                               {lang === 'en' ? 'Sales Revenue' : 'Omzet Penjualan'}
                             </span>
                           </div>
-                          <span className="text-xs font-bold text-white">{formatCurrency(dayData.omzet)}</span>
+                          <span className="text-[11px] sm:text-xs font-bold text-white currency">{formatCurrency(dayData.omzet)}</span>
                         </div>
 
                         {/* Pembelian Card */}
-                        <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <ShoppingCart size={14} className="text-amber-400" />
-                            <span className="text-[11px] text-slate-300">
+                        <div className="p-2 sm:p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <ShoppingCart size={13} className="text-amber-400 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] text-slate-300">
                               {lang === 'en' ? 'Purchase PO' : 'Pembelian PO'}
                             </span>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xs font-bold text-white">{formatCurrency(dayData.pembelian)}</div>
-                          </div>
+                          <span className="text-[11px] sm:text-xs font-bold text-white currency">{formatCurrency(dayData.pembelian)}</span>
                         </div>
 
                         {/* Volume Transaksi Card */}
-                        <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Package size={14} className="text-blue-400" />
-                            <span className="text-[11px] text-slate-300">
+                        <div className="p-2 sm:p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <Package size={13} className="text-blue-400 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] text-slate-300">
                               {lang === 'en' ? 'Total Transactions' : 'Jumlah Transaksi'}
                             </span>
                           </div>
-                          <span className="text-xs font-bold text-white">{dayData.penjualan} </span>
+                          <span className="text-[11px] sm:text-xs font-bold text-white">{dayData.penjualan}</span>
                         </div>
 
                         {/* AOV Card */}
-                        <div className="p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <DollarSign size={14} className="text-purple-400" />
-                            <span className="text-[11px] text-slate-300">
-                              {lang === 'en' ? 'AOV (Average Order Value)' : 'AOV (Rata-rata Order)'}
+                        <div className="p-2 sm:p-2.5 bg-surface-800/40 border border-surface-700/50 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <DollarSign size={13} className="text-purple-400 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] text-slate-300">
+                              {lang === 'en' ? 'AOV' : 'AOV (Rata-rata Order)'}
                             </span>
                           </div>
-                          <span className="text-xs font-bold text-white">{formatCurrency(aov)}</span>
+                          <span className="text-[11px] sm:text-xs font-bold text-white currency">{formatCurrency(aov)}</span>
                         </div>
                       </div>
                     </div>
                   );
                 })()
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                  <div className="p-3 bg-surface-850 rounded-full text-slate-500 border border-surface-700/40">
-                    <Calendar size={24} />
+                <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-center space-y-2">
+                  <div className="p-2.5 bg-surface-850 rounded-full text-slate-500 border border-surface-700/40">
+                    <Calendar size={20} />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-white">
-                      {lang === 'en' ? 'Daily Transaction Details' : 'Rincian Transaksi Harian'}
+                      {lang === 'en' ? 'Daily Details' : 'Rincian Harian'}
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-1 max-w-[200px] mx-auto">
+                    <p className="text-[10px] text-slate-500 mt-0.5 max-w-[200px] mx-auto">
                       {lang === 'en'
-                        ? 'Click one of the dates on the density calendar on the left to view detailed statistics.'
-                        : 'Klik salah satu tanggal pada kalender kepadatan di sebelah kiri untuk melihat statistik rinciannya.'}
+                        ? 'Click a date on the calendar to view details.'
+                        : 'Klik salah satu tanggal pada kalender untuk melihat rincian.'}
                     </p>
                   </div>
                 </div>

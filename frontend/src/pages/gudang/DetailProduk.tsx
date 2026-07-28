@@ -220,20 +220,20 @@ export const DetailProduk: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-none px-4 md:px-8 space-y-6">
+    <div className="w-full max-w-none px-3 sm:px-4 md:px-8 space-y-3 sm:space-y-6">
       {/* Header breadcrumbs */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-slate-900">{product.nama}</h1>
+          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-slate-900">{product.nama}</h1>
           <p className="text-xs text-slate-500 font-mono mt-0.5">{product.kode}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column: Image Gallery & Lightbox */}
-        <div className="card card-hovered space-y-4 md:col-span-1 flex flex-col justify-between">
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+        <div className="card card-hovered space-y-3 sm:space-y-4 md:col-span-1 flex flex-col justify-between p-3.5 sm:p-5">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
               {lang === 'en' ? 'Product Photo Gallery' : 'Galeri Foto Produk'}
             </h3>
             <div className="relative aspect-square rounded-lg bg-surface-900 border border-surface-700 overflow-hidden flex items-center justify-center group">
@@ -263,7 +263,7 @@ export const DetailProduk: React.FC = () => {
                   <button
                     key={idx}
                     onClick={() => setActivePhoto(ph)}
-                    className={`w-12 h-12 rounded border overflow-hidden bg-surface-900 transition-all ${activePhoto === ph ? 'border-primary-500 shadow' : 'border-surface-700 opacity-60 hover:opacity-100'
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded border overflow-hidden bg-surface-900 transition-all ${activePhoto === ph ? 'border-primary-500 shadow' : 'border-surface-700 opacity-60 hover:opacity-100'
                       }`}
                   >
                     <img src={ph} alt="thumbnail" className="w-full h-full object-cover" />
@@ -273,42 +273,42 @@ export const DetailProduk: React.FC = () => {
             )}
           </div>
 
-          <div className="text-xs text-slate-500 border-t border-surface-700/50 pt-3 flex flex-wrap gap-x-4 gap-y-1">
+          <div className="hidden sm:flex text-[11px] sm:text-xs text-slate-500 border-t border-surface-700/50 pt-2.5 flex-wrap gap-x-4 gap-y-1">
             <span>
               {lang === 'en' ? 'Press ' : 'Tekan '}
-              <kbd className="shortcut-badge text-[10px]">F2</kbd>
+              <kbd className="shortcut-badge text-[9px]">F2</kbd>
               {lang === 'en' ? ' for fullscreen' : ' untuk fullscreen'}
             </span>
           </div>
         </div>
 
         {/* Right Column: Spec Details & Suppliers Inventory */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-4 sm:space-y-6">
           {/* Spec Card */}
-          <div className="card card-hovered space-y-4 p-0 overflow-hidden">
-            <div className="bg-blue-50 border-b border-blue-100 p-3">
-              <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+          <div className="card card-hovered space-y-3 sm:space-y-4 p-0 overflow-hidden">
+            <div className="bg-blue-50 border-b border-blue-100 p-2.5 sm:p-3">
+              <h3 className="text-[10px] sm:text-xs font-bold text-blue-700 uppercase tracking-wider">
                 {lang === 'en' ? 'Detailed Specification' : 'Spesifikasi Detail'}
               </h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 pb-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 px-3 sm:px-4 pb-3 sm:pb-4">
               <div>
-                <p className="text-xs text-slate-400">{lang === 'en' ? 'Total Available Stock' : 'Total Stok Tersedia'}</p>
-                <p className="text-base font-extrabold text-slate-800 mt-0.5">
+                <p className="text-[10px] sm:text-xs text-slate-400">{lang === 'en' ? 'Total Available Stock' : 'Total Stok Tersedia'}</p>
+                <p className="text-sm sm:text-base font-extrabold text-slate-800 mt-0.5">
                   {Number(product.stok)} {product.satuan}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">{lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terbaru'}</p>
-                <p className="text-base font-extrabold text-emerald-600 mt-0.5 currency">
+                <p className="text-[10px] sm:text-xs text-slate-400">{lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terbaru'}</p>
+                <p className="text-sm sm:text-base font-extrabold text-emerald-600 mt-0.5 currency">
                   {latestPrice > 0 ? formatCurrency(latestPrice) : '-'}
                 </p>
                 {latestDate ? (
-                  <span className="text-[11px] text-slate-500 block font-mono mt-0.5">
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 block font-mono mt-0.5">
                     {lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(latestDate)}
                   </span>
                 ) : (
-                  <span className="text-[11px] text-slate-400/60 block italic mt-0.5">
+                  <span className="text-[10px] sm:text-[11px] text-slate-400/60 block italic mt-0.5">
                     {lang === 'en' ? 'No purchases yet' : 'Belum ada pembelian'}
                   </span>
                 )}
@@ -318,59 +318,59 @@ export const DetailProduk: React.FC = () => {
 
           {/* Supplier inventory details */}
           <div className="card card-hovered p-0 overflow-hidden">
-            <div className="bg-amber-50 border-b border-amber-100 p-3">
-              <h3 className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+            <div className="bg-amber-50 border-b border-amber-100 p-2.5 sm:p-3">
+              <h3 className="text-[10px] sm:text-xs font-bold text-amber-700 uppercase tracking-wider">
                 {lang === 'en' ? 'Inventory Details Per Supplier' : 'Rincian Persediaan Per Supplier'}
               </h3>
             </div>
-            <div className="p-4 pt-3">
+            <div className="p-3 sm:p-4">
               {product.product_prices.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5 sm:space-y-3">
                   {product.product_prices.map((p) => {
                     const prevPrice = getPreviousPriceForSupplier(p.supplier.nama);
                     const latestDate = getLatestPurchaseDateForSupplier(p.supplier.nama);
                     const prevDate = getPreviousPurchaseDateForSupplier(p.supplier.nama);
                     return (
-                      <div key={p.id} className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+                      <div key={p.id} className="p-3 sm:p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs space-y-2.5">
                         {/* Supplier Header */}
                         <div className="flex justify-between items-start border-b border-slate-100 pb-2">
-                          <div>
-                            <h4 className="font-bold text-slate-800 text-sm">{p.supplier.nama}</h4>
-                            <p className="text-[11px] text-slate-400 font-mono mt-0.5">{p.supplier.kode}</p>
+                          <div className="min-w-0 pr-2">
+                            <h4 className="font-bold text-slate-800 text-xs sm:text-sm truncate">{p.supplier.nama}</h4>
+                            <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5">{p.supplier.kode}</p>
                           </div>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${Number(p.stok) > 0
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold border shrink-0 ${Number(p.stok) > 0
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
                             : 'bg-slate-50 text-slate-400 border-slate-200/50'
                             }`}>
-                            {Number(p.stok)} {product.satuan} {lang === 'en' ? 'available' : 'tersedia'}
+                            {Number(p.stok)} {product.satuan} {lang === 'en' ? 'avail' : 'tersedia'}
                           </span>
                         </div>
 
                         {/* Price Comparison Grid */}
-                        <div className="grid grid-cols-2 gap-4 pt-1">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-1">
                           {/* Latest Modal Price */}
                           <div className="space-y-0.5">
-                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
-                              {lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terbaru'}
+                            <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-semibold truncate">
+                              {lang === 'en' ? 'Latest Price' : 'Harga Terbaru'}
                             </span>
-                            <strong className="text-base font-extrabold text-emerald-600 block">{formatCurrency(Number(p.harga_beli))}</strong>
+                            <strong className="text-xs sm:text-base font-extrabold text-emerald-600 block">{formatCurrency(Number(p.harga_beli))}</strong>
                             {latestDate ? (
-                              <span className="text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(latestDate)}</span>
+                              <span className="text-[9px] sm:text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(latestDate)}</span>
                             ) : (
-                              <span className="text-[10px] text-slate-400 block">{lang === 'en' ? 'No transactions yet' : 'Belum ada transaksi'}</span>
+                              <span className="text-[9px] sm:text-[10px] text-slate-400 block">{lang === 'en' ? 'No tx' : 'Belum ada'}</span>
                             )}
                           </div>
 
                           {/* Previous Modal Price */}
-                          <div className="space-y-0.5 border-l border-slate-100 pl-4">
-                            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
-                              {lang === 'en' ? 'Previous Purchase Price' : 'Harga Beli Sebelumnya'}
+                          <div className="space-y-0.5 border-l border-slate-100 pl-2 sm:pl-4">
+                            <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-semibold truncate">
+                              {lang === 'en' ? 'Prev Price' : 'Harga Sebelum'}
                             </span>
                             {prevPrice !== null ? (
                               <>
-                                <strong className="text-base font-bold text-slate-600 block">{formatCurrency(prevPrice)}</strong>
+                                <strong className="text-xs sm:text-base font-bold text-slate-600 block">{formatCurrency(prevPrice)}</strong>
                                 {prevDate && (
-                                  <span className="text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(prevDate)}</span>
+                                  <span className="text-[9px] sm:text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(prevDate)}</span>
                                 )}
                               </>
                             ) : (
@@ -383,7 +383,7 @@ export const DetailProduk: React.FC = () => {
                   })}
                 </div>
               ) : (
-                <div className="text-center p-6 bg-surface-900 border border-dashed border-surface-700 rounded-lg text-slate-500 text-xs">
+                <div className="text-center p-4 bg-surface-900 border border-dashed border-surface-700 rounded-lg text-slate-500 text-xs">
                   {lang === 'en' ? 'No stock data registered with suppliers.' : 'Tidak ada data stok terdaftar di supplier.'}
                 </div>
               )}

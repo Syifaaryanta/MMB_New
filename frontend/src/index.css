@@ -77,18 +77,18 @@ body {
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate3d(-100%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate3d(100%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale3d(0.95, 0.95, 1); }
+  to { opacity: 1; transform: scale3d(1, 1, 1); }
 }
 
 @keyframes shimmer {
@@ -101,11 +101,11 @@ body {
   50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
 }
 
-/* Utility Classes */
-.animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-.animate-slide-left { animation: slideInLeft 0.3s ease-out forwards; }
-.animate-slide-right { animation: slideInRight 0.3s ease-out forwards; }
-.animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+/* Utility Classes with GPU Acceleration */
+.animate-fade-in { animation: fadeIn 0.25s ease-out forwards; will-change: opacity, transform; }
+.animate-slide-left { animation: slideInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+.animate-slide-right { animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+.animate-scale-in { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
 
 /* Glassmorphism (Light Theme) */
 .glass {
@@ -234,9 +234,12 @@ html.dark .glass {
 .input-field.pl-9  { padding-left: 36px !important; }
 .input-field.pl-10 { padding-left: 40px !important; }
 
-.input-field:focus {
-  border-color: #64748b !important;
-  box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.15) !important;
+.input-field:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
   outline: none;
 }
 

@@ -387,10 +387,10 @@ export const InformasiHarga: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white">
             {lang === 'en' ? 'Price Information' : 'Informasi Harga'}
           </h1>
-          <p className="text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-400">
             {lang === 'en'
               ? 'Quick search of product price details and customer sales history'
               : 'Pencarian cepat detail harga produk dan riwayat penjualan pelanggan'}
@@ -399,16 +399,16 @@ export const InformasiHarga: React.FC = () => {
       </div>
 
       {/* Search Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-2.5 sm:gap-6">
         {/* Product Search Box */}
         <div className="relative">
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            {lang === 'en' ? 'Product Search' : 'Pencarian Barang'}{' '}
+          <label className="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            {lang === 'en' ? 'Product Search' : 'Cari Barang'}{' '}
             <span className="shortcut-badge text-[9px] ml-1">F1</span>
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-              <Search size={16} />
+            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">
+              <Search size={14} />
             </span>
             <input
               ref={productInputRef}
@@ -422,8 +422,8 @@ export const InformasiHarga: React.FC = () => {
                   setFocusedIndex(0);
                 }
               }}
-              placeholder={lang === 'en' ? 'Type Item Name/Code + Press Enter...' : 'Ketik Nama/Kode Barang + Tekan Enter...'}
-              className="input-field pl-9"
+              placeholder={lang === 'en' ? 'Name/Code...' : 'Nama/Kode Barang...'}
+              className="input-field pl-8 text-xs sm:text-sm py-1.5"
             />
             {productQuery && (
               <button
@@ -431,9 +431,9 @@ export const InformasiHarga: React.FC = () => {
                   setProductQuery('');
                   setSelectedProduct(null);
                 }}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white"
+                className="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-white"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             )}
           </div>
@@ -441,13 +441,13 @@ export const InformasiHarga: React.FC = () => {
 
         {/* Customer Search Box */}
         <div className="relative">
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            {lang === 'en' ? 'Customer Search (Optional)' : 'Pencarian Pelanggan (Opsional)'}{' '}
+          <label className="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate">
+            {lang === 'en' ? 'Customer Search' : 'Cari Pelanggan'}{' '}
             <span className="shortcut-badge text-[9px] ml-1">F2</span>
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-              <User size={16} />
+            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">
+              <User size={14} />
             </span>
             <input
               ref={customerInputRef}
@@ -461,8 +461,8 @@ export const InformasiHarga: React.FC = () => {
                   setFocusedIndex(0);
                 }
               }}
-              placeholder={lang === 'en' ? 'Type Customer Name + Press Enter...' : 'Ketik Nama Pelanggan + Tekan Enter...'}
-              className="input-field pl-9"
+              placeholder={lang === 'en' ? 'Customer Name...' : 'Nama Pelanggan...'}
+              className="input-field pl-8 text-xs sm:text-sm py-1.5"
             />
             {customerQuery && (
               <button
@@ -480,125 +480,126 @@ export const InformasiHarga: React.FC = () => {
       </div>
       
       {/* Keyboard Shortcuts Helper */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 w-fit">
-        <span className="flex items-center gap-1.5">
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-xs text-slate-400 bg-surface-800/40 px-3 py-2 rounded-xl border border-surface-700/50 w-full sm:w-fit">
+        <span className="flex items-center gap-1">
+          <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F1</kbd>
           <span>{lang === 'en' ? 'Search Items' : 'Cari Barang'}</span>
         </span>
-        <span className="flex items-center gap-1.5">
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
+        <span className="flex items-center gap-1">
+          <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F2</kbd>
           <span>{lang === 'en' ? 'Search Customers' : 'Cari Pelanggan'}</span>
         </span>
         {selectedProduct && (
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F4</kbd>
-            <span>{lang === 'en' ? 'View Details' : 'Lihat Detail'}</span>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F4</kbd>
+            <span>{lang === 'en' ? 'Details' : 'Detail'}</span>
           </span>
         )}
-        <span className="flex items-center gap-1.5">
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+        <span className="flex items-center gap-1">
+          <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Esc</kbd>
           <span>{lang === 'en' ? 'Back' : 'Kembali'}</span>
         </span>
       </div>
 
       {/* Main Content Area: Split Details */}
       {selectedProduct ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Product Detail Panel */}
-          <div className="card space-y-6 border border-surface-700/60 shadow-xl">
+          <div className="card space-y-4 sm:space-y-6 border border-surface-700/60 shadow-xl p-3.5 sm:p-6">
             <div className="flex items-center justify-between border-b border-surface-700 pb-3">
-              <div className="flex items-center gap-3">
-                <Tags className="text-primary-500 w-5 h-5" />
-                <h3 className="text-lg font-bold text-white">
+              <div className="flex items-center gap-2.5">
+                <Tags className="text-primary-500 w-5 h-5 shrink-0" />
+                <h3 className="text-base sm:text-lg font-bold text-white">
                   {lang === 'en' ? 'Specification & Stock Detail' : 'Detail Spesifikasi & Stok'}
                 </h3>
               </div>
               <button
                 onClick={() => navigate(`/gudang/detail?id=${selectedProduct.id}`)}
-                className="btn-primary py-1 px-2.5 text-xs flex items-center gap-1 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded"
+                className="btn-primary py-1 px-2.5 text-xs flex items-center gap-1 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded shrink-0"
                 title={lang === 'en' ? 'View Full Catalog Detail (F4)' : 'Lihat Detail Katalog Lengkap (F4)'}
               >
-                <span>{lang === 'en' ? 'View Details (F4)' : 'Lihat Detail (F4)'}</span>
+                <span className="hidden sm:inline">{lang === 'en' ? 'View Details (F4)' : 'Lihat Detail (F4)'}</span>
+                <span className="sm:hidden">{lang === 'en' ? 'Detail' : 'Detail'}</span>
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+                <p className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-semibold">
                   {lang === 'en' ? 'Item Name' : 'Nama Barang'}
                 </p>
-                <p className="text-lg font-bold text-white mt-0.5">{selectedProduct.nama}</p>
+                <p className="text-base sm:text-lg font-bold text-white mt-0.5">{selectedProduct.nama}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p className="text-xs text-slate-400 uppercase">
+                  <p className="text-[10px] sm:text-xs text-slate-400 uppercase">
                     {lang === 'en' ? 'Product Code' : 'Kode Produk'}
                   </p>
-                  <p className="text-sm font-semibold text-slate-200 mt-0.5 font-mono">{selectedProduct.kode}</p>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-200 mt-0.5 font-mono">{selectedProduct.kode}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 uppercase">
+                  <p className="text-[10px] sm:text-xs text-slate-400 uppercase">
                     {lang === 'en' ? 'Total Inventory' : 'Total Persediaan'}
                   </p>
-                  <p className="text-sm font-semibold text-slate-200 mt-0.5">
+                  <p className="text-xs sm:text-sm font-semibold text-slate-200 mt-0.5">
                     {Number(selectedProduct.stok)} {selectedProduct.satuan}
                   </p>
                 </div>
               </div>
 
-              <div className="border-t border-surface-700/50 pt-4">
-                <p className="text-xs text-slate-400 uppercase font-semibold mb-3">
+              <div className="border-t border-surface-700/50 pt-3 sm:pt-4">
+                <p className="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mb-2.5">
                   {lang === 'en' ? 'Supplier Stock & Purchase Price List' : 'Daftar Stok & Harga Beli Supplier'}
                 </p>
                 {selectedProduct.product_prices && selectedProduct.product_prices.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5 sm:space-y-3">
                     {selectedProduct.product_prices.map((p) => {
                       const prevPrice = getPreviousPriceForSupplier(p.supplier.nama);
                       const latestDate = getLatestPurchaseDateForSupplier(p.supplier.nama);
                       const prevDate = getPreviousPurchaseDateForSupplier(p.supplier.nama);
                       const displayStok = Math.min(Number(p.stok), Math.max(0, Number(selectedProduct.stok)));
                       return (
-                        <div key={p.id} className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+                        <div key={p.id} className="p-3 sm:p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs space-y-2.5">
                           {/* Supplier Header */}
                           <div className="flex justify-between items-start border-b border-slate-100 pb-2">
-                            <div>
-                              <h4 className="font-bold text-slate-800 text-sm">{p.supplier.nama}</h4>
-                              <p className="text-[11px] text-slate-400 font-mono mt-0.5">{p.supplier.kode}</p>
+                            <div className="min-w-0 pr-2">
+                              <h4 className="font-bold text-slate-800 text-xs sm:text-sm truncate">{p.supplier.nama}</h4>
+                              <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5">{p.supplier.kode}</p>
                             </div>
-                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${displayStok > 0
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold border shrink-0 ${displayStok > 0
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50'
                               : 'bg-slate-50 text-slate-400 border-slate-200/50'
                               }`}>
-                              {displayStok} {selectedProduct.satuan} {lang === 'en' ? 'available' : 'tersedia'}
+                              {displayStok} {selectedProduct.satuan} {lang === 'en' ? 'avail' : 'tersedia'}
                             </span>
                           </div>
 
                           {/* Price Comparison Grid */}
-                          <div className="grid grid-cols-2 gap-4 pt-1">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-1">
                             {/* Latest Modal Price */}
                             <div className="space-y-0.5">
-                              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
-                                {lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terkini'}
+                              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-semibold truncate">
+                                {lang === 'en' ? 'Latest Price' : 'Harga Terkini'}
                               </span>
-                              <strong className="text-base font-extrabold text-emerald-600 block">{formatCurrency(Number(p.harga_beli))}</strong>
+                              <strong className="text-sm sm:text-base font-extrabold text-emerald-600 block">{formatCurrency(Number(p.harga_beli))}</strong>
                               {latestDate ? (
-                                <span className="text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(latestDate)}</span>
+                                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(latestDate)}</span>
                               ) : (
-                                <span className="text-[10px] text-slate-400 block">{lang === 'en' ? 'No transactions yet' : 'Belum ada transaksi'}</span>
+                                <span className="text-[9px] sm:text-[10px] text-slate-400 block">{lang === 'en' ? 'No tx' : 'Belum ada'}</span>
                               )}
                             </div>
 
                             {/* Previous Modal Price */}
-                            <div className="space-y-0.5 border-l border-slate-100 pl-4">
-                              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
-                                {lang === 'en' ? 'Previous Purchase Price' : 'Harga Beli Sebelumnya'}
+                            <div className="space-y-0.5 border-l border-slate-100 pl-2 sm:pl-4">
+                              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-semibold truncate">
+                                {lang === 'en' ? 'Prev Price' : 'Harga Sebelum'}
                               </span>
                               {prevPrice !== null ? (
                                 <>
-                                  <strong className="text-base font-bold text-slate-600 block">{formatCurrency(prevPrice)}</strong>
+                                  <strong className="text-sm sm:text-base font-bold text-slate-600 block">{formatCurrency(prevPrice)}</strong>
                                   {prevDate && (
-                                    <span className="text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(prevDate)}</span>
+                                    <span className="text-[9px] sm:text-[10px] text-slate-400 block font-mono">{lang === 'en' ? 'Bought' : 'Beli'}: {formatDate(prevDate)}</span>
                                   )}
                                 </>
                               ) : (
@@ -611,7 +612,7 @@ export const InformasiHarga: React.FC = () => {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center p-4 bg-surface-800 rounded border border-dashed border-surface-700 text-xs text-slate-500">
+                  <div className="text-center p-3 sm:p-4 bg-surface-800 rounded border border-dashed border-surface-700 text-xs text-slate-500">
                     {lang === 'en' ? 'No supplier associated with a registered purchase price.' : 'Tidak ada supplier terkait dengan harga beli terdaftar.'}
                   </div>
                 )}
@@ -620,10 +621,10 @@ export const InformasiHarga: React.FC = () => {
           </div>
 
           {/* Customer History Panel */}
-          <div className="card space-y-6 border border-surface-700/60 shadow-xl">
-            <div className="flex items-center gap-3 border-b border-surface-700 pb-3">
-              <History className="text-emerald-500 w-5 h-5" />
-              <h3 className="text-lg font-bold text-white">
+          <div className="card space-y-4 sm:space-y-6 border border-surface-700/60 shadow-xl p-3.5 sm:p-6">
+            <div className="flex items-center gap-2.5 border-b border-surface-700 pb-3">
+              <History className="text-emerald-500 w-5 h-5 shrink-0" />
+              <h3 className="text-base sm:text-lg font-bold text-white">
                 {lang === 'en' ? 'Customer Purchase History' : 'Riwayat Pembelian Pelanggan'}
               </h3>
             </div>
@@ -636,49 +637,49 @@ export const InformasiHarga: React.FC = () => {
                   ))}
                 </div>
               ) : customerHistory.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Highlighted Box of Last Sale to Customer (Requirement 3) */}
-                  <div className="p-4 bg-primary-950/20 border border-primary-500/35 rounded-xl space-y-2">
-                    <p className="text-xs font-bold text-primary-400 uppercase tracking-wider">
+                <div className="space-y-3 sm:space-y-4">
+                  {/* Highlighted Box of Last Sale to Customer */}
+                  <div className="p-3 sm:p-4 bg-primary-950/20 border border-primary-500/35 rounded-xl space-y-2">
+                    <p className="text-[10px] sm:text-xs font-bold text-primary-400 uppercase tracking-wider">
                       {lang === 'en' ? 'Last Customer Transaction' : 'Transaksi Terakhir Pelanggan'}
                     </p>
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                      <div className="p-2 bg-surface-900 rounded border border-surface-700/50">
-                        <span className="text-[10px] text-slate-400 block mb-0.5">
-                          {lang === 'en' ? 'Last Unit Price' : 'Harga Satuan Terakhir'}
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-xs">
+                      <div className="p-1.5 sm:p-2 bg-surface-900 rounded border border-surface-700/50">
+                        <span className="text-[9px] sm:text-[10px] text-slate-400 block mb-0.5 truncate">
+                          {lang === 'en' ? 'Last Price' : 'Harga Satuan'}
                         </span>
-                        <strong className="text-emerald-400 text-sm font-mono">{formatCurrency(Number(customerHistory[0].unit_price))}</strong>
+                        <strong className="text-emerald-400 text-xs sm:text-sm font-mono block truncate">{formatCurrency(Number(customerHistory[0].unit_price))}</strong>
                       </div>
-                      <div className="p-2 bg-surface-900 rounded border border-surface-700/50">
-                        <span className="text-[10px] text-slate-400 block mb-0.5">
-                          {lang === 'en' ? 'Last Qty' : 'Jumlah Terakhir'}
+                      <div className="p-1.5 sm:p-2 bg-surface-900 rounded border border-surface-700/50">
+                        <span className="text-[9px] sm:text-[10px] text-slate-400 block mb-0.5 truncate">
+                          {lang === 'en' ? 'Last Qty' : 'Jumlah'}
                         </span>
-                        <strong className="text-white text-sm">{Number(customerHistory[0].qty)} {selectedProduct.satuan}</strong>
+                        <strong className="text-white text-xs sm:text-sm block truncate">{Number(customerHistory[0].qty)} {selectedProduct.satuan}</strong>
                       </div>
-                      <div className="p-2 bg-surface-900 rounded border border-surface-700/50">
-                        <span className="text-[10px] text-slate-400 block mb-0.5">
-                          {lang === 'en' ? 'Last Date' : 'Tanggal Terakhir'}
+                      <div className="p-1.5 sm:p-2 bg-surface-900 rounded border border-surface-700/50">
+                        <span className="text-[9px] sm:text-[10px] text-slate-400 block mb-0.5 truncate">
+                          {lang === 'en' ? 'Last Date' : 'Tanggal'}
                         </span>
-                        <strong className="text-slate-200 text-sm block truncate" title={formatDate(customerHistory[0].sale.order_date)}>
+                        <strong className="text-slate-200 text-xs sm:text-sm block truncate" title={formatDate(customerHistory[0].sale.order_date)}>
                           {formatDate(customerHistory[0].sale.order_date)}
                         </strong>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
-                    {customerHistory.slice(0, 1).map((item) => (
-                      <div key={item.id} className="p-3 bg-surface-900 rounded border border-surface-700/50 space-y-2">
+                  <div className="space-y-2.5 max-h-[250px] overflow-y-auto pr-1">
+                    {customerHistory.slice(0, 5).map((item) => (
+                      <div key={item.id} className="p-2.5 sm:p-3 bg-surface-900 rounded border border-surface-700/50 space-y-1 sm:space-y-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-sm font-bold text-white font-mono">
+                            <p className="text-xs sm:text-sm font-bold text-white font-mono">
                               {item.sale.no_faktur || item.sale.no_order}
                             </p>
-                            <p className="text-xs text-slate-400">{formatDate(item.sale.order_date)}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-400">{formatDate(item.sale.order_date)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-bold text-primary-400 currency">{formatCurrency(Number(item.unit_price))}</p>
-                            <p className="text-xs text-slate-400">{Number(item.qty)} {selectedProduct.satuan}</p>
+                            <p className="text-xs sm:text-sm font-bold text-primary-400 currency">{formatCurrency(Number(item.unit_price))}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-400">{Number(item.qty)} {selectedProduct.satuan}</p>
                           </div>
                         </div>
                       </div>
@@ -686,16 +687,16 @@ export const InformasiHarga: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center p-8 bg-surface-800 rounded border border-dashed border-surface-700 text-sm text-slate-500">
+                <div className="text-center p-6 sm:p-8 bg-surface-800 rounded border border-dashed border-surface-700 text-xs sm:text-sm text-slate-500">
                   {lang === 'en'
                     ? `Customer ${selectedCustomer.nama} has never purchased this product.`
                     : `Customer ${selectedCustomer.nama} belum pernah melakukan pembelian produk ini.`}
                 </div>
               )
             ) : (
-              <div className="flex flex-col items-center justify-center text-center p-8 text-slate-500 h-[250px] border border-dashed border-surface-700 rounded-lg bg-surface-800/30">
-                <AlertCircle className="w-8 h-8 mb-2 opacity-40 text-slate-400" />
-                <p className="text-sm font-medium">
+              <div className="flex flex-col items-center justify-center text-center p-6 sm:p-8 text-slate-500 min-h-[200px] sm:h-[250px] border border-dashed border-surface-700 rounded-lg bg-surface-800/30">
+                <AlertCircle className="w-7 h-7 sm:w-8 sm:h-8 mb-2 opacity-40 text-slate-400" />
+                <p className="text-xs sm:text-sm font-medium">
                   {lang === 'en'
                     ? 'Please select customer (F2) to see specific selling price history for this customer.'
                     : 'Silakan pilih pelanggan (F2) untuk melihat riwayat harga jual khusus pelanggan tersebut.'}
@@ -705,12 +706,12 @@ export const InformasiHarga: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20 min-h-[300px]">
-          <ShoppingBag className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-          <h3 className="text-lg font-bold text-slate-400">
+        <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/20 min-h-[250px] sm:min-h-[300px]">
+          <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 mb-3 opacity-40 text-slate-400" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-400">
             {lang === 'en' ? 'Please Select an Item First' : 'Pilih Barang Terlebih Dahulu'}
           </h3>
-          <p className="text-sm max-w-sm mt-1">
+          <p className="text-xs sm:text-sm max-w-sm mt-1">
             {lang === 'en'
               ? 'Press F1 to start typing item name/code and search its price.'
               : 'Tekan F1 untuk mulai mengetik nama/kode barang dan mencari harganya.'}
@@ -721,113 +722,113 @@ export const InformasiHarga: React.FC = () => {
       {/* Product Selection Popup Modal */}
       {showProductPopup && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            ref={productPopupRef}
-            tabIndex={0}
-            onKeyDown={handleProductPopupKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
-          >
-            <div className="flex justify-between items-center w-full">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Search size={18} />
-                <span>{lang === 'en' ? 'Select Item' : 'Pilih Barang'}</span>
-              </h3>
-              <button onClick={() => setShowProductPopup(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
-              {products.length > 0 ? (
-                products.map((prod, idx) => (
-                  <button
-                    key={prod.id}
-                    onClick={() => selectProduct(prod)}
-                    ref={idx === focusedIndex ? activeItemRef : null}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedIndex
-                      ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                      }`}
-                  >
-                    <div>
-                      <p className={`font-semibold ${idx === focusedIndex ? 'text-primary-900' : 'text-slate-900'}`}>{prod.nama}</p>
-                      <p className="text-xs text-slate-500 font-mono">{prod.kode}</p>
-                    </div>
-                    <span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-slate-600">
-                      {lang === 'en' ? 'Stock' : 'Stok'}: {Number(prod.stok)} {prod.satuan}
-                    </span>
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  {lang === 'en' ? `No item matches "${productQuery}".` : `Tidak ada barang yang cocok dengan "${productQuery}".`}
-                </div>
-              )}
-            </div>
-            <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
-              <span>
-                <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
-                <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
-              </span>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay">
+            <div
+              ref={productPopupRef}
+              tabIndex={0}
+              onKeyDown={handleProductPopupKeyDown}
+              className="bg-surface-800 border border-surface-700 rounded-xl max-w-md sm:max-w-xl w-full p-4 sm:p-5 shadow-2xl animate-scale-in outline-none max-h-[85vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center w-full">
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <Search size={18} />
+                  <span>{lang === 'en' ? 'Select Item' : 'Pilih Barang'}</span>
+                </h3>
+                <button onClick={() => setShowProductPopup(false)} className="text-slate-400 hover:text-white p-1">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
+                {products.length > 0 ? (
+                  products.map((prod, idx) => (
+                    <button
+                      key={prod.id}
+                      onClick={() => selectProduct(prod)}
+                      ref={idx === focusedIndex ? activeItemRef : null}
+                      className={`w-full text-left px-3 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between text-xs sm:text-sm transition-all border rounded-lg ${idx === focusedIndex
+                        ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                        }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <p className={`font-semibold truncate ${idx === focusedIndex ? 'text-primary-900' : 'text-slate-900'}`}>{prod.nama}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500 font-mono">{prod.kode}</p>
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-slate-600 shrink-0">
+                        {lang === 'en' ? 'Stk' : 'Stok'}: {Number(prod.stok)} {prod.satuan}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-slate-500 text-xs sm:text-sm">
+                    {lang === 'en' ? `No item matches "${productQuery}".` : `Tidak ada barang yang cocok dengan "${productQuery}".`}
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 pt-2.5 border-t border-surface-700 flex justify-between text-[10px] sm:text-[11px] text-slate-400">
+                <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+                <span>
+                  <kbd className="shortcut-badge text-[9px]">Enter</kbd> {lang === 'en' ? 'confirm' : 'pilih'}, {' '}
+                  <kbd className="shortcut-badge text-[9px]">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
       {/* Customer Selection Popup Modal */}
       {showCustomerPopup && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            ref={customerPopupRef}
-            tabIndex={0}
-            onKeyDown={handleCustomerPopupKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col"
-          >
-            <div className="flex justify-between items-center w-full">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Search size={18} />
-                <span>{lang === 'en' ? 'Select Customer' : 'Pilih Pelanggan'}</span>
-              </h3>
-              <button onClick={() => setShowCustomerPopup(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
-              {customers.length > 0 ? (
-                customers.map((cust, idx) => (
-                  <button
-                    key={cust.id}
-                    onClick={() => selectCustomer(cust)}
-                    ref={idx === focusedIndex ? activeItemRef : null}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === focusedIndex
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                      }`}
-                  >
-                    <div>
-                      <p className={`font-semibold ${idx === focusedIndex ? 'text-emerald-900' : 'text-slate-900'}`}>{cust.nama}</p>
-                      <p className="text-xs text-slate-500 font-mono">{cust.kode}</p>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  {lang === 'en' ? `No customer matches "${customerQuery}".` : `Tidak ada pelanggan yang cocok dengan "${customerQuery}".`}
-                </div>
-              )}
-            </div>
-            <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
-              <span>
-                <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
-                <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
-              </span>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay">
+            <div
+              ref={customerPopupRef}
+              tabIndex={0}
+              onKeyDown={handleCustomerPopupKeyDown}
+              className="bg-surface-800 border border-surface-700 rounded-xl max-w-md sm:max-w-xl w-full p-4 sm:p-5 shadow-2xl animate-scale-in outline-none max-h-[85vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center w-full">
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <Search size={18} />
+                  <span>{lang === 'en' ? 'Select Customer' : 'Pilih Pelanggan'}</span>
+                </h3>
+                <button onClick={() => setShowCustomerPopup(false)} className="text-slate-400 hover:text-white p-1">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
+                {customers.length > 0 ? (
+                  customers.map((cust, idx) => (
+                    <button
+                      key={cust.id}
+                      onClick={() => selectCustomer(cust)}
+                      ref={idx === focusedIndex ? activeItemRef : null}
+                      className={`w-full text-left px-3 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between text-xs sm:text-sm transition-all border rounded-lg ${idx === focusedIndex
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold ring-2 ring-emerald-500/20 scale-[1.01]'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                        }`}
+                    >
+                      <div className="min-w-0">
+                        <p className={`font-semibold truncate ${idx === focusedIndex ? 'text-emerald-900' : 'text-slate-900'}`}>{cust.nama}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500 font-mono">{cust.kode}</p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-slate-500 text-xs sm:text-sm">
+                    {lang === 'en' ? `No customer matches "${customerQuery}".` : `Tidak ada pelanggan yang cocok dengan "${customerQuery}".`}
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 pt-2.5 border-t border-surface-700 flex justify-between text-[10px] sm:text-[11px] text-slate-400">
+                <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+                <span>
+                  <kbd className="shortcut-badge text-[9px]">Enter</kbd> {lang === 'en' ? 'confirm' : 'pilih'}, {' '}
+                  <kbd className="shortcut-badge text-[9px]">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
     </div>

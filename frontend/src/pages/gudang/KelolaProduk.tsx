@@ -20,7 +20,8 @@ import {
   AlertCircle,
   CheckCircle,
   Archive,
-  XCircle
+  XCircle,
+  Camera
 } from 'lucide-react';
 
 interface Supplier {
@@ -56,6 +57,7 @@ export const KelolaProduk: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const editTypeModalRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const activeRowRef = useRef<HTMLTableRowElement | null>(null);
   const activePopupItemRef = useRef<HTMLButtonElement | null>(null);
   const supplierPopupRef = useRef<HTMLDivElement>(null);
@@ -305,7 +307,7 @@ export const KelolaProduk: React.FC = () => {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get(`/products?q=${search}&page=${page}&limit=10`);
+      const res = await api.get(`/products?q=${search}&page=${page}&limit=20`);
       setProducts(res.data.data || []);
       setTotalProducts(res.data.total || 0);
       setSelectedIdx(0);
@@ -436,6 +438,84 @@ export const KelolaProduk: React.FC = () => {
         setFotoUrls((prev) => [...prev, base64]);
       };
     };
+  };
+
+  // Camera & Photo Upload Source Modal States
+  const [showPhotoSourceModal, setShowPhotoSourceModal] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const startCamera = async () => {
+    setShowPhotoSourceModal(false);
+
+    // Jika WebRTC getUserMedia tidak didukung / diblokir karena akses HTTP non-HTTPS
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (cameraInputRef.current) {
+        cameraInputRef.current.click();
+      } else {
+        addToast('error', 'Kamera memerlukan koneksi aman (HTTPS). Membuka pemilih berkas.');
+      }
+      return;
+    }
+
+    try {
+      setShowCameraModal(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } }
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Camera access error / HTTP Security fallback:', err);
+      setShowCameraModal(false);
+      // Fallback otomatis ke aplikasi kamera bawaan HP (Native Mobile Camera App)
+      if (cameraInputRef.current) {
+        cameraInputRef.current.click();
+      } else {
+        addToast('error', 'Gagal membuka kamera langsung. Mengalihkan ke aplikasi kamera HP.');
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+    setShowCameraModal(false);
+  };
+
+  useEffect(() => {
+    if (showCameraModal && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [showCameraModal, cameraStream]);
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      fetch(dataUrl)
+        .then((res) => res.blob())
+        .then((blob) => {
+          const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          compressAndAddImage(file);
+        })
+        .catch(() => {
+          setFotoUrls((prev) => [...prev, dataUrl]);
+        });
+
+      stopCamera();
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -717,11 +797,15 @@ export const KelolaProduk: React.FC = () => {
     }
   }, { enableOnFormTags: true });
 
-  // F1 inside the form modal to upload/select a photo
+  // F1 inside the form modal to upload/select a photo (open Gallery vs Camera source modal)
   useHotkeys('f1', (e) => {
     e.preventDefault();
     if (showFormModal && (editMode === 'create' || editMode === 'full' || editMode === 'info')) {
-      fileInputRef.current?.click();
+      if (fotoUrls.length < 3) {
+        setShowPhotoSourceModal(true);
+      } else {
+        addToast('error', 'Maksimal 3 foto per produk.');
+      }
     }
   }, { enableOnFormTags: true });
 
@@ -816,7 +900,11 @@ export const KelolaProduk: React.FC = () => {
   // Esc: Tutup modal aktif atau clear search / kembali ke gudang
   useHotkeys('esc', (e) => {
     e.preventDefault();
-    if (showSupplierPopup) {
+    if (showCameraModal) {
+      stopCamera();
+    } else if (showPhotoSourceModal) {
+      setShowPhotoSourceModal(false);
+    } else if (showSupplierPopup) {
       setShowSupplierPopup(false);
     } else if (showGalleryModal) {
       setShowGalleryModal(false);
@@ -872,63 +960,63 @@ export const KelolaProduk: React.FC = () => {
       {archiveTarget && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setArchiveTarget(null)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-center text-center gap-2 bg-amber-50 border-b border-amber-100 px-5 py-4">
-              <div className="p-2 bg-amber-100 rounded-full"><Archive size={20} className="text-amber-600" /></div>
-              <div>
-                <h2 className="font-bold text-slate-800 text-sm">
-                  {lang === 'en' ? 'Archive Product' : 'Arsipkan Produk'}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {lang === 'en' ? 'This action can be undone through the archives page' : 'Tindakan ini dapat dibatalkan melalui halaman arsip'}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-col items-center text-center gap-2 bg-amber-50 border-b border-amber-100 px-5 py-4">
+                <div className="p-2 bg-amber-100 rounded-full"><Archive size={20} className="text-amber-600" /></div>
+                <div>
+                  <h2 className="font-bold text-slate-800 text-sm">
+                    {lang === 'en' ? 'Archive Product' : 'Arsipkan Produk'}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {lang === 'en' ? 'This action can be undone through the archives page' : 'Tindakan ini dapat dibatalkan melalui halaman arsip'}
+                  </p>
+                </div>
+              </div>
+              <div className="px-5 py-5 text-center">
+                <p className="text-slate-700 text-sm leading-relaxed">
+                  {lang === 'en' ? 'Are you sure you want to archive product' : 'Apakah Anda yakin ingin mengarsipkan produk'}{' '}
+                  <span className="font-bold text-slate-900">"{archiveTarget.nama}"</span>?
+                </p>
+                <p className="text-xs text-slate-400 mt-2">
+                  {lang === 'en' ? 'Archived products will not appear in the active list, but the data remains stored.' : 'Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.'}
                 </p>
               </div>
-            </div>
-            <div className="px-5 py-5 text-center">
-              <p className="text-slate-700 text-sm leading-relaxed">
-                {lang === 'en' ? 'Are you sure you want to archive product' : 'Apakah Anda yakin ingin mengarsipkan produk'}{' '}
-                <span className="font-bold text-slate-900">"{archiveTarget.nama}"</span>?
-              </p>
-              <p className="text-xs text-slate-400 mt-2">
-                {lang === 'en' ? 'Archived products will not appear in the active list, but the data remains stored.' : 'Produk yang diarsipkan tidak akan muncul di daftar aktif, namun datanya tetap tersimpan.'}
-              </p>
-            </div>
-            <div className="flex gap-2 px-5 pb-5 justify-center">
-              <button onClick={() => setArchiveTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
-                <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
-                {lang === 'en' ? 'Cancel' : 'Batal'}
-              </button>
-              <button onClick={confirmArchive} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-md shadow-amber-500/10">
-                <kbd className="text-[10px] bg-amber-400/40 border border-amber-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
-                {lang === 'en' ? 'Yes, Archive' : 'Ya, Arsipkan'}
-              </button>
+              <div className="flex gap-2 px-5 pb-5 justify-center">
+                <button onClick={() => setArchiveTarget(null)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors border border-slate-200">
+                  <kbd className="text-[10px] bg-slate-200 border border-slate-300 rounded px-1 py-0.5 font-mono">Esc</kbd>
+                  {lang === 'en' ? 'Cancel' : 'Batal'}
+                </button>
+                <button onClick={confirmArchive} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 transition-colors shadow-md shadow-amber-500/10">
+                  <kbd className="text-[10px] bg-amber-400/40 border border-amber-400/40 rounded px-1 py-0.5 font-mono">Y</kbd>
+                  {lang === 'en' ? 'Yes, Archive' : 'Ya, Arsipkan'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white">
             {lang === 'en' ? 'Manage Product Catalog' : 'Katalog Kelola Produk'}
           </h1>
-          <p className="text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-400">
             {lang === 'en'
               ? 'Manage active warehouse product master data and supplier price lists'
               : 'Kelola master data barang gudang aktif dan daftar harga supplier'}
           </p>
         </div>
 
-        <button onClick={handleOpenCreate} className="btn-primary">
+        <button onClick={handleOpenCreate} className="btn-primary py-2 px-3 sm:px-4 text-xs sm:text-sm shrink-0" title={lang === 'en' ? 'Add Product (F3)' : 'Tambah Barang (F3)'}>
           <Plus size={16} />
-          <span>{lang === 'en' ? 'Add Product (F3)' : 'Tambah Barang (F3)'}</span>
+          <span className="hidden sm:inline">{lang === 'en' ? 'Add Product (F3)' : 'Tambah Barang (F3)'}</span>
         </button>
       </div>
 
       {/* Filter and Helpers */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
+      <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-center justify-between w-full">
         <div className="relative flex-1 w-full">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
             <Search size={16} />
@@ -946,7 +1034,7 @@ export const KelolaProduk: React.FC = () => {
               }
             }}
             placeholder={lang === 'en' ? 'Type Item Name/Code + Press Enter...' : 'Ketik Nama/Kode Barang + Tekan Enter...'}
-            className="input-field pl-9 w-full"
+            className="input-field pl-9 w-full text-xs sm:text-sm"
           />
           {searchQuery && (
             <button
@@ -961,33 +1049,33 @@ export const KelolaProduk: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+        <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-xs text-slate-400 bg-surface-800/40 px-3 py-2 rounded-xl border border-surface-700/50 shrink-0 w-full md:w-auto">
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F1</kbd>
             <span>{lang === 'en' ? 'Search' : 'Cari'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F2</kbd>
             <span>{lang === 'en' ? 'Gallery' : 'Galeri'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F3</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F3</kbd>
             <span>{lang === 'en' ? 'Add' : 'Tambah'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Enter</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Enter</kbd>
             <span>{lang === 'en' ? 'Edit' : 'Edit'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Del</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Del</kbd>
             <span>{lang === 'en' ? 'Archive' : 'Arsip'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">PgUp/PgDn</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">PgUp/PgDn</kbd>
             <span>{lang === 'en' ? 'Page' : 'Hal'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Esc</kbd>
             <span>{lang === 'en' ? 'Back' : 'Kembali'}</span>
           </span>
         </div>
@@ -995,12 +1083,12 @@ export const KelolaProduk: React.FC = () => {
 
       {/* Main Grid/Table */}
       {search.trim() === '' ? (
-        <div className="flex flex-col items-center justify-center text-center p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10 min-h-[250px]">
-          <Search className="w-12 h-12 mb-3 opacity-40 text-slate-400" />
-          <h3 className="text-lg font-bold text-slate-400">
+        <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12 text-slate-500 border border-dashed border-surface-700 rounded-xl bg-surface-800/10 min-h-[220px] sm:min-h-[250px]">
+          <Search className="w-10 h-10 sm:w-12 sm:h-12 mb-3 opacity-40 text-slate-400" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-400">
             {lang === 'en' ? 'Product Catalog Search' : 'Pencarian Katalog Produk'}
           </h3>
-          <p className="text-sm max-w-sm mt-1">
+          <p className="text-xs sm:text-sm max-w-sm mt-1">
             {lang === 'en'
               ? 'Press F1 then enter item name/code to display catalog data.'
               : 'Tekan F1 lalu masukkan nama/kode barang untuk menampilkan data katalog.'}
@@ -1014,15 +1102,15 @@ export const KelolaProduk: React.FC = () => {
         </div>
       ) : products.length > 0 ? (
         <div className="card p-0 overflow-hidden border border-surface-700">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[550px] sm:min-w-0">
               <thead>
                 <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                  <th className="p-4">{lang === 'en' ? 'Code' : 'Kode'}</th>
-                  <th className="p-4">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
-                  <th className="p-4 text-center">{lang === 'en' ? 'Stock' : 'Stok'}</th>
-                  <th className="p-4">{lang === 'en' ? 'Primary Supplier' : 'Supplier Utama'}</th>
-                  <th className="p-4 text-right">{lang === 'en' ? 'Cheapest Purchase Price' : 'Harga Beli Termurah'}</th>
+                  <th className="px-3 py-2.5 sm:p-4">{lang === 'en' ? 'Code' : 'Kode'}</th>
+                  <th className="px-3 py-2.5 sm:p-4">{lang === 'en' ? 'Product Name' : 'Nama Produk'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 text-center">{lang === 'en' ? 'Stock' : 'Stok'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 hidden sm:table-cell">{lang === 'en' ? 'Supplier' : 'Supplier'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 text-right">{lang === 'en' ? 'Price' : 'Harga Beli'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-700/50">
@@ -1041,11 +1129,11 @@ export const KelolaProduk: React.FC = () => {
                       className={`hover:bg-surface-800/40 cursor-pointer transition-colors ${idx === selectedIdx ? 'table-row-selected' : ''
                         }`}
                     >
-                      <td className="p-4 font-mono font-semibold text-slate-300">{p.kode}</td>
-                      <td className="p-4 font-bold text-white">{p.nama}</td>
-                      <td className="p-4 text-center font-semibold text-slate-200">{Number(p.stok)}</td>
-                      <td className="p-4 text-slate-300 truncate max-w-xs">{primeSupplier}</td>
-                      <td className="p-4 text-right text-emerald-400 font-semibold currency">
+                      <td className="px-3 py-2.5 sm:p-4 font-mono font-semibold text-slate-300">{p.kode}</td>
+                      <td className="px-3 py-2.5 sm:p-4 font-bold text-white max-w-[150px] sm:max-w-none truncate">{p.nama}</td>
+                      <td className="px-3 py-2.5 sm:p-4 text-center font-semibold text-slate-200">{Number(p.stok)}</td>
+                      <td className="px-3 py-2.5 sm:p-4 text-slate-300 truncate max-w-[120px] sm:max-w-xs hidden sm:table-cell">{primeSupplier}</td>
+                      <td className="px-3 py-2.5 sm:p-4 text-right text-emerald-400 font-semibold currency">
                         {cheapestPrice > 0 ? formatCurrency(cheapestPrice) : '-'}
                       </td>
                     </tr>
@@ -1056,8 +1144,8 @@ export const KelolaProduk: React.FC = () => {
           </div>
 
           {/* Pagination Footer */}
-          <div className="flex items-center justify-between p-4 bg-surface-800/50 border-t border-surface-700">
-            <span className="text-xs text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 bg-surface-800/50 border-t border-surface-700 gap-2">
+            <span className="text-[11px] sm:text-xs text-slate-400">
               {lang === 'en'
                 ? `Showing ${products.length} of ${totalProducts} items`
                 : `Menampilkan ${products.length} dari ${totalProducts} barang`}
@@ -1075,7 +1163,7 @@ export const KelolaProduk: React.FC = () => {
               </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
-                disabled={products.length < 10}
+                disabled={products.length < 20}
                 className="btn-secondary p-1.5 rounded-lg disabled:opacity-50"
               >
                 <ChevronRight size={16} />
@@ -1084,7 +1172,7 @@ export const KelolaProduk: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="text-center p-12 bg-surface-800/20 border border-dashed border-surface-700 rounded-xl">
+        <div className="text-center p-8 sm:p-12 bg-surface-800/20 border border-dashed border-surface-700 rounded-xl text-xs sm:text-sm">
           {lang === 'en' ? 'No active products found.' : 'Tidak ada barang aktif ditemukan.'}
         </div>
       )}
@@ -1126,570 +1214,700 @@ export const KelolaProduk: React.FC = () => {
 
         return (
           <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-            <div
-              ref={editTypeModalRef}
-              tabIndex={0}
-              onKeyDown={handleEditTypeModalKeyDown}
-              className="bg-surface-800 border border-surface-700 rounded-xl max-w-sm w-full mx-4 shadow-2xl animate-scale-in outline-none flex flex-col"
-            >
-              <div className="flex justify-between items-center w-full">
-                <h3 className="text-lg font-bold text-white">
-                  {lang === 'en' ? 'Select Edit Mode' : 'Pilih Mode Pengeditan'}
-                </h3>
-                <button onClick={() => setShowEditTypeModal(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="mt-4 mb-4">
-                <p className="text-xs text-slate-400">
-                  {lang === 'en'
-                    ? 'Select the aspect of the product you want to update to speed up the process.'
-                    : 'Pilih aspek produk yang ingin Anda perbarui untuk mempercepat pengisian.'}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2.5 mb-4">
-                {editOptions.map((opt, idx) => {
-                  const Icon = opt.icon;
-                  const isActive = idx === editModeSelectIdx;
-                  return (
-                    <button
-                      key={opt.mode}
-                      type="button"
-                      onClick={() => handleStartEdit(opt.mode)}
-                      className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm transition-all border rounded-lg ${isActive
-                        ? opt.activeColorClass + ' font-semibold scale-[1.01]'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                        }`}
-                    >
-                      <Icon size={16} className={isActive ? '' : opt.colorClass} />
-                      <span>
-                        {opt.mode === 'info'
-                          ? (lang === 'en' ? 'Product Info & Photo Only' : 'Hanya Informasi & Foto Produk')
-                          : (lang === 'en' ? 'Supplier Stock & Price Only' : 'Hanya Stok & Harga Supplier')
-                        }
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-500 border-t border-surface-700/50 pt-2.5">
-                <span>
-                  {lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}
-                </span>
-                <span>
-                  <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'select, ' : 'pilih, '}
-                  <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>
-        );
-      })()}      {/* Popup 2: Form Modal (Add / Edit) */}
-      {showFormModal && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay overflow-y-auto">
-          <div
-            style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)' }}
-            className="border border-blue-200 rounded-xl max-w-2xl w-full my-4 mx-4 shadow-2xl animate-scale-in flex flex-col overflow-hidden"
-          >
-            <form id="kelola-produk-form" onSubmit={handleSave} onKeyDown={handleFormKeyDown} className="space-y-3">
-              {/* Header inside form as first-child to match index.css */}
-              <div className="flex justify-between items-center w-full px-5 py-3">
-                <div>
-                  <h3 className="text-lg font-bold text-white">
-                    {editMode === 'create'
-                      ? (lang === 'en' ? 'Add New Product' : 'Tambah Produk Baru')
-                      : editMode === 'prices'
-                        ? (lang === 'en' ? 'Edit Stock & Price' : 'Edit Stok & Harga')
-                        : (lang === 'en' ? `Edit Product: ${nama}` : `Edit Produk: ${nama}`)}
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay">
+              <div
+                ref={editTypeModalRef}
+                tabIndex={0}
+                onKeyDown={handleEditTypeModalKeyDown}
+                className="bg-surface-800 border border-surface-700 rounded-xl max-w-sm w-full p-4 sm:p-5 shadow-2xl animate-scale-in outline-none flex flex-col max-h-[85vh]"
+              >
+                <div className="flex justify-between items-center w-full">
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    {lang === 'en' ? 'Select Edit Mode' : 'Pilih Mode Pengeditan'}
                   </h3>
-                  <p className="text-[10px] text-white/70 mt-0.5 capitalize">
-                    {lang === 'en' ? 'Edit Mode: ' : 'Mode Pengeditan: '} {editMode} Mode
+                  <button onClick={() => setShowEditTypeModal(false)} className="text-slate-400 hover:text-white">
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="mt-3 mb-3">
+                  <p className="text-xs text-slate-400">
+                    {lang === 'en'
+                      ? 'Select the aspect of the product you want to update to speed up the process.'
+                      : 'Pilih aspek produk yang ingin Anda perbarui untuk mempercepat pengisian.'}
                   </p>
                 </div>
-                <button type="button" onClick={() => setShowFormModal(false)}>
-                  <X size={18} />
-                </button>
+                <div className="flex flex-col gap-2 mb-3">
+                  {editOptions.map((opt, idx) => {
+                    const Icon = opt.icon;
+                    const isActive = idx === editModeSelectIdx;
+                    return (
+                      <button
+                        key={opt.mode}
+                        type="button"
+                        onClick={() => handleStartEdit(opt.mode)}
+                        className={`w-full text-left px-3.5 py-3 flex items-center gap-3 text-xs sm:text-sm transition-all border rounded-lg ${isActive
+                          ? opt.activeColorClass + ' font-semibold scale-[1.01]'
+                          : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                          }`}
+                      >
+                        <Icon size={16} className={isActive ? '' : opt.colorClass} />
+                        <span>
+                          {opt.mode === 'info'
+                            ? (lang === 'en' ? 'Product Info & Photo Only' : 'Hanya Informasi & Foto Produk')
+                            : (lang === 'en' ? 'Supplier Stock & Price Only' : 'Hanya Stok & Harga Supplier')
+                          }
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-500 border-t border-surface-700/50 pt-2.5">
+                  <span>
+                    {lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}
+                  </span>
+                  <span>
+                    <kbd className="shortcut-badge text-[9px]">Enter</kbd> {lang === 'en' ? 'select, ' : 'pilih, '}
+                    <kbd className="shortcut-badge text-[9px]">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+                  </span>
+                </div>
               </div>
+            </div>
+          </ModalPortal>
+        );
+      })()}
 
-              {formError && (
-                <div className="mx-6 p-3 rounded-lg bg-danger-600/10 border border-danger-500/30 text-danger-600 text-xs flex items-center gap-2">
-                  <AlertCircle size={14} className="shrink-0" />
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              {/* Read-only fields for Edit Stok Mode at the top */}
-              {editMode === 'prices' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mx-6 mt-6">
+      {/* Popup 2: Form Modal (Add / Edit) */}
+      {showFormModal && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-overlay overflow-y-auto">
+            <div
+              style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)' }}
+              className="border border-blue-200 rounded-xl max-w-2xl w-full my-auto shadow-2xl animate-scale-in flex flex-col overflow-hidden max-h-[92vh]"
+            >
+              <form id="kelola-produk-form" onSubmit={handleSave} onKeyDown={handleFormKeyDown} className="space-y-2 sm:space-y-3 overflow-y-auto p-1">
+                {/* Header inside form as first-child to match index.css */}
+                <div className="flex justify-between items-center w-full px-4 sm:px-5 py-3 border-b border-blue-100 bg-surface-900 rounded-t-lg">
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">
-                      {lang === 'en' ? 'Item Code' : 'Kode Barang'}
-                    </label>
-                    <input
-                      type="text"
-                      value={kode}
-                      onChange={(e) => setKode(e.target.value)}
-                      className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 font-semibold"
-                    />
+                    <h3 className="text-base sm:text-lg font-bold text-white">
+                      {editMode === 'create'
+                        ? (lang === 'en' ? 'Add New Product' : 'Tambah Produk Baru')
+                        : editMode === 'prices'
+                          ? (lang === 'en' ? 'Edit Stock & Price' : 'Edit Stok & Harga')
+                          : (lang === 'en' ? `Edit Product: ${nama}` : `Edit Produk: ${nama}`)}
+                    </h3>
+                    <p className="text-[10px] text-white/70 mt-0.5 capitalize">
+                      {lang === 'en' ? 'Edit Mode: ' : 'Mode Pengeditan: '} {editMode} Mode
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">
-                      {lang === 'en' ? 'Item Name' : 'Nama Barang'}
-                    </label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={nama}
-                      className="input-field form-start-field w-full bg-slate-100/80 border-blue-100 text-slate-500 cursor-not-allowed font-semibold"
-                    />
-                  </div>
+                  <button type="button" onClick={() => setShowFormModal(false)} className="text-slate-400 hover:text-white p-1">
+                    <X size={18} />
+                  </button>
                 </div>
-              )}
 
-              {/* Product Info Section (Visible in 'create', 'full', 'info') */}
-              {(editMode === 'create' || editMode === 'full' || editMode === 'info') && (
-                <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
-                  <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    {lang === 'en' ? 'A. Item Information' : 'A. Informasi Barang'}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {formError && (
+                  <div className="mx-3 sm:mx-6 p-2.5 rounded-lg bg-danger-600/10 border border-danger-500/30 text-danger-600 text-xs flex items-center gap-2">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
+                {/* Read-only fields for Edit Stok Mode at the top */}
+                {editMode === 'prices' && (
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 mx-3 sm:mx-6 mt-3">
                     <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1">
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
                         {lang === 'en' ? 'Item Code' : 'Kode Barang'}
                       </label>
                       <input
                         type="text"
-                        required
                         value={kode}
                         onChange={(e) => setKode(e.target.value)}
-                        placeholder={lang === 'en' ? 'Add Item Code' : 'Tambahkan Kode Barang'}
-                        className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
+                        className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 font-semibold text-xs sm:text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-700 font-semibold mb-1">
-                        {lang === 'en' ? 'Product Name' : 'Nama Produk'}
+                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                        {lang === 'en' ? 'Item Name' : 'Nama Barang'}
                       </label>
                       <input
                         type="text"
-                        required
+                        readOnly
                         value={nama}
-                        onChange={(e) => setNama(e.target.value)}
-                        placeholder={lang === 'en' ? 'Add Product Name' : 'Tambahkan Nama Produk'}
-                        className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
+                        className="input-field form-start-field w-full bg-slate-100/80 border-blue-100 text-slate-500 cursor-not-allowed font-semibold text-xs sm:text-sm"
                       />
                     </div>
                   </div>
+                )}
 
-                  <div>
-                    <label className="block text-xs text-slate-700 font-semibold mb-1">
-                      {lang === 'en' ? 'Description / Details' : 'Keterangan/Deskripsi'}
-                    </label>
-                    <textarea
-                      ref={descRef}
-                      value={deskripsi}
-                      onChange={(e) => {
-                        setDeskripsi(e.target.value);
-                        adjustDescHeight();
-                      }}
-                      placeholder={lang === 'en' ? 'Add product details...' : 'Tambahkan detail produk...'}
-                      className="input-field min-h-[40px] resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 overflow-hidden"
-                    />
-                  </div>
+                {/* Product Info Section (Visible in 'create', 'full', 'info') */}
+                {(editMode === 'create' || editMode === 'full' || editMode === 'info') && (
+                  <div className="space-y-3 mx-3 sm:mx-4 p-3 sm:p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-2">
+                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                      {lang === 'en' ? 'A. Item Information' : 'A. Informasi Barang'}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      <div>
+                        <label className="block text-xs text-slate-700 font-semibold mb-1">
+                          {lang === 'en' ? 'Item Code' : 'Kode Barang'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={kode}
+                          onChange={(e) => setKode(e.target.value)}
+                          placeholder={lang === 'en' ? 'Add Item Code' : 'Kode'}
+                          className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-700 font-semibold mb-1">
+                          {lang === 'en' ? 'Product Name' : 'Nama Produk'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={nama}
+                          onChange={(e) => setNama(e.target.value)}
+                          placeholder={lang === 'en' ? 'Add Product Name' : 'Nama Produk'}
+                          className="input-field form-start-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 text-xs sm:text-sm"
+                        />
+                      </div>
+                    </div>
 
-                  {/* Images Upload Area */}
-                  <div>
-                    <label className="block text-xs text-slate-700 font-semibold mb-1">
-                      {lang === 'en' ? 'Product Photo (Max 3, Max 1MB, auto-compressed if larger)' : 'Foto Produk (Maks 3, Maks 1MB, auto-kompres jika lebih)'}
-                    </label>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {fotoUrls.map((url, idx) => (
-                        <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-blue-200 bg-white group">
-                          <img src={url} alt="preview" className="w-full h-full object-cover" />
+                    <div>
+                      <label className="block text-xs text-slate-700 font-semibold mb-1">
+                        {lang === 'en' ? 'Description / Details' : 'Keterangan/Deskripsi'}
+                      </label>
+                      <textarea
+                        ref={descRef}
+                        value={deskripsi}
+                        onChange={(e) => {
+                          setDeskripsi(e.target.value);
+                          adjustDescHeight();
+                        }}
+                        placeholder={lang === 'en' ? 'Add product details...' : 'Tambahkan detail produk...'}
+                        className="input-field min-h-[40px] resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 overflow-hidden text-xs sm:text-sm"
+                      />
+                    </div>
+
+                    {/* Images Upload Area */}
+                    <div>
+                      <label className="block text-xs text-slate-700 font-semibold mb-1">
+                        {lang === 'en' ? 'Product Photo (F1 to upload) (Max 3, Max 1MB)' : 'Foto Produk (Tekan F1) (Maks 3, Maks 1MB)'}
+                      </label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {fotoUrls.map((url, idx) => (
+                          <div key={idx} className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-blue-200 bg-white group">
+                            <img src={url} alt="preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setFotoUrls(prev => prev.filter((_, i) => i !== idx))}
+                              className="absolute top-1 right-1 p-0.5 bg-black/60 hover:bg-danger-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+
+                        {fotoUrls.length < 3 && (
                           <button
                             type="button"
-                            onClick={() => setFotoUrls(prev => prev.filter((_, i) => i !== idx))}
-                            className="absolute top-1 right-1 p-0.5 bg-black/60 hover:bg-danger-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setShowPhotoSourceModal(true)}
+                            className="w-14 h-14 sm:w-16 sm:h-16 border border-dashed border-blue-300 hover:border-blue-500 rounded-lg flex flex-col items-center justify-center text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-50 cursor-pointer transition-colors"
                           >
-                            <X size={12} />
+                            <Upload size={16} />
+                            <span className="text-[9px] font-semibold mt-0.5">{lang === 'en' ? 'Upload (F1)' : 'Upload (F1)'}</span>
                           </button>
-                        </div>
-                      ))}
-
-                      {fotoUrls.length < 3 && (
-                        <label className="w-16 h-16 border border-dashed border-blue-200 hover:border-blue-500 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:text-blue-600 bg-white cursor-pointer transition-colors">
-                          <Upload size={16} />
-                          <span className="text-[9px] mt-0.5">{lang === 'en' ? 'Upload (F1)' : 'Upload (F1)'}</span>
-                          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" multiple />
-                        </label>
-                      )}
+                        )}
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" multiple />
+                        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageChange} className="hidden" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Price / Supplier Section (Visible in 'create', 'full', 'prices') */}
-              {(editMode === 'create' || editMode === 'full' || editMode === 'prices') && (
-                <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
-                      {lang === 'en' ? 'B. Purchase Price & Stock per Supplier' : 'B. Harga Beli & Stok per Supplier'}
-                    </h4>
-                    <button type="button" onClick={addPriceRow} className="btn-secondary py-1 px-2.5 text-xs border-blue-200 hover:bg-blue-50 text-blue-700 bg-white">
-                      <Plus size={12} />
-                      <span>{lang === 'en' ? 'Add Supplier (F2)' : 'Tambah Supplier (F2)'}</span>
-                    </button>
-                  </div>
+                {/* Price / Supplier Section (Visible in 'create', 'full', 'prices') */}
+                {(editMode === 'create' || editMode === 'full' || editMode === 'prices') && (
+                  <div className="space-y-3 mx-3 sm:mx-4 p-3 sm:p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-2">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                        {lang === 'en' ? 'B. Purchase Price & Stock per Supplier' : 'B. Harga Beli & Stok per Supplier'}
+                      </h4>
+                      <button type="button" onClick={addPriceRow} className="btn-secondary py-1 px-2 text-xs border-blue-200 hover:bg-blue-50 text-blue-700 bg-white flex items-center gap-1">
+                        <Plus size={12} />
+                        <span className="hidden sm:inline">{lang === 'en' ? 'Add Supplier (F2)' : 'Tambah Supplier (F2)'}</span>
+                        <span className="sm:hidden">{lang === 'en' ? 'Supplier' : 'Supplier'}</span>
+                      </button>
+                    </div>
 
-                  {priceRows.length > 0 ? (
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                      {priceRows.map((row, idx) => (
-                        <div key={idx} className="flex flex-col sm:flex-row gap-2.5 items-center bg-white p-2.5 rounded-lg border border-blue-100 shadow-sm supplier-row">
-                          {/* Supplier Selector */}
-                          <div className="w-full sm:flex-1 relative">
-                            <input
-                              type="text"
-                              readOnly
-                              autoFocus={idx === priceRows.length - 1}
-                              value={suppliers.find((s) => s.id === row.supplier_id)?.nama || ''}
-                              onClick={() => {
-                                setActiveSupplierRowIdx(idx);
-                                setSupplierPopupSearch('');
-                                setSupplierPopupFocusedIdx(0);
-                                setShowSupplierPopup(true);
-                              }}
-                              onFocus={() => {
-                                setActiveSupplierRowIdx(idx);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
+                    {priceRows.length > 0 ? (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {priceRows.map((row, idx) => (
+                          <div key={idx} className="flex flex-col sm:flex-row gap-2 items-center bg-white p-2 sm:p-2.5 rounded-lg border border-blue-100 shadow-xs supplier-row">
+                            {/* Supplier Selector */}
+                            <div className="w-full sm:flex-1 relative">
+                              <input
+                                type="text"
+                                readOnly
+                                autoFocus={idx === priceRows.length - 1}
+                                value={suppliers.find((s) => s.id === row.supplier_id)?.nama || ''}
+                                onClick={() => {
                                   setActiveSupplierRowIdx(idx);
                                   setSupplierPopupSearch('');
                                   setSupplierPopupFocusedIdx(0);
                                   setShowSupplierPopup(true);
-                                } else if (e.key === 'Delete' || e.key === 'Del') {
-                                  e.preventDefault();
-                                  removePriceRow(idx);
-                                }
-                              }}
-                              placeholder={lang === 'en' ? 'Select Supplier...' : 'Pilih Supplier...'}
-                              className="input-field py-2 pr-8 w-full font-semibold bg-white border-blue-200 text-slate-800 cursor-pointer"
-                            />
-                            <span className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 pointer-events-none">
-                              <Search size={14} />
-                            </span>
-                          </div>
+                                }}
+                                onFocus={() => {
+                                  setActiveSupplierRowIdx(idx);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setActiveSupplierRowIdx(idx);
+                                    setSupplierPopupSearch('');
+                                    setSupplierPopupFocusedIdx(0);
+                                    setShowSupplierPopup(true);
+                                  } else if (e.key === 'Delete' || e.key === 'Del') {
+                                    e.preventDefault();
+                                    removePriceRow(idx);
+                                  }
+                                }}
+                                placeholder={lang === 'en' ? 'Select Supplier...' : 'Pilih Supplier...'}
+                                className="input-field py-1.5 pr-8 w-full font-semibold bg-white border-blue-200 text-slate-800 cursor-pointer text-xs sm:text-sm"
+                              />
+                              <span className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 pointer-events-none">
+                                <Search size={14} />
+                              </span>
+                            </div>
 
-                           {/* Stok Input */}
-                          <div className="w-full sm:w-28">
-                            <input
-                              type="text"
-                              value={row.stok}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === '' || /^[+-]?\d*\.?\d*$/.test(val)) {
-                                  const copy = [...priceRows];
-                                  copy[idx].stok = val as any;
-                                  setPriceRows(copy);
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Delete' || e.key === 'Del') {
-                                  e.preventDefault();
-                                  removePriceRow(idx);
-                                }
-                              }}
-                              placeholder={lang === 'en' ? 'Stock' : 'Stok'}
-                              className="input-field py-2 font-semibold w-full bg-white border-blue-200 text-slate-800"
-                            />
-                          </div>
+                            <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto items-center">
+                              {/* Stok Input */}
+                              <div className="w-full sm:w-28">
+                                <input
+                                  type="text"
+                                  value={row.stok}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^[+-]?\d*\.?\d*$/.test(val)) {
+                                      const copy = [...priceRows];
+                                      copy[idx].stok = val as any;
+                                      setPriceRows(copy);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Delete' || e.key === 'Del') {
+                                      e.preventDefault();
+                                      removePriceRow(idx);
+                                    }
+                                  }}
+                                  placeholder={lang === 'en' ? 'Stock' : 'Stok'}
+                                  className="input-field py-1.5 font-semibold w-full bg-white border-blue-200 text-slate-800 text-xs sm:text-sm"
+                                />
+                              </div>
 
-                          {/* Harga Input */}
-                          <div className="w-full sm:w-40">
-                            <input
-                              type="text"
-                              value={formatRupiahInput(row.harga_beli)}
-                              onChange={(e) => {
-                                const copy = [...priceRows];
-                                copy[idx].harga_beli = e.target.value === '' ? '' : parseRupiahInput(e.target.value);
-                                setPriceRows(copy);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Delete' || e.key === 'Del') {
-                                  e.preventDefault();
-                                  removePriceRow(idx);
-                                }
-                              }}
-                              placeholder={lang === 'en' ? 'Purchase Price' : 'Harga Beli'}
-                              className="input-field py-2 text-emerald-600 w-full font-mono font-semibold bg-white border-blue-200"
-                            />
-                          </div>
+                              {/* Harga Input */}
+                              <div className="w-full sm:w-36">
+                                <input
+                                  type="text"
+                                  value={formatRupiahInput(row.harga_beli)}
+                                  onChange={(e) => {
+                                    const copy = [...priceRows];
+                                    copy[idx].harga_beli = e.target.value === '' ? '' : parseRupiahInput(e.target.value);
+                                    setPriceRows(copy);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Delete' || e.key === 'Del') {
+                                      e.preventDefault();
+                                      removePriceRow(idx);
+                                    }
+                                  }}
+                                  placeholder={lang === 'en' ? 'Purchase Price' : 'Harga Beli'}
+                                  className="input-field py-1.5 text-emerald-600 w-full font-mono font-semibold bg-white border-blue-200 text-xs sm:text-sm"
+                                />
+                              </div>
+                            </div>
 
-                          {/* Delete Action */}
-                          <button
-                            type="button"
-                            onClick={() => removePriceRow(idx)}
-                            className="p-2 text-slate-400 hover:text-danger-500 rounded hover:bg-slate-50 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
+                            {/* Delete Action */}
+                            <button
+                              type="button"
+                              onClick={() => removePriceRow(idx)}
+                              className="p-1.5 text-slate-400 hover:text-danger-500 rounded hover:bg-slate-50 transition-colors shrink-0"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center p-3 bg-white rounded border border-dashed border-blue-200 text-xs text-slate-500">
+                        {lang === 'en'
+                          ? 'No supplier price added yet. Click Add Supplier.'
+                          : 'Belum ada supplier harga yang ditambahkan. Klik Tambah Supplier.'}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Validation Section (Visible only in 'prices' mode) */}
+                {editMode === 'prices' && (
+                  <div className="space-y-3 mx-3 sm:mx-4 p-3 sm:p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-2">
+                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <CheckCircle size={14} className="text-blue-600" />
+                      <span>{lang === 'en' ? 'Stock Change Validation' : 'Validasi Perubahan Stok'}</span>
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                          {lang === 'en' ? 'Change Date' : 'Tanggal Diubah'}
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={tanggalDiubah}
+                          onChange={(e) => setTanggalDiubah(e.target.value)}
+                          className="input-field w-full bg-white border-blue-200 text-slate-800 text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                          {lang === 'en' ? 'Changed By' : 'Diubah Oleh'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={diubahOleh}
+                          onChange={(e) => setDiubahOleh(e.target.value)}
+                          placeholder={lang === 'en' ? 'Staff Name' : 'Nama Staff'}
+                          className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 text-xs sm:text-sm"
+                        />
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-center p-4 bg-white rounded border border-dashed border-blue-200 text-xs text-slate-500">
-                      {lang === 'en'
-                        ? 'No supplier price added yet. Please click Add Supplier above or press F2.'
-                        : 'Belum ada supplier harga yang ditambahkan. Silakan klik Tambah Supplier di atas atau tekan F2.'}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Validation Section (Visible only in 'prices' mode) */}
-              {editMode === 'prices' && (
-                <div className="space-y-3 mx-4 p-3.5 rounded-lg border border-blue-100 bg-blue-50/10 shadow-xs mt-3">
-                  <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <CheckCircle size={14} className="text-blue-600" />
-                    <span>{lang === 'en' ? 'Stock Change Validation' : 'Validasi Perubahan Stok'}</span>
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
-                        {lang === 'en' ? 'Change Date' : 'Tanggal Diubah'}
+                        {lang === 'en' ? 'Reason for Change' : 'Alasan Diubah'}
                       </label>
-                      <input
-                        type="date"
+                      <textarea
                         required
-                        value={tanggalDiubah}
-                        onChange={(e) => setTanggalDiubah(e.target.value)}
-                        className="input-field w-full bg-white border-blue-200 text-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
-                        {lang === 'en' ? 'Changed By' : 'Diubah Oleh'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={diubahOleh}
-                        onChange={(e) => setDiubahOleh(e.target.value)}
-                        placeholder={lang === 'en' ? 'Staff Name' : 'Nama Staff'}
-                        className="input-field w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
+                        value={alasanDiubah}
+                        onChange={(e) => setAlasanDiubah(e.target.value)}
+                        placeholder={lang === 'en' ? 'Example: physical stock correction' : 'Contoh: koreksi stok fisik setelah stock opname'}
+                        className="input-field h-14 resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500 text-xs sm:text-sm"
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
-                      {lang === 'en' ? 'Reason for Change' : 'Alasan Diubah'}
-                    </label>
-                    <textarea
-                      required
-                      value={alasanDiubah}
-                      onChange={(e) => setAlasanDiubah(e.target.value)}
-                      placeholder={lang === 'en' ? 'Example: physical stock correction after stock opname' : 'Contoh: koreksi stok fisik setelah stock opname'}
-                      className="input-field h-16 resize-none w-full bg-white border-blue-200 text-slate-800 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Submit Buttons */}
-              <div className="flex justify-end gap-2 border-t border-blue-100 pt-3 px-4 pb-4 mt-3">
-                <button type="button" onClick={() => setShowFormModal(false)} className="btn-secondary form-cancel-btn border-slate-200 hover:bg-slate-50 text-slate-700 bg-white">
-                  {lang === 'en' ? 'Cancel' : 'Batal'}
-                </button>
-                <button type="submit" disabled={isSubmitting} className="btn-primary">
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{lang === 'en' ? 'Saving...' : 'Menyimpan...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save size={16} />
-                      <span>{lang === 'en' ? 'Save (F10)' : 'Simpan (F10)'}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+                {/* Submit Buttons */}
+                <div className="flex justify-end gap-2 border-t border-blue-100 pt-2.5 px-4 pb-3 mt-2">
+                  <button type="button" onClick={() => setShowFormModal(false)} className="btn-secondary form-cancel-btn border-slate-200 hover:bg-slate-50 text-slate-700 bg-white py-1.5 px-3 text-xs sm:text-sm">
+                    {lang === 'en' ? 'Cancel' : 'Batal'}
+                  </button>
+                  <button type="submit" disabled={isSubmitting} className="btn-primary py-1.5 px-3 text-xs sm:text-sm">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'en' ? 'Saving...' : 'Menyimpan...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        <span>{lang === 'en' ? 'Save (F10)' : 'Simpan (F10)'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
       {/* Popup 3: Lightbox Gallery Modal */}
       {showGalleryModal && currentProduct && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div className="relative max-w-lg w-full p-4 animate-scale-in">
-            <button
-              onClick={() => setShowGalleryModal(false)}
-              className="absolute top-0 right-0 m-4 p-2 bg-black/60 rounded-full hover:bg-black text-white z-10 transition-colors"
-            >
-              <X size={20} />
-            </button>
-            <div className="card p-4 flex flex-col items-center gap-4 bg-surface-850">
-              <h3 className="text-lg font-bold text-white">{currentProduct.nama}</h3>
-              <div className="w-full h-80 rounded-lg bg-surface-900 border border-surface-700 overflow-hidden flex items-center justify-center">
-                {getProductPhotos(currentProduct).length > 0 ? (
-                  <img
-                    src={getProductPhotos(currentProduct)[0]}
-                    alt="product"
-                    className="max-w-full max-h-full object-contain"
-                  />
-                ) : (
-                  <div className="text-slate-500 text-sm">
-                    {lang === 'en' ? 'No product photo uploaded' : 'Tidak ada foto produk terupload'}
-                  </div>
-                )}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay">
+            <div className="relative max-w-lg w-full p-2 sm:p-4 animate-scale-in">
+              <button
+                onClick={() => setShowGalleryModal(false)}
+                className="absolute top-0 right-0 m-4 p-2 bg-black/60 rounded-full hover:bg-black text-white z-10 transition-colors"
+              >
+                <X size={20} />
+              </button>
+              <div className="card p-4 flex flex-col items-center gap-4 bg-surface-850">
+                <h3 className="text-base sm:text-lg font-bold text-white text-center">{currentProduct.nama}</h3>
+                <div className="w-full h-64 sm:h-80 rounded-lg bg-surface-900 border border-surface-700 overflow-hidden flex items-center justify-center">
+                  {getProductPhotos(currentProduct).length > 0 ? (
+                    <img
+                      src={getProductPhotos(currentProduct)[0]}
+                      alt="product"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-slate-500 text-xs sm:text-sm">
+                      {lang === 'en' ? 'No product photo uploaded' : 'Tidak ada foto produk terupload'}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
       {/* Product Selection Popup Modal */}
       {showSearchPopup && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
-          <div
-            ref={searchPopupRef}
-            tabIndex={0}
-            onKeyDown={handleSearchPopupKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col p-6"
-          >
-            <div className="flex justify-between items-center w-full">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Search size={18} />
-                <span>{lang === 'en' ? 'Select Item' : 'Pilih Barang'}</span>
-              </h3>
-              <button onClick={() => setShowSearchPopup(false)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
-              {popupProducts.length > 0 ? (
-                popupProducts.map((prod, idx) => (
-                  <button
-                    key={prod.id}
-                    onClick={() => selectProduct(prod)}
-                    ref={idx === popupFocusedIndex ? activePopupItemRef : null}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === popupFocusedIndex
-                      ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                      }`}
-                  >
-                    <div>
-                      <p className={`font-semibold ${idx === popupFocusedIndex ? 'text-primary-900' : 'text-slate-900'}`}>{prod.nama}</p>
-                      <p className="text-xs text-slate-500 font-mono">{prod.kode}</p>
-                    </div>
-                    <span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-slate-600">
-                      {lang === 'en' ? 'Stock' : 'Stok'}: {Number(prod.stok)} {prod.satuan}
-                    </span>
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  {lang === 'en' ? `No item matches "${searchQuery}".` : `Tidak ada barang yang cocok dengan "${searchQuery}".`}
-                </div>
-              )}
-            </div>
-            <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
-              <span>
-                <kbd className="shortcut-badge">Enter</kbd> {lang === 'en' ? 'to confirm, ' : 'untuk konfirmasi, '}
-                <kbd className="shortcut-badge">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
-              </span>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-overlay">
+            <div
+              ref={searchPopupRef}
+              tabIndex={0}
+              onKeyDown={handleSearchPopupKeyDown}
+              className="bg-surface-800 border border-surface-700 rounded-xl max-w-md sm:max-w-xl w-full p-4 sm:p-5 shadow-2xl animate-scale-in outline-none max-h-[85vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center w-full">
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <Search size={18} />
+                  <span>{lang === 'en' ? 'Select Item' : 'Pilih Barang'}</span>
+                </h3>
+                <button onClick={() => setShowSearchPopup(false)} className="text-slate-400 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
+                {popupProducts.length > 0 ? (
+                  popupProducts.map((prod, idx) => (
+                    <button
+                      key={prod.id}
+                      onClick={() => selectProduct(prod)}
+                      ref={idx === popupFocusedIndex ? activePopupItemRef : null}
+                      className={`w-full text-left px-3 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between text-xs sm:text-sm transition-all border rounded-lg ${idx === popupFocusedIndex
+                        ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                        }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <p className={`font-semibold truncate ${idx === popupFocusedIndex ? 'text-primary-900' : 'text-slate-900'}`}>{prod.nama}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500 font-mono">{prod.kode}</p>
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-slate-600 shrink-0">
+                        {lang === 'en' ? 'Stk' : 'Stok'}: {Number(prod.stok)} {prod.satuan}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-slate-500 text-xs sm:text-sm">
+                    {lang === 'en' ? `No item matches "${searchQuery}".` : `Tidak ada barang yang cocok dengan "${searchQuery}".`}
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 pt-2.5 border-t border-surface-700 flex justify-between text-[10px] sm:text-[11px] text-slate-400">
+                <span>{lang === 'en' ? 'Use ↑ ↓ to select' : 'Gunakan ↑ ↓ untuk memilih'}</span>
+                <span>
+                  <kbd className="shortcut-badge text-[9px]">Enter</kbd> {lang === 'en' ? 'confirm, ' : 'pilih, '}
+                  <kbd className="shortcut-badge text-[9px]">Esc</kbd> {lang === 'en' ? 'cancel' : 'batal'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         </ModalPortal>
       )}
 
       {/* Supplier Selection Popup Modal */}
       {showSupplierPopup && (
         <ModalPortal>
-          <div className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
-          <div
-            ref={supplierPopupRef}
-            tabIndex={0}
-            onKeyDown={handleSupplierPopupKeyDown}
-            className="bg-surface-800 border border-surface-700 rounded-xl max-w-xl w-full mx-4 shadow-2xl animate-scale-in outline-none max-h-[80vh] flex flex-col p-6"
-          >
-            <div className="flex justify-between items-center w-full">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Search size={18} />
-                <span>{lang === 'en' ? 'Select Supplier' : 'Pilih Supplier'}</span>
-              </h3>
-              <button onClick={() => setShowSupplierPopup(false)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 modal-overlay">
+            <div
+              ref={supplierPopupRef}
+              tabIndex={0}
+              onKeyDown={handleSupplierPopupKeyDown}
+              className="bg-surface-800 border border-surface-700 rounded-xl max-w-md sm:max-w-xl w-full p-4 sm:p-5 shadow-2xl animate-scale-in outline-none max-h-[85vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center w-full">
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <Search size={18} />
+                  <span>{lang === 'en' ? 'Select Supplier' : 'Pilih Supplier'}</span>
+                </h3>
+                <button onClick={() => setShowSupplierPopup(false)} className="text-slate-400 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
 
-            {/* Search Input inside Popup */}
-            <div className="relative mt-4 w-full">
-              <Search size={16} className="absolute left-10  top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
-                ref={supplierPopupInputRef}
-                type="text"
-                value={supplierPopupSearch}
-                onKeyDown={handleSupplierPopupKeyDown}
-                onChange={(e) => {
-                  setSupplierPopupSearch(e.target.value);
-                  setSupplierPopupFocusedIdx(0);
-                }}
-                placeholder={lang === 'en' ? 'Search Supplier Code or Name...' : 'Cari Kode atau Nama Supplier...'}
-                className="input-field pl-10 w-full bg-white text-slate-800"
-              />
-            </div>
+              {/* Search Input inside Popup */}
+              <div className="relative mt-3 w-full">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  ref={supplierPopupInputRef}
+                  type="text"
+                  value={supplierPopupSearch}
+                  onKeyDown={handleSupplierPopupKeyDown}
+                  onChange={(e) => {
+                    setSupplierPopupSearch(e.target.value);
+                    setSupplierPopupFocusedIdx(0);
+                  }}
+                  placeholder={lang === 'en' ? 'Search Supplier Code or Name...' : 'Cari Kode atau Nama Supplier...'}
+                  className="input-field pl-9 w-full bg-white text-slate-800 text-xs sm:text-sm"
+                />
+              </div>
 
-            {/* Supplier List */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-4">
-              {(() => {
-                const filtered = suppliers.filter(s =>
-                  s.nama.toLowerCase().includes(supplierPopupSearch.toLowerCase()) ||
-                  s.kode.toLowerCase().includes(supplierPopupSearch.toLowerCase())
-                );
-                return filtered.length > 0 ? (
-                  filtered.map((sup, idx) => (
-                    <button
-                      key={sup.id}
-                      type="button"
-                      onClick={() => selectSupplierForActiveRow(sup)}
-                      ref={idx === supplierPopupFocusedIdx ? activeSupplierPopupItemRef : null}
-                      className={`w-full text-left px-4 py-3 flex items-center justify-between text-sm transition-all border rounded-lg ${idx === supplierPopupFocusedIdx
-                        ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
-                        }`}
-                    >
-                      <div>
-                        <p className={`font-semibold ${idx === supplierPopupFocusedIdx ? 'text-primary-900' : 'text-slate-900'}`}>{sup.nama}</p>
-                        <p className="text-xs text-slate-500 font-mono">{sup.kode}</p>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-slate-500 text-sm">
-                    Tidak ada supplier yang cocok dengan "{supplierPopupSearch}".
-                  </div>
-                );
-              })()}
-            </div>
+              {/* Supplier List */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
+                {(() => {
+                  const filtered = suppliers.filter(s =>
+                    s.nama.toLowerCase().includes(supplierPopupSearch.toLowerCase()) ||
+                    s.kode.toLowerCase().includes(supplierPopupSearch.toLowerCase())
+                  );
+                  return filtered.length > 0 ? (
+                    filtered.map((sup, idx) => (
+                      <button
+                        key={sup.id}
+                        type="button"
+                        onClick={() => selectSupplierForActiveRow(sup)}
+                        ref={idx === supplierPopupFocusedIdx ? activeSupplierPopupItemRef : null}
+                        className={`w-full text-left px-3 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between text-xs sm:text-sm transition-all border rounded-lg ${idx === supplierPopupFocusedIdx
+                          ? 'border-primary-500 bg-primary-50 text-primary-900 font-semibold ring-2 ring-primary-500/20 scale-[1.01]'
+                          : 'border-slate-200 hover:bg-slate-50 text-slate-700 bg-white'
+                          }`}
+                      >
+                        <div className="min-w-0">
+                          <p className={`font-semibold truncate ${idx === supplierPopupFocusedIdx ? 'text-primary-900' : 'text-slate-900'}`}>{sup.nama}</p>
+                          <p className="text-[10px] sm:text-xs text-slate-500 font-mono">{sup.kode}</p>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-slate-500 text-xs sm:text-sm">
+                      Tidak ada supplier yang cocok dengan "{supplierPopupSearch}".
+                    </div>
+                  );
+                })()}
+              </div>
 
-            <div className="mt-4 pt-3 border-t border-surface-700 flex justify-between text-[11px] text-slate-500">
-              <span>Gunakan <kbd className="shortcut-badge">↑</kbd> <kbd className="shortcut-badge">↓</kbd> untuk memilih</span>
-              <span><kbd className="shortcut-badge">Enter</kbd> untuk konfirmasi, <kbd className="shortcut-badge">Esc</kbd> batal</span>
+              <div className="mt-3 pt-2.5 border-t border-surface-700 flex justify-between text-[10px] sm:text-[11px] text-slate-400">
+                <span>Gunakan <kbd className="shortcut-badge text-[9px]">↑</kbd> <kbd className="shortcut-badge text-[9px]">↓</kbd> untuk memilih</span>
+                <span><kbd className="shortcut-badge text-[9px]">Enter</kbd> pilih, <kbd className="shortcut-badge text-[9px]">Esc</kbd> batal</span>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
+      )}
+
+      {/* Modal Pilihan Unggah Foto (Galeri vs Kamera) */}
+      {showPhotoSourceModal && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowPhotoSourceModal(false)}>
+            <div className="relative max-w-[320px] sm:max-w-md w-full p-4 sm:p-5 bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl space-y-4" onClick={(e) => e.stopPropagation()}>
+
+              {/* Header Centered */}
+              <div className="relative flex flex-col items-center justify-center text-center border-b border-surface-700/80 pb-3 pr-6 pl-6">
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoSourceModal(false)}
+                  className="absolute top-0 right-0 p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                <div className="p-2 bg-primary-500/10 text-primary-400 rounded-full mb-1">
+                  <ImageIcon size={20} />
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white">
+                  {lang === 'en' ? 'Select Photo Source' : 'Pilih Sumber Foto Produk'}
+                </h3>
+              </div>
+
+              {/* Description outside header */}
+              <p className="text-xs text-slate-400 text-center">
+                {lang === 'en'
+                  ? 'Choose whether to pick an image file from device gallery or capture directly using camera.'
+                  : 'Pilih apakah ingin mengunggah file dari galeri/perangkat atau ambil foto langsung dengan kamera.'}
+              </p>
+
+              {/* Photo Source Buttons with Black Bold Text */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPhotoSourceModal(false);
+                    fileInputRef.current?.click();
+                  }}
+                  className="flex flex-col items-center justify-center p-4 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-900 transition-all space-y-2 group shadow-md hover:scale-[1.02]"
+                >
+                  <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg group-hover:scale-110 transition-transform">
+                    <Upload size={22} />
+                  </div>
+                  <span className="text-xs font-extrabold text-slate-900 group-hover:text-black">{lang === 'en' ? 'Gallery / File' : 'Galeri / Berkas'}</span>
+                  <span className="text-[10px] text-slate-600 font-medium">{lang === 'en' ? 'Select Image' : 'Pilih File'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className="flex flex-col items-center justify-center p-4 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-900 transition-all space-y-2 group shadow-md hover:scale-[1.02]"
+                >
+                  <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg group-hover:scale-110 transition-transform">
+                    <Camera size={22} />
+                  </div>
+                  <span className="text-xs font-extrabold text-slate-900 group-hover:text-black">{lang === 'en' ? 'Take Photo' : 'Kamera Langsung'}</span>
+                  <span className="text-[10px] text-slate-600 font-medium">{lang === 'en' ? 'Use Camera' : 'Jepret Foto'}</span>
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-surface-700/50 flex justify-between items-center text-xs text-slate-400">
+                <span className="text-[10px] text-slate-500 font-mono">Tekan <kbd className="shortcut-badge text-[9px]">Esc</kbd> untuk batal</span>
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoSourceModal(false)}
+                  className="btn-secondary py-1.5 px-3 text-xs"
+                >
+                  {lang === 'en' ? 'Cancel' : 'Batal'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {/* Modal Live Stream Kamera & Snap Photo */}
+      {showCameraModal && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay bg-slate-950/80 backdrop-blur-sm" onClick={stopCamera}>
+            <div className="relative max-w-[340px] sm:max-w-lg w-full p-4 sm:p-5 bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl space-y-3" onClick={(e) => e.stopPropagation()}>
+
+              {/* Header Centered */}
+              <div className="relative flex flex-col items-center justify-center text-center border-b border-surface-700/80 pb-2 pr-6 pl-6">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="absolute top-0 right-0 p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                <div className="flex items-center gap-2 justify-center">
+                  <Camera size={18} className="text-emerald-400 animate-pulse" />
+                  <h3 className="text-xs sm:text-base font-bold text-white">
+                    {lang === 'en' ? 'Live Camera Capture' : 'Kamera Langsung'}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="relative aspect-video sm:aspect-4/3 w-full bg-black rounded-xl overflow-hidden border border-surface-700 flex items-center justify-center">
+                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button type="button" onClick={stopCamera} className="btn-secondary py-1.5 px-3 text-xs">
+                  {lang === 'en' ? 'Cancel' : 'Batal'}
+                </button>
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="btn-primary py-2 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 rounded-xl shadow-lg shadow-emerald-600/20"
+                >
+                  <Camera size={16} />
+                  <span>{lang === 'en' ? 'Snap Photo' : 'Jepret Foto'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </ModalPortal>
       )}
     </div>

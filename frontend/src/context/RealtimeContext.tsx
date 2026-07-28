@@ -93,18 +93,18 @@ export const RealtimeProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
 
     socketInstance.on('so_updated', (data: SoUpdatedEvent) => {
-      console.log('⚡ Received so_updated event:', data);
+      console.log(' Received so_updated event:', data);
 
-      let notifTitle = '📋 Update Sales Order';
+      let notifTitle = ' Update Sales Order';
       let notifMsg = `SO No. ${data.no_order} (${data.customer_nama}) telah diperbarui.`;
       let type: 'info' | 'success' | 'warning' = 'info';
 
       if (data.action === 'complete') {
-        notifTitle = '✅ Sales Order Selesai';
+        notifTitle = ' Sales Order Selesai';
         notifMsg = `SO No. ${data.no_order} (${data.customer_nama}) telah diselesaikan.`;
         type = 'success';
       } else if (data.action === 'delete') {
-        notifTitle = '⚠️ Sales Order Dibatalkan';
+        notifTitle = ' Sales Order Dibatalkan';
         notifMsg = `SO No. ${data.no_order} (${data.customer_nama}) telah dibatalkan.`;
         type = 'warning';
       }
@@ -165,23 +165,21 @@ export const RealtimeProvider: React.FC<{ children: ReactNode }> = ({ children }
         {notifications.map((n) => (
           <div
             key={n.id}
-            className={`pointer-events-auto flex items-stretch p-3.5 rounded-xl shadow-2xl border backdrop-blur-md transition-all transform translate-y-0 bg-slate-950/95 ${
-              n.type === 'success'
-                ? 'border-emerald-500/40 shadow-emerald-950/40 ring-1 ring-emerald-500/20'
-                : n.type === 'warning'
+            className={`pointer-events-auto flex items-stretch p-3.5 rounded-xl shadow-2xl border backdrop-blur-md transition-all transform translate-y-0 bg-slate-950/95 ${n.type === 'success'
+              ? 'border-emerald-500/40 shadow-emerald-950/40 ring-1 ring-emerald-500/20'
+              : n.type === 'warning'
                 ? 'border-amber-500/40 shadow-amber-950/40 ring-1 ring-amber-500/20'
                 : 'border-blue-500/40 shadow-blue-950/40 ring-1 ring-blue-500/20'
-            }`}
+              }`}
           >
             {/* Left Glowing Accent Bar */}
             <div
-              className={`w-1.5 rounded-full mr-3 shrink-0 ${
-                n.type === 'success'
-                  ? 'bg-gradient-to-b from-emerald-400 to-green-600 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
-                  : n.type === 'warning'
+              className={`w-1.5 rounded-full mr-3 shrink-0 ${n.type === 'success'
+                ? 'bg-gradient-to-b from-emerald-400 to-green-600 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
+                : n.type === 'warning'
                   ? 'bg-gradient-to-b from-amber-400 to-yellow-600 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
                   : 'bg-gradient-to-b from-blue-400 to-indigo-600 shadow-[0_0_8px_rgba(96,165,250,0.6)]'
-              }`}
+                }`}
             />
 
             <div className="flex-1 min-w-0 pr-1">

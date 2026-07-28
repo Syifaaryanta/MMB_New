@@ -164,7 +164,7 @@ export const DaftarInventori: React.FC = () => {
   const fetchInventory = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get(`/products?q=${search}&page=${page}&limit=50`);
+      const res = await api.get(`/products?q=${search}&page=${page}&limit=20`);
       setProducts(res.data.data || []);
       setTotalProducts(res.data.total || 0);
       setSelectedIdx(0);
@@ -316,24 +316,25 @@ export const DaftarInventori: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white">
             {lang === 'en' ? 'Real-time Inventory List' : 'Daftar Inventori Real-time'}
           </h1>
-          <p className="text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-400">
             {lang === 'en'
               ? 'Overview of physical inventory of all items available in MMB warehouse'
               : 'Ikhtisar persediaan fisik seluruh unit barang yang tersedia di gudang MMB'}
           </p>
         </div>
-        <button onClick={() => navigate('/gudang')} className="btn-secondary text-xs">
-          {lang === 'en' ? 'Back to Inventory' : 'Kembali ke Gudang'}
+        <button onClick={() => navigate('/gudang')} className="btn-secondary py-1.5 px-2.5 sm:px-3 text-xs shrink-0" title={lang === 'en' ? 'Back' : 'Kembali'}>
+          <span className="hidden sm:inline">{lang === 'en' ? 'Back to Inventory' : 'Kembali ke Gudang'}</span>
+          <span className="sm:hidden">{lang === 'en' ? 'Back' : 'Kembali'}</span>
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
+      <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-center justify-between w-full">
         <div className="relative flex-1 w-full">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
             <Search size={16} />
@@ -352,7 +353,7 @@ export const DaftarInventori: React.FC = () => {
               }
             }}
             placeholder={lang === 'en' ? 'Search Item Code or Name... (F1)' : 'Cari Kode atau Nama Barang... (F1)'}
-            className="input-field pl-9 w-full"
+            className="input-field pl-9 w-full text-xs sm:text-sm"
           />
           {search && (
             <button
@@ -364,25 +365,25 @@ export const DaftarInventori: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-surface-800/40 px-4 py-2.5 rounded-xl border border-surface-700/50 shrink-0">
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F1</kbd>
+        <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-xs text-slate-400 bg-surface-800/40 px-3 py-2 rounded-xl border border-surface-700/50 shrink-0 w-full md:w-auto">
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F1</kbd>
             <span>{lang === 'en' ? 'Search' : 'Cari'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">F2</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">F2</kbd>
             <span>{lang === 'en' ? 'Zoom' : 'Zoom'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Enter</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Enter</kbd>
             <span>{lang === 'en' ? 'Detail' : 'Detail'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Del</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Del</kbd>
             <span>{lang === 'en' ? 'Archive' : 'Arsip'}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-sm">Esc</kbd>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold bg-surface-900 border border-surface-700 rounded text-slate-200 shadow-xs">Esc</kbd>
             <span>{lang === 'en' ? 'Back' : 'Kembali'}</span>
           </span>
         </div>
@@ -397,15 +398,15 @@ export const DaftarInventori: React.FC = () => {
         </div>
       ) : products.length > 0 ? (
         <div className="card p-0 overflow-hidden border border-surface-700">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[550px] sm:min-w-0">
               <thead>
                 <tr className="bg-surface-800 border-b border-surface-700 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-                  <th className="p-4">{lang === 'en' ? 'Item Code' : 'Kode Barang'}</th>
-                  <th className="p-4">{lang === 'en' ? 'Item Name' : 'Nama Barang'}</th>
-                  <th className="p-4 text-right">{lang === 'en' ? 'Physical Stock' : 'Stok Fisik'}</th>
-                  <th className="p-4 text-right">{lang === 'en' ? 'Latest Purchase Price' : 'Harga Beli Terbaru'}</th>
-                  <th className="p-4 text-center">{lang === 'en' ? 'Status' : 'Status'}</th>
+                  <th className="px-3 py-2.5 sm:p-4">{lang === 'en' ? 'Item Code' : 'Kode'}</th>
+                  <th className="px-3 py-2.5 sm:p-4">{lang === 'en' ? 'Item Name' : 'Nama Barang'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 text-right">{lang === 'en' ? 'Stock' : 'Stok'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 text-right">{lang === 'en' ? 'Buy Price' : 'Harga Beli'}</th>
+                  <th className="px-3 py-2.5 sm:p-4 text-center">{lang === 'en' ? 'Stat' : 'Status'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-700/50">
@@ -417,57 +418,71 @@ export const DaftarInventori: React.FC = () => {
                     <React.Fragment key={p.id}>
                       <tr
                         onClick={() => setSelectedIdx(idx)}
+                        onDoubleClick={() => navigate(`/gudang/detail?id=${p.id}`)}
                         ref={idx === selectedIdx ? activeRowRef : null}
                         className={`hover:bg-surface-800/20 cursor-pointer transition-colors ${idx === selectedIdx ? 'table-row-selected border-b-0' : ''
                           }`}
                         style={idx === selectedIdx ? { borderBottom: 'none' } : {}}
                       >
-                        <td className="p-4 font-mono font-semibold text-slate-300">{p.kode}</td>
-                        <td className="p-4 font-bold text-white">{p.nama}</td>
-                        <td className="p-4 text-right font-bold text-slate-200">{Number(p.stok)}</td>
-                        <td className="p-4 text-right font-bold text-emerald-400">
+                        <td className="px-3 py-2.5 sm:p-4 font-mono font-semibold text-slate-300">{p.kode}</td>
+                        <td className="px-3 py-2.5 sm:p-4 font-bold text-white max-w-[160px] sm:max-w-none truncate">{p.nama}</td>
+                        <td className="px-3 py-2.5 sm:p-4 text-right font-bold text-slate-200">{Number(p.stok)}</td>
+                        <td className="px-3 py-2.5 sm:p-4 text-right font-bold text-emerald-400 currency">
                           {p.harga_beli_terbaru !== null && p.harga_beli_terbaru !== undefined
                             ? formatCurrency(p.harga_beli_terbaru)
                             : '-'}
                         </td>
-                        <td className="p-4 text-center">
+                        <td className="px-3 py-2.5 sm:p-4 text-center">
                           {isLow ? (
-                            <span className="badge badge-red inline-flex items-center gap-1">
-                              <AlertTriangle size={12} />
+                            <span className="badge badge-red inline-flex items-center gap-1 px-2 py-0.5 text-xs">
+                              <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
                               <span>{lang === 'en' ? 'Critical' : 'Kritis'}</span>
                             </span>
                           ) : (
-                            <span className="badge badge-green">{lang === 'en' ? 'Safe' : 'Aman'}</span>
+                            <span className="badge badge-green inline-flex items-center gap-1 px-2 py-0.5 text-xs">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                              <span>{lang === 'en' ? 'Safe' : 'Aman'}</span>
+                            </span>
                           )}
                         </td>
                       </tr>
                       {idx === selectedIdx && (
                         <tr className="bg-[rgba(59,130,246,0.08)] border-t-0" style={{ borderLeft: '3px solid #3b82f6', borderTop: 'none' }}>
-                          <td colSpan={5} className="p-4 pt-1 pb-3 border-t-0">
-                            <div className="flex items-center gap-4 bg-slate-900/10 p-3 rounded-lg border border-surface-700/30 w-fit">
-                              <div className="relative w-20 h-20 rounded-lg bg-surface-800 border border-surface-700 overflow-hidden flex items-center justify-center group/img">
+                          <td colSpan={5} className="px-3 py-2.5 sm:p-4 pt-1 pb-3 border-t-0">
+                            <div
+                              onClick={() => navigate(`/gudang/detail?id=${p.id}`)}
+                              className="flex items-center gap-3 sm:gap-4 bg-slate-900/20 hover:bg-slate-900/40 p-2.5 sm:p-3 rounded-lg border border-surface-700/40 hover:border-primary-500/50 w-fit cursor-pointer transition-all group"
+                              title={lang === 'en' ? 'Click to open product details' : 'Klik untuk buka detail produk'}
+                            >
+                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-surface-800 border border-surface-700 overflow-hidden flex items-center justify-center group-hover:border-primary-400 transition-colors shrink-0">
                                 {photoUrl ? (
                                   <img src={photoUrl} alt={p.nama} className="max-w-full max-h-full object-contain" />
                                 ) : (
                                   <div className="flex flex-col items-center justify-center text-slate-500 gap-1 text-[10px]">
-                                    <ImageIcon size={20} />
+                                    <ImageIcon size={18} />
                                     <span>No Photo</span>
                                   </div>
                                 )}
                               </div>
                               <div className="space-y-1">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                  {lang === 'en' ? 'Image Preview' : 'Preview Gambar'}
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 group-hover:text-primary-400 transition-colors">
+                                  <span>{lang === 'en' ? 'Image Preview' : 'Preview Gambar'}</span>
+
                                 </h4>
                                 {photoUrl ? (
-                                  <p className="text-xs text-slate-600">
-                                    {lang === 'en' ? 'Press ' : 'Tekan '}
-                                    <kbd className="shortcut-badge text-[10px]">F2</kbd>
-                                    {lang === 'en' ? ' for full size' : ' untuk fullsize'}
+                                  <p className="text-[11px] text-slate-400">
+                                    <span className="hidden sm:inline">
+                                      {lang === 'en' ? 'Press ' : 'Tekan '}
+                                      <kbd className="shortcut-badge text-[9px]">F2</kbd>
+                                      {lang === 'en' ? ' for full size · ' : ' untuk fullsize · '}
+                                    </span>
+                                    <span className="text-primary-400 font-semibold group-hover:underline">
+                                      {lang === 'en' ? 'Click for detail →' : 'Klik untuk lihat detail →'}
+                                    </span>
                                   </p>
                                 ) : (
-                                  <p className="text-[11px] text-slate-500 italic">
-                                    {lang === 'en' ? 'No product photo' : 'Tidak ada foto produk'}
+                                  <p className="text-[11px] text-primary-400 font-semibold group-hover:underline">
+                                    {lang === 'en' ? 'Click to view product details →' : 'Klik untuk lihat detail produk →'}
                                   </p>
                                 )}
                               </div>
@@ -483,8 +498,8 @@ export const DaftarInventori: React.FC = () => {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between p-4 bg-surface-800/50 border-t border-surface-700">
-            <span className="text-xs text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 bg-surface-800/50 border-t border-surface-700 gap-2">
+            <span className="text-[11px] sm:text-xs text-slate-400">
               {lang === 'en'
                 ? `Showing ${products.length} of ${totalProducts} registered SKUs`
                 : `Menampilkan ${products.length} dari ${totalProducts} SKU terdaftar`}
@@ -497,12 +512,12 @@ export const DaftarInventori: React.FC = () => {
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-xs px-3 font-semibold">
+              <span className="text-xs px-3 font-semibold font-mono">
                 {lang === 'en' ? `Page ${page}` : `Halaman ${page}`}
               </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
-                disabled={products.length < 50}
+                disabled={products.length < 20}
                 className="btn-secondary p-1.5 rounded-lg disabled:opacity-50"
               >
                 <ChevronRight size={16} />
@@ -511,7 +526,7 @@ export const DaftarInventori: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="text-center p-12 bg-surface-800/20 border border-dashed border-surface-700 rounded-xl">
+        <div className="text-center p-8 sm:p-12 bg-surface-800/20 border border-dashed border-surface-700 rounded-xl text-xs sm:text-sm">
           {lang === 'en' ? 'No active products registered yet.' : 'Belum ada produk aktif terdaftar.'}
         </div>
       )}
