@@ -21,12 +21,18 @@
   --color-primary-950: #172554;
 
   /* Light Surface Colors */
-  --color-surface-900: #f8fafc; /* Slate 50 (Page background) */
-  --color-surface-800: #ffffff; /* White (Card/Header background) */
-  --color-surface-700: #e2e8f0; /* Slate 200 (Borders) */
-  --color-surface-600: #f1f5f9; /* Slate 100 (Hover/Alt BG) */
-  --color-surface-500: #cbd5e1; /* Slate 300 (Darker borders) */
-  --color-surface-400: #94a3b8; /* Slate 400 (Muted texts) */
+  --color-surface-900: #f8fafc;
+  /* Slate 50 (Page background) */
+  --color-surface-800: #ffffff;
+  /* White (Card/Header background) */
+  --color-surface-700: #e2e8f0;
+  /* Slate 200 (Borders) */
+  --color-surface-600: #f1f5f9;
+  /* Slate 100 (Hover/Alt BG) */
+  --color-surface-500: #cbd5e1;
+  /* Slate 300 (Darker borders) */
+  --color-surface-400: #94a3b8;
+  /* Slate 400 (Muted texts) */
 
   /* Status Colors */
   --color-success-400: #4ade80;
@@ -41,7 +47,9 @@
 }
 
 /* Base Styles */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -59,10 +67,23 @@ body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 
 /* Focus styles */
 *:focus-visible {
@@ -72,40 +93,95 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translate3d(-100%, 0, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: 0;
+    transform: translate3d(-100%, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translate3d(100%, 0, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: 0;
+    transform: translate3d(100%, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale3d(0.95, 0.95, 1); }
-  to { opacity: 1; transform: scale3d(1, 1, 1); }
+  from {
+    opacity: 0;
+    transform: scale3d(0.95, 0.95, 1);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
 }
 
 /* Utility Classes with GPU Acceleration */
-.animate-fade-in { animation: fadeIn 0.25s ease-out forwards; will-change: opacity, transform; }
-.animate-slide-left { animation: slideInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-.animate-slide-right { animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-.animate-scale-in { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+  will-change: opacity, transform;
+}
+
+.animate-slide-left {
+  animation: slideInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-slide-right {
+  animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
 
 /* Glassmorphism (Light Theme) */
 .glass {
@@ -220,19 +296,24 @@ html.dark .glass {
 }
 
 /* Automatically add left padding when preceded by an icon span (prevent text overlapping icon) */
-.relative > span.absolute + .input-field,
-.relative > span.absolute ~ .input-field {
+.relative>span.absolute+.input-field,
+.relative>span.absolute~.input-field {
   padding-left: 38px !important;
 }
 
 /* Automatically add right padding when followed by an absolute button (e.g. password eye) */
-.relative:has(> button.absolute) > .input-field {
+.relative:has(> button.absolute)>.input-field {
   padding-right: 38px !important;
 }
 
 /* If input already has explicit pl-9 / pl-10 class, ensure icon does not overlap */
-.input-field.pl-9  { padding-left: 36px !important; }
-.input-field.pl-10 { padding-left: 40px !important; }
+.input-field.pl-9 {
+  padding-left: 36px !important;
+}
+
+.input-field.pl-10 {
+  padding-left: 40px !important;
+}
 
 .input-field:focus,
 input:focus,
@@ -243,7 +324,9 @@ textarea:focus {
   outline: none;
 }
 
-.input-field::placeholder { color: #94a3b8; }
+.input-field::placeholder {
+  color: #94a3b8;
+}
 
 /* Kill browser autofill blue background */
 input:-webkit-autofill,
@@ -280,7 +363,9 @@ input:-webkit-autofill:active {
   transform: translateY(-1px);
 }
 
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:active {
+  transform: translateY(0);
+}
 
 .btn-secondary {
   background: #ffffff;
@@ -344,13 +429,50 @@ input:-webkit-autofill:active {
 }
 
 /* Badge Styles */
-.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-.badge-blue { background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); }
-.badge-green { background: rgba(22, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.2); }
-.badge-yellow { background: rgba(202, 138, 4, 0.1); color: #ca8a04; border: 1px solid rgba(202, 138, 4, 0.2); }
-.badge-red { background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); }
-.badge-gray { background: rgba(71, 85, 105, 0.1); color: #475569; border: 1px solid rgba(71, 85, 105, 0.2); }
-.badge-purple { background: rgba(124, 58, 237, 0.1); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.2); }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-blue {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.badge-green {
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.badge-yellow {
+  background: rgba(202, 138, 4, 0.1);
+  color: #ca8a04;
+  border: 1px solid rgba(202, 138, 4, 0.2);
+}
+
+.badge-red {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.badge-gray {
+  background: rgba(71, 85, 105, 0.1);
+  color: #475569;
+  border: 1px solid rgba(71, 85, 105, 0.2);
+}
+
+.badge-purple {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
 
 /* Sidebar Nav (Redesigned for blue gradient background sidebar) */
 .nav-item {
@@ -404,7 +526,9 @@ input:-webkit-autofill:active {
 }
 
 /* Number formatting */
-.currency { font-variant-numeric: tabular-nums; }
+.currency {
+  font-variant-numeric: tabular-nums;
+}
 
 /* 
 =========================================
@@ -417,47 +541,56 @@ html:not(.dark) main .text-white,
 html:not(.dark) main .text-slate-100,
 html:not(.dark) main .text-slate-200,
 html:not(.dark) main .text-slate-300,
-html:not(.dark) main .text-slate-350 {
-  color: #1e293b !important;
+/* Light Mode Text Color Rules - Exclude elements inside blue/primary/danger/success backgrounds */
+html:not(.dark) main :not([class*="bg-blue-"]):not([class*="bg-primary-"]):not([class*="bg-indigo-"]):not(.btn-primary):not(.btn-danger):not(.btn-success).text-slate-350 {
+  color: #1e293b;
 }
 
-html:not(.dark) main .text-slate-400,
-html:not(.dark) main .text-slate-450 {
-  color: #475569 !important;
+html:not(.dark) main :not([class*="bg-blue-"]):not([class*="bg-primary-"]):not([class*="bg-indigo-"]):not(.btn-primary):not(.btn-danger):not(.btn-success).text-slate-400,
+html:not(.dark) main :not([class*="bg-blue-"]):not([class*="bg-primary-"]):not([class*="bg-indigo-"]):not(.btn-primary):not(.btn-danger):not(.btn-success).text-slate-450 {
+  color: #475569;
 }
 
-/* Exemptions for components where white/light text is intended (buttons, active status states) */
-main .btn-primary,
-main .btn-primary *,
-main .btn-danger,
-main .btn-danger *,
-main .btn-success,
-main .btn-success *,
-main a.btn-primary,
-main a.btn-primary *,
-main a.btn-danger,
-main a.btn-danger *,
-main a.btn-success,
-main a.btn-success *,
-main .bg-primary-600,
-main .bg-primary-600 *,
-main .bg-primary-500,
-main .bg-primary-500 *,
-main .bg-blue-600,
-main .bg-blue-600 *,
-main .bg-success-600,
-main .bg-success-600 *,
-main .bg-danger-600,
-main .bg-danger-600 *,
-main .bg-warning-600,
-main .bg-warning-600 *,
-main .bg-rose-600,
-main .bg-rose-600 *,
-main .bg-emerald-600,
-main .bg-emerald-600 *,
-main .bg-amber-600,
-main .bg-amber-600 * {
+/* Force pure white text for all solid blue/primary/danger/success elements everywhere (including inside modals & cards) */
+.bg-primary-500,
+.bg-primary-500 *,
+.bg-primary-600,
+.bg-primary-600 *,
+.bg-primary-700,
+.bg-primary-700 *,
+.bg-blue-500,
+.bg-blue-500 *,
+.bg-blue-600,
+.bg-blue-600 *,
+.bg-blue-700,
+.bg-blue-700 *,
+.bg-blue-800,
+.bg-blue-800 *,
+.bg-indigo-600,
+.bg-indigo-600 *,
+.bg-indigo-700,
+.bg-indigo-700 *,
+.bg-success-600,
+.bg-success-600 *,
+.bg-danger-600,
+.bg-danger-600 *,
+.bg-emerald-600,
+.bg-emerald-600 *,
+.btn-primary,
+.btn-primary *,
+.btn-danger,
+.btn-danger *,
+.btn-success,
+.btn-success * {
   color: #ffffff !important;
+}
+
+/* Allow muted sub-labels inside blue headers if explicitly assigned text-blue-200 or text-blue-300 */
+.bg-blue-600 .text-blue-200,
+.bg-blue-600 .text-blue-300,
+.bg-primary-600 .text-blue-200,
+.bg-primary-600 .text-blue-300 {
+  color: #bfdbfe !important;
 }
 
 main .btn-secondary,
@@ -481,7 +614,8 @@ main table {
 }
 
 main thead tr {
-  background-color: #1d4ed8 !important; /* Premium dark blue header */
+  background-color: #1d4ed8 !important;
+  /* Premium dark blue header */
   color: #ffffff !important;
 }
 
@@ -538,6 +672,7 @@ main [class*="bg-blue-950"] {
   color: #1d4ed8 !important;
   border: 1px solid rgba(37, 99, 235, 0.25) !important;
 }
+
 main [class*="bg-primary-950"] *,
 main [class*="bg-primary-900"] *,
 main [class*="bg-blue-950"] * {
@@ -553,6 +688,7 @@ main [class*="bg-indigo-950"] {
   color: #6d28d9 !important;
   border: 1px solid rgba(124, 58, 237, 0.25) !important;
 }
+
 main [class*="bg-purple-950"] *,
 main [class*="bg-purple-900"] *,
 main [class*="bg-indigo-950"] * {
@@ -569,6 +705,7 @@ main [class*="bg-rose-950"] {
   color: #b91c1c !important;
   border: 1px solid rgba(220, 38, 38, 0.25) !important;
 }
+
 main [class*="bg-danger-950"] *,
 main [class*="bg-danger-900"] *,
 main [class*="bg-red-950"] *,
@@ -586,6 +723,7 @@ main [class*="bg-teal-950"] {
   color: #047857 !important;
   border: 1px solid rgba(16, 185, 129, 0.25) !important;
 }
+
 main [class*="bg-success-950"] *,
 main [class*="bg-green-950"] *,
 main [class*="bg-emerald-950"] *,
@@ -603,6 +741,7 @@ main [class*="bg-orange-950"] {
   color: #b45309 !important;
   border: 1px solid rgba(245, 158, 11, 0.25) !important;
 }
+
 main [class*="bg-amber-950"] *,
 main [class*="bg-amber-900"] *,
 main [class*="bg-yellow-950"] *,
@@ -687,6 +826,7 @@ main button.card [class*="p-3"][class*="text-primary"] {
   background-color: rgba(37, 99, 235, 0.10) !important;
   border-color: rgba(37, 99, 235, 0.22) !important;
 }
+
 /* Emerald/Green */
 main button.card div.p-3.text-emerald-400,
 main button.card div.p-3\.5.text-emerald-400,
@@ -694,6 +834,7 @@ main button.card [class*="p-3"][class*="text-emerald"] {
   background-color: rgba(16, 185, 129, 0.10) !important;
   border-color: rgba(16, 185, 129, 0.22) !important;
 }
+
 /* Red/Danger */
 main button.card div.p-3.text-danger-400,
 main button.card div.p-3\.5.text-danger-400,
@@ -702,6 +843,7 @@ main button.card [class*="p-3"][class*="text-rose"] {
   background-color: rgba(220, 38, 38, 0.09) !important;
   border-color: rgba(220, 38, 38, 0.20) !important;
 }
+
 /* Amber/Yellow */
 main button.card div.p-3.text-amber-400,
 main button.card div.p-3\.5.text-amber-400,
@@ -709,6 +851,7 @@ main button.card [class*="p-3"][class*="text-amber"] {
   background-color: rgba(245, 158, 11, 0.10) !important;
   border-color: rgba(245, 158, 11, 0.22) !important;
 }
+
 /* Purple */
 main button.card div.p-3.text-purple-400,
 main button.card div.p-3\.5.text-purple-400,
@@ -716,6 +859,7 @@ main button.card [class*="p-3"][class*="text-purple"] {
   background-color: rgba(124, 58, 237, 0.10) !important;
   border-color: rgba(124, 58, 237, 0.22) !important;
 }
+
 /* Sky */
 main button.card div.p-3.text-sky-400,
 main button.card div.p-3\.5.text-sky-400,
@@ -752,7 +896,7 @@ main button.card div[class*="text-primary"] svg {
 }
 
 /* ChevronRight chevron icon - always muted */
-main button.card > div > div svg:last-child,
+main button.card>div>div svg:last-child,
 main button.card .text-slate-500 svg {
   color: #64748b !important;
   stroke: #64748b !important;
@@ -766,7 +910,7 @@ STAT / INFO CARDS — ATTRACTIVE BORDERS
 
 /* Non-clickable stat cards (plain div.card in grid, no left-border class) 
    get a subtle colored top accent + soft shadow */
-main .grid > div.card:not([class*="border-l"]):not([class*="border-rose"]):not([class*="border-amber"]):not([class*="border-emerald"]):not([class*="border-primary"]) {
+main .grid>div.card:not([class*="border-l"]):not([class*="border-rose"]):not([class*="border-amber"]):not([class*="border-emerald"]):not([class*="border-primary"]) {
   position: relative !important;
   overflow: hidden !important;
   border: 1.5px solid #e0e7ff !important;
@@ -775,30 +919,47 @@ main .grid > div.card:not([class*="border-l"]):not([class*="border-rose"]):not([
   transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease !important;
 }
 
-main .grid > div.card:not([class*="border-l"]):not([class*="border-rose"]):not([class*="border-amber"]):not([class*="border-emerald"]):not([class*="border-primary"]):hover {
+main .grid>div.card:not([class*="border-l"]):not([class*="border-rose"]):not([class*="border-amber"]):not([class*="border-emerald"]):not([class*="border-primary"]):hover {
   box-shadow: 0 6px 24px rgba(37, 99, 235, 0.10) !important;
   border-color: #c7d2fe !important;
   border-top-color: #2563eb !important;
 }
 
 /* Penagihan border-l-4 stat cards — enhance with deeper shadow */
-main .grid > div.card[class*="border-l"] {
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+main .grid>div.card[class*="border-l"] {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
   transition: box-shadow 0.2s ease, transform 0.15s ease !important;
 }
 
-main .grid > div.card[class*="border-l"]:hover {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.10) !important;
+main .grid>div.card[class*="border-l"]:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10) !important;
   transform: translateY(-1px);
 }
 
 /* Restore explicit left-border colors on stat cards (border-rose/amber/emerald-500) */
-main .grid > div.card.border-rose-500   { border-left: 4px solid #f43f5e !important; }
-main .grid > div.card.border-amber-500  { border-left: 4px solid #f59e0b !important; }
-main .grid > div.card.border-emerald-500 { border-left: 4px solid #10b981 !important; }
-main .grid > div.card.border-primary-500 { border-left: 4px solid #3b82f6 !important; }
-main .grid > div.card.border-sky-500    { border-left: 4px solid #0ea5e9 !important; }
-main .grid > div.card.border-purple-500 { border-left: 4px solid #8b5cf6 !important; }
+main .grid>div.card.border-rose-500 {
+  border-left: 4px solid #f43f5e !important;
+}
+
+main .grid>div.card.border-amber-500 {
+  border-left: 4px solid #f59e0b !important;
+}
+
+main .grid>div.card.border-emerald-500 {
+  border-left: 4px solid #10b981 !important;
+}
+
+main .grid>div.card.border-primary-500 {
+  border-left: 4px solid #3b82f6 !important;
+}
+
+main .grid>div.card.border-sky-500 {
+  border-left: 4px solid #0ea5e9 !important;
+}
+
+main .grid>div.card.border-purple-500 {
+  border-left: 4px solid #8b5cf6 !important;
+}
 
 /* 
 =========================================
@@ -807,7 +968,7 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
 */
 
 /* modal-overlay wrapper and card layout adjustments */
-.modal-overlay > div {
+.modal-overlay>div {
   overflow: hidden !important;
   padding: 0 !important;
   border-radius: 12px !important;
@@ -815,8 +976,8 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
 }
 
 /* Default Blue Header */
-.modal-overlay > div > div:first-child,
-.modal-overlay > div > form > div:first-child {
+.modal-overlay>div>div:first-child,
+.modal-overlay>div>form>div:first-child {
   background-color: #1d4ed8 !important;
   color: #ffffff !important;
   margin: 0 !important;
@@ -829,12 +990,12 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
 }
 
 /* Header Text elements */
-.modal-overlay > div > div:first-child h2,
-.modal-overlay > div > div:first-child h3,
-.modal-overlay > div > div:first-child h4,
-.modal-overlay > div > form > div:first-child h2,
-.modal-overlay > div > form > div:first-child h3,
-.modal-overlay > div > form > div:first-child h4 {
+.modal-overlay>div>div:first-child h2,
+.modal-overlay>div>div:first-child h3,
+.modal-overlay>div>div:first-child h4,
+.modal-overlay>div>form>div:first-child h2,
+.modal-overlay>div>form>div:first-child h3,
+.modal-overlay>div>form>div:first-child h4 {
   color: #ffffff !important;
   font-weight: 700 !important;
   font-size: 16px !important;
@@ -842,64 +1003,67 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
 }
 
 /* Close Icon buttons inside headers */
-.modal-overlay > div > div:first-child button,
-.modal-overlay > div > form > div:first-child button {
+.modal-overlay>div>div:first-child button,
+.modal-overlay>div>form>div:first-child button {
   color: rgba(255, 255, 255, 0.8) !important;
   background: transparent !important;
   border: none !important;
   padding: 4px !important;
   border-radius: 6px !important;
 }
-.modal-overlay > div > div:first-child button:hover,
-.modal-overlay > div > form > div:first-child button:hover {
+
+.modal-overlay>div>div:first-child button:hover,
+.modal-overlay>div>form>div:first-child button:hover {
   color: #ffffff !important;
   background-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Close Icon svg inside header close button */
-.modal-overlay > div > div:first-child button svg,
-.modal-overlay > div > form > div:first-child button svg {
+.modal-overlay>div>div:first-child button svg,
+.modal-overlay>div>form>div:first-child button svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
 
 /* Ensure all SVG icons in any modal header are white */
-.modal-overlay > div > div:first-child svg,
-.modal-overlay > div > form > div:first-child svg {
+.modal-overlay>div>div:first-child svg,
+.modal-overlay>div>form>div:first-child svg {
   stroke: #ffffff !important;
   color: #ffffff !important;
 }
 
 /* Modal Body container elements spacing padding */
-.modal-overlay > div > :not(:first-child),
-.modal-overlay > div > form > :not(:first-child) {
+.modal-overlay>div> :not(:first-child),
+.modal-overlay>div>form> :not(:first-child) {
   padding-left: 24px !important;
   padding-right: 24px !important;
 }
-.modal-overlay > div > :not(:first-child):last-child,
-.modal-overlay > div > form > :not(:first-child):last-child {
+
+.modal-overlay>div> :not(:first-child):last-child,
+.modal-overlay>div>form> :not(:first-child):last-child {
   padding-bottom: 24px !important;
 }
-.modal-overlay > div > :not(:first-child):first-of-type,
-.modal-overlay > div > form > :not(:first-child):first-of-type {
+
+.modal-overlay>div> :not(:first-child):first-of-type,
+.modal-overlay>div>form> :not(:first-child):first-of-type {
   padding-top: 20px !important;
 }
 
 /* Delete popup (RED) overrides - if modal has danger buttons */
-.modal-overlay:has(.btn-danger, .bg-danger-600, .bg-red-600, [class*="bg-danger"]) > div > div:first-child,
-.modal-overlay:has(.btn-danger, .bg-danger-600, .bg-red-600, [class*="bg-danger"]) > div > form > div:first-child {
+.modal-overlay:has(.btn-danger, .bg-danger-600, .bg-red-600, [class*="bg-danger"])>div>div:first-child,
+.modal-overlay:has(.btn-danger, .bg-danger-600, .bg-red-600, [class*="bg-danger"])>div>form>div:first-child {
   background-color: #dc2626 !important;
 }
 
 /* Archive popup (YELLOW) overrides - if modal has archive buttons */
-.modal-overlay:has(.btn-warning, .bg-warning-600, .bg-amber-600, .bg-yellow-600, [class*="bg-warning"]) > div > div:first-child,
-.modal-overlay:has(.btn-warning, .bg-warning-600, .bg-amber-600, .bg-yellow-600, [class*="bg-warning"]) > div > form > div:first-child {
+.modal-overlay:has(.btn-warning, .bg-warning-600, .bg-amber-600, .bg-yellow-600, [class*="bg-warning"])>div>div:first-child,
+.modal-overlay:has(.btn-warning, .bg-warning-600, .bg-amber-600, .bg-yellow-600, [class*="bg-warning"])>div>form>div:first-child {
   background-color: #d97706 !important;
 }
 
 /* Fix default focus outline on modal divs when focused programmatically */
-.modal-overlay > div:focus,
-.modal-overlay > div:focus-visible {
+.modal-overlay>div:focus,
+.modal-overlay>div:focus-visible {
   outline: none !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
 }
@@ -917,17 +1081,20 @@ POPUP MODAL DIALOG HEADER STYLE OVERRIDES
   border-bottom: 2px solid #3b82f6 !important;
   background-color: rgba(59, 130, 246, 0.08) !important;
 }
+
 .table-row-selected td,
 .table-row-selected td *,
 .table-row-selected td span,
 .table-row-selected td div {
   color: #000000 !important;
 }
+
 .table-row-selected td:first-child {
   border-left: 2px solid #3b82f6 !important;
   border-top-left-radius: 8px !important;
   border-bottom-left-radius: 8px !important;
 }
+
 .table-row-selected td:last-child {
   border-right: 2px solid #3b82f6 !important;
   border-top-right-radius: 8px !important;
@@ -946,12 +1113,18 @@ main button.card.card-focused {
 /* Dark Mode overrides */
 html.dark {
   /* Override Tailwind Surface variables for dark mode */
-  --color-surface-900: #0f172a !important; /* Page background */
-  --color-surface-800: #1e293b !important; /* Card background */
-  --color-surface-700: #334155 !important; /* Borders */
-  --color-surface-600: #1e293b !important; /* Hover/Alt BG */
-  --color-surface-500: #475569 !important; /* Darker borders */
-  --color-surface-400: #94a3b8 !important; /* Muted texts */
+  --color-surface-900: #0f172a !important;
+  /* Page background */
+  --color-surface-800: #1e293b !important;
+  /* Card background */
+  --color-surface-700: #334155 !important;
+  /* Borders */
+  --color-surface-600: #1e293b !important;
+  /* Hover/Alt BG */
+  --color-surface-500: #475569 !important;
+  /* Darker borders */
+  --color-surface-400: #94a3b8 !important;
+  /* Muted texts */
 }
 
 html.dark body {
@@ -967,9 +1140,11 @@ html.dark main {
 html.dark .bg-surface-900 {
   background-color: #0f172a !important;
 }
+
 html.dark .bg-surface-800 {
   background-color: #1e293b !important;
 }
+
 html.dark .border-surface-700 {
   border-color: #334155 !important;
 }
@@ -986,9 +1161,9 @@ html.dark header {
   border-bottom: 1px solid #1e293b !important;
 }
 
-html.dark header span, 
-html.dark header p, 
-html.dark header h1, 
+html.dark header span,
+html.dark header p,
+html.dark header h1,
 html.dark header h2,
 html.dark header div {
   color: #f8fafc !important;
@@ -1131,20 +1306,20 @@ html.dark tbody tr:hover {
 }
 
 /* Modals & Popups (e.g. Pilih Pemasok / Pilih Barang / Pilih Pelanggan / Edit Produk) */
-html.dark .modal-overlay > div,
-html.dark .modal-overlay > form,
-html.dark .modal-overlay > div > div,
-html.dark .modal-overlay > div > form {
+html.dark .modal-overlay>div,
+html.dark .modal-overlay>form,
+html.dark .modal-overlay>div>div,
+html.dark .modal-overlay>div>form {
   background: #1e293b !important;
   background-color: #1e293b !important;
   border: 1px solid #334155 !important;
   border-color: #334155 !important;
 }
 
-html.dark .modal-overlay > div div,
-html.dark .modal-overlay > form div,
-html.dark .modal-overlay > div > div div,
-html.dark .modal-overlay > div > form > div div {
+html.dark .modal-overlay>div div,
+html.dark .modal-overlay>form div,
+html.dark .modal-overlay>div>div div,
+html.dark .modal-overlay>div>form>div div {
   border-color: #334155 !important;
 }
 
@@ -1156,8 +1331,10 @@ html.dark .modal-overlay p {
 
 /* Override selection list items in autocomplete modals */
 html.dark .bg-emerald-50 {
-  background-color: rgba(16, 185, 129, 0.15) !important; /* Dark emerald background */
-  color: #34d399 !important; /* Light green/emerald text */
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  /* Dark emerald background */
+  color: #34d399 !important;
+  /* Light green/emerald text */
 }
 
 html.dark .text-emerald-900 {
@@ -1189,15 +1366,19 @@ html.dark .text-slate-750 {
 html.dark .bg-primary-50 {
   background-color: rgba(37, 99, 235, 0.18) !important;
 }
+
 html.dark .bg-yellow-50 {
   background-color: rgba(234, 179, 8, 0.18) !important;
 }
+
 html.dark .bg-purple-50 {
   background-color: rgba(168, 85, 247, 0.18) !important;
 }
+
 html.dark .bg-rose-50 {
   background-color: rgba(244, 63, 94, 0.18) !important;
 }
+
 html.dark .bg-amber-50 {
   background-color: rgba(245, 158, 11, 0.18) !important;
 }
@@ -1231,15 +1412,18 @@ html.dark .table-row-selected td {
   border-bottom: 2px solid #2563eb !important;
   background-color: rgba(30, 58, 138, 0.4) !important;
 }
+
 html.dark .table-row-selected td,
 html.dark .table-row-selected td *,
 html.dark .table-row-selected td span,
 html.dark .table-row-selected td div {
   color: #ffffff !important;
 }
+
 html.dark .table-row-selected td:first-child {
   border-left: 2px solid #2563eb !important;
 }
+
 html.dark .table-row-selected td:last-child {
   border-right: 2px solid #2563eb !important;
 }
@@ -1250,12 +1434,14 @@ html.dark .text-slate-750,
 html.dark .text-slate-655,
 html.dark .text-slate-555,
 html.dark .text-slate-550 {
-  color: #cbd5e1 !important; /* Muted text to light gray for readability */
+  color: #cbd5e1 !important;
+  /* Muted text to light gray for readability */
 }
 
 html.dark .text-slate-855 strong,
 html.dark .text-slate-655 strong {
-  color: #ffffff !important; /* Make title/strong labels bright white */
+  color: #ffffff !important;
+  /* Make title/strong labels bright white */
 }
 
 html.dark .bg-slate-55,
@@ -1264,7 +1450,8 @@ html.dark .bg-slate-150,
 html.dark .bg-slate-100,
 html.dark .bg-slate-50,
 html.dark .bg-slate-55\/50 {
-  background-color: #0f172a !important; /* Make light gray backgrounds dark */
+  background-color: #0f172a !important;
+  /* Make light gray backgrounds dark */
 }
 
 html.dark .bg-blue-50\/50,
@@ -1272,7 +1459,8 @@ html.dark .bg-blue-50\/30,
 html.dark .bg-blue-50\/10,
 html.dark .bg-primary-50\/50,
 html.dark .bg-primary-50 {
-  background-color: rgba(30, 41, 59, 0.5) !important; /* Soft dark slate background */
+  background-color: rgba(30, 41, 59, 0.5) !important;
+  /* Soft dark slate background */
   background: rgba(30, 41, 59, 0.5) !important;
   border-color: #334155 !important;
 }
@@ -1290,7 +1478,8 @@ html.dark .border-slate-350,
 html.dark .border-slate-250,
 html.dark .border-slate-150,
 html.dark .divide-slate-150 {
-  border-color: #334155 !important; /* Consistent dark borders */
+  border-color: #334155 !important;
+  /* Consistent dark borders */
 }
 
 /* Override light blue borders and backgrounds in dark mode */

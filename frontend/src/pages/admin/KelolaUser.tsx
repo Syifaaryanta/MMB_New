@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
@@ -39,6 +40,7 @@ const roleOptions: Array<{ id: RoleType; label: string; desc: string }> = [
 ];
 
 export const KelolaUser: React.FC = () => {
+  const navigate = useNavigate();
   const { lang } = useTranslation();
   const { user: currentUser } = useAuthStore();
   const [users, setUsers] = useState<ProfileData[]>([]);
@@ -108,9 +110,21 @@ export const KelolaUser: React.FC = () => {
     }
   }, [filteredUsers.length, selectedIdx]);
 
-  // Global Keyboard Hotkeys: F1 for Search, F2 for Add User, F3 for First Row, Arrow Up/Down for table row selection, Enter for Edit, Delete/Del for Delete
+  // Global Keyboard Hotkeys: ESC for Dashboard (or Close Modal), F1 for Search, F2 for Add User, F3 for First Row, Arrow Up/Down for table row selection, Enter for Edit, Delete/Del for Delete
   useEffect(() => {
     const handleGlobalHotkeys = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (showAddModal || editTarget || deleteTarget) {
+          setShowAddModal(false);
+          setEditTarget(null);
+          setDeleteTarget(null);
+        } else {
+          navigate('/dashboard');
+        }
+        return;
+      }
+
       // If modal is active, handle inside modal hooks
       if (showAddModal || editTarget || deleteTarget) return;
 
@@ -146,7 +160,7 @@ export const KelolaUser: React.FC = () => {
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
-  }, [showAddModal, editTarget, deleteTarget, filteredUsers, selectedIdx, currentUser]);
+  }, [showAddModal, editTarget, deleteTarget, filteredUsers, selectedIdx, currentUser, navigate]);
 
   // Auto focus username field on popup open
   useEffect(() => {
